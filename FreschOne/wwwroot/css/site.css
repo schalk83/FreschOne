@@ -1,0 +1,98 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.reset-password-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f8f9fa;
+}
+
+.reset-password-box {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: f8f9fa;
+}
+
+.login-box {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+}
+
+/* Hide sub-menu initially */
+.sub-menu {
+    display: none;
+    list-style: none;
+    margin-top: 0;
+    padding: 0;
+}
+
+    /* Make all items look the same */
+    .nav-item .nav-link,
+    .sub-menu .nav-link {
+        display: block;
+        color: black;
+        text-decoration: none;
+        padding: 10px 15px; /* Same padding for consistency */
+        font-size: 16px; /* Ensure same text size */
+    }
+
+        /* Add a consistent hover effect for all items */
+        .nav-item .nav-link:hover,
+        .sub-menu .nav-link:hover {
+            background: rgba(0, 0, 0, 0.1); /* Slightly darker grey */
+            color: black;
+        }
+
+/* Main menu item wrapper (ensures alignment) */
+.nav-item {
+    position: relative;
+}
+
+/* Style for the toggle arrow */
+.toggle-arrow {
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    margin-left: 5px;
+}
+
+    /* Rotate arrow when expanded */
+    .toggle-arrow.open {
+        transform: rotate(180deg);
+    }
+

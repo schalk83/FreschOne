@@ -1,0 +1,18 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+@{
+    var userid = ViewBag.userid;
+}
+
+<div class="d-flex">
+    <!-- Sidebar -->
+    <partial name="_Sidebar" />
+
+    <!-- Main Content -->
+    <div class="container-fluid p-4" style="margin-left: 260px;">
+        <h1>Welcome to FreschOne</h1>
+        <p>Select an option from the sidebar to proceed.</p>
+    </div>
+</div>
