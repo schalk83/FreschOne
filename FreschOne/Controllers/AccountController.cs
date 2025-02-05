@@ -8,7 +8,6 @@ namespace FreschOne.Controllers
        // public AccountController(DatabaseHelper dbHelper) : base(dbHelper) { }
         public AccountController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
 
-
         public IActionResult Login()
         {
             return View();

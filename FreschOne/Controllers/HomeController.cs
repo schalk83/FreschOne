@@ -10,7 +10,7 @@ namespace FreschOne.Controllers
         public IActionResult Index(int userid)
         {
             SetUserAccess(userid);
-            ViewBag.userid = userid;
+            ViewBag.userid = userid; 
             return View();
         }
     }

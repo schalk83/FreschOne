@@ -1,16 +1,20 @@
 ﻿@model FreschOne.Models.TableViewModel
 @{
     var userid = ViewBag.userid;
+    var readwriteaccess = ViewBag.readwriteaccess;
+    var tablename = ViewBag.tablename;
 }
 
 <partial name="_Sidebar" />
 
 <h1>Data for Table: @Model.TableName</h1>
 
+@if (readwriteaccess == "RW")
+{
+    <a href="@Url.Action("Create", new { userid = Model.UserId, tablename = Model.TableName, readwriteaccess = readwriteaccess })" class="btn btn-primary">Create</a>
+}
 
-<a href="@Url.Action("Create", new { userid = Model.UserId, tablename = Model.TableName })" class="btn btn-primary">Create</a>
-
-
+<!-- Data Table -->
 <table class="table table-bordered">
     <thead>
         <tr>
@@ -27,13 +31,201 @@
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    <td>@row[column]</td>
+                    <td onclick="showPopup(event, '@tablename', '@row["ID"]')">@row[column]</td>
                 }
                 <td>
-                    <a href="@Url.Action("Edit", new { id = row[Model.PrimaryKeyColumn], tablename = Model.TableName })" class="btn btn-warning">Edit</a>
-                    <a href="@Url.Action("Delete", new { id = row[Model.PrimaryKeyColumn], tablename = Model.TableName })" class="btn btn-danger">Delete</a>
+                    @if (readwriteaccess == "RW")
+                    {
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid, readwriteaccess = readwriteaccess })" class="btn btn-warning">Edit</a>
+                        <a href="@Url.Action("Delete", new { id = @row["ID"], tablename = tablename })" class="btn btn-danger">Delete</a>
+                    }
+                    @if (readwriteaccess == "R")
+                    {
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid, readwriteaccess = readwriteaccess })" class="btn btn-warning">View</a>
+                    }
                 </td>
             </tr>
         }
     </tbody>
 </table>
+
+<!-- Pagination Controls (Bootstrap Pagination) -->
+<div class="d-flex justify-content-center mt-3">
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            @if (ViewBag.pageNumber > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, readwriteaccess = ViewBag.readwriteaccess, pageNumber = ViewBag.pageNumber - 1 })" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            }
+
+            @for (var i = 1; i <= ViewBag.totalPages; i++)
+            {
+                <li class="page-item @(i == ViewBag.pageNumber ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, readwriteaccess = ViewBag.readwriteaccess, pageNumber = i })">
+                        @i
+                    </a>
+                </li>
+            }
+
+            @if (ViewBag.pageNumber < ViewBag.totalPages)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, readwriteaccess = ViewBag.readwriteaccess, pageNumber = ViewBag.pageNumber + 1 })" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </nav>
+</div>
+
+<!-- Popup for Related Tables -->
+<div id="popup" class="popup" style="display:none;">
+    <div class="popup-header">
+        <span class="popup-close" onclick="document.getElementById('popup').style.display='none'">&times;</span>
+    </div>
+    <div id="popup-content" class="popup-content"></div>
+</div>
+
+@section Styles {
+    <style>
+        /* Basic Popup Styling */
+        /* Basic Popup Styling */
+        .popup {
+            display: none;
+            position: absolute;
+            width: 350px;
+            max-width: 90%; /* Responsive width */
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
+            padding: 20px;
+            z-index: 1000;
+            transition: opacity 0.3s ease; /* Smooth transition */
+        }
+
+        .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+            .popup-header h5 {
+                font-size: 1.2em;
+                margin: 0;
+                color: #333;
+                font-weight: 500;
+            }
+
+        .popup-close {
+            cursor: pointer;
+            font-size: 1.4em;
+            color: #aaa;
+        }
+
+            .popup-close:hover {
+                color: #555;
+            }
+
+        .popup-content table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .popup-content th, .popup-content td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .popup-content th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .popup-content td a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+            .popup-content td a:hover {
+                text-decoration: underline;
+            }
+                  
+    </style>
+}
+
+@section Scripts {
+    <script>
+        function showPopup(event, tablename, id) {
+            console.log('showPopup called with tablename:', tablename, 'and id:', id); // Debugging line
+
+            // Fetch related tables via AJAX, and pass the userid to check user access
+        fetch(`/TableX/ForeignTables_Index?tablename=${tablename}&userid=${@ViewBag.userid}&isAjax=true`)
+                        .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        let content = '<table class="table table-bordered">';
+                        content += '<thead><tr><th>Related Table</th></tr></thead><tbody>';
+
+                        data.forEach(record => {
+                            const url = `/TableY/Index?tablename=${record.ChildTable}&PKColumn=${record.ForeignKey}&PKID=${id}`;
+                            content += `<tr><td><a href="${url}">${record.ChildTable}</a></td></tr>`;
+                        });
+
+                        content += '</tbody></table>';
+                        document.getElementById('popup-content').innerHTML = content;
+                        document.getElementById('popup').style.display = 'block';
+
+                        // Position the popup near the clicked cell
+                        var popup = document.getElementById('popup');
+                        var rect = event.target.getBoundingClientRect();  // Get the position of the clicked cell
+
+                        // Ensure the popup stays within the viewport
+                        var popupWidth = popup.offsetWidth;
+                        var popupHeight = popup.offsetHeight;
+
+                        var left = rect.left + window.scrollX + rect.width / 2 - popupWidth / 2;
+                        var top = rect.top + window.scrollY + rect.height + 10;
+
+                        // Adjust position if the popup is off the right side of the screen
+                        if (left + popupWidth > window.innerWidth) {
+                            left = window.innerWidth - popupWidth - 10;
+                        }
+
+                        // Adjust position if the popup is off the bottom of the screen
+                        if (top + popupHeight > window.innerHeight) {
+                            top = rect.top + window.scrollY - popupHeight - 10;  // Position above the cell
+                        }
+
+                        // Apply the calculated position
+                        popup.style.left = left + 'px';
+                        popup.style.top = top + 'px';
+                    } else {
+                        document.getElementById('popup-content').innerHTML = '<p>No related records available.</p>';
+                        document.getElementById('popup').style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching related tables:', error);
+                });
+        }
+
+
+            document.addEventListener('click', function (event) {
+            var popup = document.getElementById('popup');
+            if (!popup.contains(event.target) && event.target.tagName !== 'TD') {
+                popup.style.display = 'none';
+            }
+        });
+    </script>
+}

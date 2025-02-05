@@ -1,0 +1,83 @@
+﻿@model FreschOne.Models.TableCreateViewModel
+
+@{
+    var userid = ViewBag.userid;
+    var readwriteaccess = ViewBag.readwriteaccess;
+    var tablename = ViewBag.tablename;
+    var columnTypes = ViewBag.ColumnTypes; // Get column types from ViewBag
+    var columnLengths = ViewBag.ColumnLengths; // Get column lengths from ViewBag
+}
+
+<partial name="_Sidebar" />
+
+<h1>Create New @Model.TableName</h1>
+
+<form method="post" action="@Url.Action("Create", new { userid = userid, tablename = Model.TableName, readwriteaccess = readwriteaccess })">
+    @foreach (var column in Model.Columns)
+    {
+        if (column == "ID") continue;  // Skip the ID column, it should be auto-generated
+
+        var columnValue = Model.Record.ContainsKey(column) ? Model.Record[column] : null;
+        var columnType = columnTypes.ContainsKey(column) ? columnTypes[column] : "string"; // Default to string if not found
+        var columnLength = columnLengths.ContainsKey(column) ? columnLengths[column] : 255; // Default length if not found
+
+        <div class="form-group">
+            <label for="@column">@column</label>
+
+            @if (columnType == "varchar" && columnLength <= 255)
+            {
+                <!-- Render text input for varchar columns with length <= 255 -->
+                <input type="text" name="@column" value="@columnValue" class="form-control" />
+            }
+            else if (columnType == "varchar" && columnLength > 255)
+            {
+                <!-- Render textarea for varchar columns with length > 255 -->
+                <textarea name="@column" class="form-control">@columnValue</textarea>
+            }
+            else if (columnType == "int" || columnType == "decimal")
+            {
+                <!-- Render number input for int or decimal columns -->
+                <input type="number" name="@column" value="@columnValue" class="form-control" />
+            }
+            else if (columnType == "bit")
+            {
+                <!-- Render checkbox for bit columns, handle DBNull -->
+                <input type="checkbox" name="@column" value="true" class="form-check-input" />
+                
+            }
+            else if (columnType == "datetime")
+            {
+                <!-- Render date picker for datetime columns -->
+                string formattedDate = columnValue != null ? DateTime.TryParse(columnValue.ToString(), out var dateValue)
+                ? dateValue.ToString("yyyy-MM-dd") : "" : ""; // If the value is null, set it to an empty string
+                <input type="date" name="@column" value="@formattedDate" class="form-control" />
+            }
+            else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+            {
+                var foreignKey = Model.ForeignKeys.First(fk => fk.ColumnName == column);
+
+                @Html.DropDownList(
+                         foreignKey.ColumnName,
+                         new SelectList(
+                         Model.ForeignKeyOptions[foreignKey.ColumnName],
+                         "Value", "Text", columnValue),
+                         "Select...",
+                         new { @class = "form-control" })
+            }
+        </div>
+    }
+
+    <br />
+    <hr />
+    <div class="form-group text-center">
+        <button type="submit" class="btn btn-primary">Create</button>
+    </div>
+
+    <!-- Back link styled as a simple hyperlink -->
+    <div class="form-group text-right">
+        <a href="@Url.Action("Index", "TableX", new { userid, tablename, readwriteaccess })" class="btn btn-link">
+            Back to Previous Screen
+        </a>
+    </div>
+
+</form>
