@@ -52,6 +52,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/TableX/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFibGVYXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/TableX/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFibGVYXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/TableX/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcVGFibGVYXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 

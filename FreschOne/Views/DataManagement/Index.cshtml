@@ -1,11 +1,11 @@
-﻿@model Dictionary<string, List<foUserTable>>
+﻿@model Tuple<Dictionary<string, List<foUserTable>>, List<foTablePrefix>>
 
 <h1>Data Management</h1>
 
 <partial name="_Sidebar" />
 
 <div class="accordion" id="accordionExample">
-    @foreach (var group in Model)
+    @foreach (var group in Model.Item1)
     {
         <div class="accordion-item">
             <h2 class="accordion-header" id="heading_@group.Key">
@@ -18,9 +18,18 @@
                     <ul>
                         @foreach (var access in group.Value)
                         {
+                            // Dynamically remove the prefix from the TableName
+                            var prefix = Model.Item2.FirstOrDefault(p => access.TableName.StartsWith(p.Prefix));
+                            var displayName = access.TableName;
+                            if (prefix != null)
+                            {
+                                displayName = access.TableName.Replace(prefix.Prefix, string.Empty);
+                            }
+
+                            // Pass the original TableName (with prefix) to the URL, but display the modified TableName (without prefix)
                             <li>
                                 <a href="@Url.Action("Index", "TableX", new { userid = access.UserID, tablename = access.TableName, readwriteaccess = access.ReadWriteAccess })">
-                                    @access.TableName 
+                                    @displayName
                                 </a>
                             </li>
                         }
