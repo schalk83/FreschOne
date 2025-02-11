@@ -7,6 +7,8 @@
         public List<string> Columns { get; set; }
         public List<Dictionary<string, object>> TableData { get; set; }
         public string PrimaryKeyColumn { get; set; }
+        public List<ForeignKeyInfo> ForeignKeys { get; set; }  // List of foreign key columns (for dropdowns)
+
     }
 
 }

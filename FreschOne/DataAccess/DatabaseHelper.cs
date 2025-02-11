@@ -161,4 +161,36 @@ public FoUser AuthenticateUser(string username, string password)
 
         return hasAccess;
     }
+
+    public string CheckUserTableAccessRights(long userid, string tablename)
+    {
+        string readwriteaccess = "";
+
+        string query = @"
+        SELECT ReadWriteAccess
+        FROM foUserTable 
+        WHERE UserID = @UserID 
+        AND TableName = @TableName 
+        AND Active = 1"; // Ensure the access is active
+
+        using (SqlConnection conn = new SqlConnection(_connectionString))
+        {
+            conn.Open();
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@UserID", userid);
+                cmd.Parameters.AddWithValue("@TableName", tablename);
+
+                var result = cmd.ExecuteScalar();
+
+                if (result != null)
+                {
+                    readwriteaccess = result.ToString(); // Safe conversion if result is not null
+                }
+            }
+        }
+
+        return readwriteaccess;
+    }
+
 }

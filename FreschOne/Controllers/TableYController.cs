@@ -7,17 +7,17 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FreschOne.Controllers
 {
-    public class TableXController : BaseController
+    public class TableYController : BaseController
     {
-        public TableXController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
+        public TableYController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
 
-        public IActionResult Index(int userid, string tablename, string readwriteaccess, int pageNumber = 1, string searchText = "")
+        public IActionResult Index(int userid, int PKID, string PKColumn, string tablename, string readwriteaccess, int pageNumber = 1, string searchText = "")
         {
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
 
             var columns = GetTableColumns(tablename);  // Get the columns for the table
-            var tableData = GetTableData(tablename);   // Get the data for the table
+            var tableData = GetTableData(PKID, PKColumn, tablename);   // Get the data for the table
 
             // Apply column-based filtering if any column's search text is provided
             if (!string.IsNullOrEmpty(searchText))
@@ -28,17 +28,20 @@ namespace FreschOne.Controllers
             }
 
             // Fetch all foreign key columns and replace them with corresponding descriptions
-            var foreignKeys = GetForeignKeyColumns(tablename);
+            var foreignKeys = GetForeignKeyColumns(tablename, PKColumn);
             foreach (var row in tableData)
             {
                 foreach (var foreignKey in foreignKeys)
                 {
-                    if (row.ContainsKey(foreignKey.ColumnName))
+                    if (foreignKey.ColumnName != PKColumn)
                     {
-                        var foreignKeyValue = row[foreignKey.ColumnName];
-                        if (foreignKeyValue != DBNull.Value)
+                        if (row.ContainsKey(foreignKey.ColumnName))
                         {
-                            row[foreignKey.ColumnName] = GetForeignKeyDescription(foreignKey.TableName, foreignKeyValue);
+                            var foreignKeyValue = row[foreignKey.ColumnName];
+                            if (foreignKeyValue != DBNull.Value)
+                            {
+                                row[foreignKey.ColumnName] = GetForeignKeyDescription(foreignKey.TableName, foreignKeyValue);
+                            }
                         }
                     }
                 }
@@ -53,10 +56,11 @@ namespace FreschOne.Controllers
             ViewBag.totalPages = totalPages;
             ViewBag.searchText = searchText;
 
+            ViewBag.PKID = PKID;
+            ViewBag.PKColumn = PKColumn;
             ViewBag.userid = userid;
             ViewBag.tablename = tablename;
             
-             
             var tablePrefixes = GetTablePrefixes();
             var tableDescription = "";
             // Check if the ChildTable name starts with any prefix and remove it
@@ -64,7 +68,8 @@ namespace FreschOne.Controllers
             {
                 tableDescription = tablename.Substring(prefix.Prefix.Length);
             }
-            ViewBag.tableDescription = tableDescription.Replace("_"," "); 
+            ViewBag.tableDescription = tableDescription.Replace("_", " ");
+
 
             var viewModel = new TableViewModel
             {
@@ -194,7 +199,8 @@ namespace FreschOne.Controllers
             return prefixes;
         }
 
-        private List<ForeignKeyInfo> GetForeignKeyColumns(string tablename)
+
+        private List<ForeignKeyInfo> GetForeignKeyColumns(string tablename, string PKColumn)
         {
             var foreignKeys = new List<ForeignKeyInfo>();
             string query = @"
@@ -212,7 +218,7 @@ namespace FreschOne.Controllers
         INNER JOIN 
             sys.tables AS ref_tab ON ref_tab.object_id = fkc.referenced_object_id
         WHERE 
-            parent_tab.name = @TableName
+            parent_tab.name = @TableName and c.name != @PKColumn
             AND c.name LIKE '%ID'";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -221,6 +227,8 @@ namespace FreschOne.Controllers
                 using (var command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@TableName", tablename);
+                    command.Parameters.AddWithValue("@PKColumn", PKColumn);
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -238,7 +246,7 @@ namespace FreschOne.Controllers
             return foreignKeys;
         }
 
-        public IActionResult Edit(int id, string tablename, int userid, string readwriteaccess)
+        public IActionResult Edit(int id, int PKID, string PKColumn, string tablename, int userid, string readwriteaccess)
         {
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
@@ -248,7 +256,7 @@ namespace FreschOne.Controllers
 
             // Get columns and their types for the table
             var columns = GetTableColumns(tablename);
-            var foreignKeys = GetForeignKeyColumns(tablename);
+            var foreignKeys = GetForeignKeyColumns(tablename, PKColumn);
 
             // Get column types and lengths from systypes and syscolumns
             var columnTypes = new Dictionary<string, string>(); // Dictionary to hold column types
@@ -279,7 +287,8 @@ namespace FreschOne.Controllers
 
             foreach (var foreignKey in foreignKeys)
             {
-                foreignKeyOptions[foreignKey.ColumnName] = GetForeignKeyOptions(foreignKey.TableName);
+                
+                    foreignKeyOptions[foreignKey.ColumnName] = GetForeignKeyOptions(foreignKey.TableName);
             }
 
             var tablePrefixes = GetTablePrefixes();
@@ -298,6 +307,9 @@ namespace FreschOne.Controllers
             ViewBag.ColumnTypes = columnTypes; // Pass column types to the view
             ViewBag.ColumnLengths = columnLengths; // Pass column lengths to the view
 
+            ViewBag.PKID = PKID;
+            ViewBag.PKColumn = PKColumn;
+
             // Create the view model
             var viewModel = new TableEditViewModel
             {
@@ -310,6 +322,7 @@ namespace FreschOne.Controllers
 
             return View(viewModel);
         }
+
 
         private string GetForeignKeyDescription(string tableName, object foreignKeyValue)
         {
@@ -328,6 +341,7 @@ namespace FreschOne.Controllers
 
             return description;
         }
+
 
         private Dictionary<string, object> GetRecordById(string tablename, int id)
         {
@@ -385,9 +399,8 @@ namespace FreschOne.Controllers
 
 
         [HttpPost]
-        public IActionResult Update(int id, int userid, string tablename, string readwriteaccess, IFormCollection form)
+        public IActionResult Update(int id, int userid, int PKID, string PKColumn, string tablename, string readwriteaccess, IFormCollection form)
         {
-         
             // Create a dictionary to store the updated values
             var updatedValues = new Dictionary<string, object>();
 
@@ -440,7 +453,7 @@ namespace FreschOne.Controllers
                 }
             }
 
-            return RedirectToAction("Index", new { userid = userid, tablename = tablename, readwriteaccess = readwriteaccess });
+            return RedirectToAction("Index", new { userid = userid, PKID = PKID, PKColumn = PKColumn, tablename = tablename, readwriteaccess = readwriteaccess });
         }
 
 
@@ -450,7 +463,7 @@ namespace FreschOne.Controllers
             return RedirectToAction("Index");
         }
 
-        public IActionResult Create(int userid, string tablename, string readwriteaccess) 
+        public IActionResult Create(int userid, int PKID, string PKColumn, string tablename, string readwriteaccess) 
         {
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
@@ -459,7 +472,7 @@ namespace FreschOne.Controllers
             var columns = GetTableColumns(tablename);
 
             // Retrieve foreign key columns for the table
-            var foreignKeys = GetForeignKeyColumns(tablename);
+            var foreignKeys = GetForeignKeyColumns(tablename, PKColumn);
 
             // Get column types and lengths from systypes and syscolumns
             var columnTypes = new Dictionary<string, string>(); // Dictionary to hold column types
@@ -505,6 +518,8 @@ namespace FreschOne.Controllers
             // Prepare the ViewBag for additional parameters
             ViewBag.userid = userid;
             ViewBag.tablename = tablename;
+            ViewBag.PKColumn = PKColumn;
+            ViewBag.PKID = PKID;
             ViewBag.ColumnTypes = columnTypes; // Pass column types to the view
             ViewBag.ColumnLengths = columnLengths; // Pass column lengths to the view
 
@@ -524,11 +539,12 @@ namespace FreschOne.Controllers
         }
 
 
-
         [HttpPost]
-        public IActionResult Create(int userid, string tablename, string readwriteaccess, Dictionary<string, string> formData)
+        public IActionResult Create(int userid, int PKID, string PKColumn, string tablename, string readwriteaccess, Dictionary<string, string> formData)
         {
             SetUserAccess(userid);
+            GetUserReadWriteAccess(userid, tablename);
+
 
             // Prepare the data for insertion into the table
             var columns = GetTableColumns(tablename);
@@ -576,7 +592,9 @@ namespace FreschOne.Controllers
                 }
             }
 
-            return RedirectToAction("Index", new { userid = userid, tablename = tablename, readwriteaccess = readwriteaccess });
+//            return RedirectToAction("Index", new { userid = userid, tablename = tablename, readwriteaccess = readwriteaccess });
+            return RedirectToAction("Index", new { userid = userid, PKID = PKID, PKColumn = PKColumn, tablename = tablename, readwriteaccess = readwriteaccess });
+
         }
 
         private List<SelectListItem> GetForeignKeyDropdownData(string referencedTableName)
@@ -632,10 +650,10 @@ namespace FreschOne.Controllers
             return columns;
         }
 
-        private List<Dictionary<string, object>> GetTableData(string tablename)
+        private List<Dictionary<string, object>> GetTableData(int PKID, string PKColumn, string tablename)
         {
             var tableData = new List<Dictionary<string, object>>();
-            string query = $"SELECT * FROM {tablename}";
+            string query = $"SELECT * FROM {tablename} where {PKColumn} = {PKID} ";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {

@@ -19,5 +19,14 @@ namespace FreschOne.Controllers
             bool isAdmin = _dbHelper.IsUserAdmin(userId);
             ViewBag.IsAdmin = isAdmin;
         }
+
+        protected void GetUserReadWriteAccess(long userId, string tablename)
+        {
+            string readwriteaccess = _dbHelper.CheckUserTableAccessRights(userId, tablename);
+            ViewBag.readwriteaccess = readwriteaccess;
+        }
+
+
+
     }
 }
