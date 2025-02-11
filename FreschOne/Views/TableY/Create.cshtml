@@ -7,8 +7,9 @@
     var columnTypes = ViewBag.ColumnTypes; // Get column types from ViewBag
     var columnLengths = ViewBag.ColumnLengths; // Get column lengths from ViewBag
     var PKID = ViewBag.PKID;
-    var PKColumn = ViewBag.PKColumn;
+    var PKColumn = ViewBag.PKColumn; 
     var tableDescription = ViewBag.tableDescription;
+
 
 }
 
@@ -16,7 +17,7 @@
 
 <h1>Create New @tableDescription</h1>
 
-<form method="post" action="@Url.Action("Create", new { userid = userid, PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName })">
+<form method="post" action="@Url.Action("Create", new { userid = userid, PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName})">
     @foreach (var column in Model.Columns)
     {
         if (column == "ID") continue;  // Skip the ID column, it should be auto-generated
@@ -26,15 +27,22 @@
         var columnLength = columnLengths.ContainsKey(column) ? columnLengths[column] : 255; // Default length if not found
 
         <div class="form-group">
-
-            @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+            @if (@column == PKColumn)
             {
-                <label for="@column">@column.Replace("ID", "")</label>
+                <label style="display: none;" for="@column">@column</label>
             }
             else
             {
-                <label for="@column">@column</label>
+                @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+                {
+                    <label for="@column">@column.Replace("ID", "")</label>
+                }
+                else
+                {
+                    <label for="@column">@column</label>
+                }
             }
+
 
             @if (columnType == "varchar" && columnLength <= 255)
             {
@@ -60,8 +68,16 @@
             }
             else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
             {
+                if (@column == PKColumn)
+                {
+                    <input style="display: none;" name="@column" value="@PKID" class="form-control" />
+                }
+                else
+                {
+                    <input type="number" name="@column" value="@columnValue" class="form-control" />
+
+                }
                 <!-- Render number input for int or decimal columns -->
-                <input type="number" name="@column" value="@columnValue" class="form-control" />
             }
             else if (columnType == "bit")
             {
@@ -76,7 +92,7 @@
                 ? dateValue.ToString("yyyy-MM-dd") : "" : ""; // If the value is null, set it to an empty string
                 <input type="date" name="@column" value="@formattedDate" class="form-control" />
             }
-            
+           
         </div>
     }
 

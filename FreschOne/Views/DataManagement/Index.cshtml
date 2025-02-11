@@ -28,7 +28,7 @@
 
                             // Pass the original TableName (with prefix) to the URL, but display the modified TableName (without prefix)
                             <li>
-                                <a href="@Url.Action("Index", "TableX", new { userid = access.UserID, tablename = access.TableName, readwriteaccess = access.ReadWriteAccess })">
+                                <a href="@Url.Action("Index", "TableX", new { userid = access.UserID, tablename = access.TableName })">
                                     @displayName
                                 </a>
                             </li>

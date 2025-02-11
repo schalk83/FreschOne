@@ -5,6 +5,8 @@
     var tablename = ViewBag.tablename;
     var columnTypes = ViewBag.ColumnTypes; // Get column types from ViewBag
     var columnLengths = ViewBag.ColumnLengths; // Get column lengths from ViewBag
+    var PKID = ViewBag.PKID;
+    var PKColumn = ViewBag.PKColumn;
 
     // Declare a variable to check if the form should be editable
     var editable = readwriteaccess == "RW";
@@ -12,11 +14,12 @@
 
 }
 
+
 <partial name="_Sidebar" />
 
 <h1>Edit @tableDescription</h1>
 
-<form method="post" action="@Url.Action("Update", new { id = Model.Record["ID"], tablename = Model.TableName, userid = userid })">
+<form method="post" action="@Url.Action("Update", new { id = Model.Record["ID"], PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName, userid = userid})">
     <!-- Include hidden ID field -->
     <input type="hidden" name="ID" value="@Model.Record["ID"]" />
 
@@ -29,14 +32,23 @@
         var columnLength = columnLengths.ContainsKey(column) ? columnLengths[column] : 255; // Default length if not found
 
         <div class="form-group">
+
             @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
             {
-                <label for="@column">@column.Replace("ID","")</label>
+                <label for="@column">@column.Replace("ID", "")</label>
             }
             else
             {
-                <label for="@column">@column</label>
-            }
+                if (@column == PKColumn)
+                {
+                    <label for="@column" style="display: none;">@column</label>
+                }
+                else
+                {
+                    <label for="@column">@column</label>
+
+                }
+            }           
 
             @if (editable)
             {
@@ -62,7 +74,15 @@
                 }
                 else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
                 {
-                    <input type="number" name="@column" value="@columnValue" class="form-control" />
+                    if (@column == PKColumn)
+                    {
+                        <input type="hidden" name="@column" value="@columnValue" class="form-control" />
+                    }
+                    else
+                    {
+                        <input type="number" name="@column" value="@columnValue" class="form-control" />
+
+                    }
                 }
                 else if (columnType == "bit")
                 {
@@ -104,7 +124,15 @@
                 }
                 else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
                 {
-                    <input type="number" name="@column" value="@columnValue" class="form-control" readonly />
+                    if (@column == PKColumn)
+                    {
+                        <input type="hidden" name="@column" value="@columnValue" class="form-control" />
+                    }
+                    else
+                    {
+                        <input type="number" name="@column" value="@columnValue" class="form-control" />
+
+                    }
                 }
                 else if (columnType == "bit")
                 {
@@ -137,7 +165,7 @@
 
     <!-- Back link styled as a simple hyperlink -->
     <div class="form-group text-right">
-        <a href="@Url.Action("Index", "TableX", new { userid, tablename })" class="btn btn-link">
+        <a href="@Url.Action("Index", "TableY", new { userid, PKID, PKColumn, tablename })" class="btn btn-link">
             Back to Previous Screen
         </a>
     </div>

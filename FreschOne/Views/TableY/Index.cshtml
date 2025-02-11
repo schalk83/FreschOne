@@ -3,8 +3,11 @@
     var userid = ViewBag.userid;
     var readwriteaccess = ViewBag.readwriteaccess;
     var tablename = ViewBag.tablename;
+
+    var PKID = ViewBag.PKID;
     var PKColumn = ViewBag.PKColumn;
     var tableDescription = ViewBag.tableDescription;
+
 
 }
 
@@ -14,34 +17,43 @@
 
 @if (readwriteaccess == "RW")
 {
-    <a href="@Url.Action("Create", new { userid = Model.UserId, tablename = Model.TableName})" class="btn btn-primary">Create</a>
+    <a href="@Url.Action("Create", new { PKID = PKID, PKColumn = PKColumn, userid = Model.UserId, tablename = Model.TableName })" class="btn btn-primary">Create</a>
 }
 
 <!-- Data Table -->
 <table class="table table-bordered">
     <thead>
         <tr>
-            @foreach (var column in Model.Columns)
+                       @foreach (var column in Model.Columns)
             {
                 string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
 
-                if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+                if (@column == PKColumn)
                 {
-                    <th id="@column">@column.Replace("ID", "")</th>
+                    <th style="display: none;">@column</th>
                 }
-                else
+                else 
                 {
-                    @if ( column == "ID")
+                    if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                     {
-                        <th>@column</th>
-
+                        <th id="@column">@column.Replace("ID", "")</th>
                     }
                     else
                     {
-                     <th>@formattedColumn</th>
-                    }
+
+                        @if (column == "ID")
+                        {
+                            <th>@column</th>
+
+                        }
+                        else
+                        {
+                            <th>@formattedColumn</th>
+                        }                    }
                 }
             }
+
+
             <th>Actions</th>
         </tr>
     </thead>
@@ -51,20 +63,29 @@
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    <td onclick="showPopup(event, '@tablename', '@row["ID"]')">@row[column]</td>
+                    if (@column == PKColumn)
+                    {
+                        <td style="display: none;" onclick="showPopup(event, '@tablename', '@row["ID"]')">@row[column]</td>
+
+                    }
+                    else
+                    {
+                        <td onclick="showPopup(event, '@tablename', '@row["ID"]')">@row[column]</td>
+                    }
+                    //@row[column]
                 }
                 <td>
                     @if (readwriteaccess == "RW")
                     {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"],  tablename = tablename, userid = userid })" class="btn btn-warning">Edit</a>
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], PKID = PKID, PKColumn = PKColumn,tablename = tablename, userid = userid })" class="btn btn-warning">Edit</a>
                         <a href="@Url.Action("Delete", new { id = @row["ID"], tablename = tablename })" class="btn btn-danger">Delete</a>
                     }
                     @if (readwriteaccess == "R")
                     {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid  })" class="btn btn-warning">View</a>
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], PKID = PKID, PKColumn = PKColumn,tablename = tablename, userid = userid  })" class="btn btn-warning">View</a>
                     }
-                
                     <button class="btn btn-info" onclick="showPopup(event, '@tablename', '@row["ID"]')">More</button>
+
                 </td>
             </tr>
         }
@@ -78,7 +99,7 @@
             @if (ViewBag.pageNumber > 1)
             {
                 <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.pageNumber - 1 })" aria-label="Previous">
+                    <a class="page-link" href="@Url.Action("Index", "TableY", new { PKID = PKID, PKColumn = PKColumn, userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.pageNumber - 1 })" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
@@ -87,7 +108,7 @@
             @for (var i = 1; i <= ViewBag.totalPages; i++)
             {
                 <li class="page-item @(i == ViewBag.pageNumber ? "active" : "")">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = i })">
+                    <a class="page-link" href="@Url.Action("Index", "TableY", new { PKID = PKID, PKColumn = PKColumn,userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = i })">
                         @i
                     </a>
                 </li>
@@ -96,7 +117,7 @@
             @if (ViewBag.pageNumber < ViewBag.totalPages)
             {
                 <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.pageNumber + 1 })" aria-label="Next">
+                    <a class="page-link" href="@Url.Action("Index", "TableY", new { PKID = PKID, PKColumn = PKColumn,userid = ViewBag.userid, tablename = ViewBag.tablename,  pageNumber = ViewBag.pageNumber + 1 })" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
@@ -190,17 +211,19 @@
     <script>
         function showPopup(event, tablename, id) {
             console.log('showPopup called with tablename:', tablename, 'and id:', id); // Debugging line
-            //&PKColumn=${record.ForeignKey}
+
             // Fetch related tables via AJAX, and pass the userid to check user access
-        fetch(`/TableX/ForeignTables_Index?tablename=${tablename}&userid=${@ViewBag.userid}&isAjax=true`)
+        fetch(`/TableY/ForeignTables_Index?tablename=${tablename}&userid=${@ViewBag.userid}&isAjax=true`)
                         .then(response => response.json())
                 .then(data => {
                     if (data.length > 0) {
+                                  
+
                         let content = '<table class="table table-bordered">';
                         content += '<thead><tr><th>Related Table</th></tr></thead><tbody>';
 
                         data.forEach(record => {
-                        const url = `/TableY/Index?&userid=${@ViewBag.userid}&tablename=${record.ChildTable}&PKID=${id}&PKColumn=${record.PKColumn}`;
+                        const url = `/TableY/Index?&userid=${@ViewBag.userid}&tablename=${record.ChildTable}&PKColumn=${record.ForeignKey}&PKID=${id}&PKColumn=${record.PKColumn}`;
                                     content += `<tr><td><a href="${url}">${record.ChildTableDescription}</a></td></tr>`;
                         });
 
@@ -233,7 +256,7 @@
                         popup.style.left = left + 'px';
                         popup.style.top = top + 'px';
                     } else {
-                        document.getElementById('popup-content').innerHTML = '<p>No related records available.</p>';
+                        document.getElementById('popup-content').innerHTML = '<p>No related records availableS.</p>';
                         document.getElementById('popup').style.display = 'block';
                     }
                 })
