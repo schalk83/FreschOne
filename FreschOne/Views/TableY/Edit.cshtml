@@ -45,7 +45,8 @@
                 }
                 else
                 {
-                    <label for="@column">@column</label>
+                    string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
+                    <label for="@formattedColumn">@formattedColumn</label>
 
                 }
             }           

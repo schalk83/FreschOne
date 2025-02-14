@@ -19,6 +19,7 @@ namespace FreschOne.Controllers
             var columns = GetTableColumns(tablename);  // Get the columns for the table
             var tableData = GetTableData(tablename);   // Get the data for the table
 
+
             // Apply column-based filtering if any column's search text is provided
             if (!string.IsNullOrEmpty(searchText))
             {
@@ -55,8 +56,7 @@ namespace FreschOne.Controllers
 
             ViewBag.userid = userid;
             ViewBag.tablename = tablename;
-            
-             
+                         
             var tablePrefixes = GetTablePrefixes();
             var tableDescription = "";
             // Check if the ChildTable name starts with any prefix and remove it
@@ -134,8 +134,6 @@ namespace FreschOne.Controllers
             }
         }
 
-
-
         private List<Dictionary<string, object>> GetForeignTables(string tablename, List<string> userTables)
         {
             var result = new List<Dictionary<string, object>>();
@@ -194,6 +192,31 @@ namespace FreschOne.Controllers
             return prefixes;
         }
 
+        private List<Dictionary<string, object>> GetRelatedTables(string tablename, int userid)
+        {
+            var userAccessList = GetUserTables(userid).Where(x => x.Active).ToList();
+            var userTables = userAccessList.Select(x => x.TableName).ToList();
+            var relatedTables = GetForeignTables(tablename, userTables);
+            var tablePrefixes = GetTablePrefixes();
+
+            foreach (var table in relatedTables)
+            {
+                var childTableName = table["ChildTable"].ToString();
+                foreach (var prefix in tablePrefixes)
+                {
+                    if (childTableName.StartsWith(prefix.Prefix))
+                    {
+                        table["ChildTable"] = childTableName;
+                        table["ChildTableDescription"] = childTableName.Substring(prefix.Prefix.Length);
+                        table["PKColumn"] = GetTableColumns(childTableName).Skip(1).FirstOrDefault();
+                        break;
+                    }
+                }
+            }
+
+            return relatedTables;
+        }
+
         private List<ForeignKeyInfo> GetForeignKeyColumns(string tablename)
         {
             var foreignKeys = new List<ForeignKeyInfo>();
@@ -250,6 +273,9 @@ namespace FreschOne.Controllers
             var columns = GetTableColumns(tablename);
             var foreignKeys = GetForeignKeyColumns(tablename);
 
+            var relatedTables = GetRelatedTables(tablename, userid);
+            ViewBag.RelatedTables = relatedTables;
+
             // Get column types and lengths from systypes and syscolumns
             var columnTypes = new Dictionary<string, string>(); // Dictionary to hold column types
             var columnLengths = new Dictionary<string, int>(); // Dictionary to hold column lengths
@@ -257,10 +283,10 @@ namespace FreschOne.Controllers
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 string query = @"
-            SELECT c.name AS ColumnName, t.name AS ColumnType, c.length
-            FROM syscolumns c
-            JOIN systypes t ON c.xusertype = t.xusertype
-            WHERE c.id = OBJECT_ID(@TableName)";
+    SELECT c.name AS ColumnName, t.name AS ColumnType, c.length
+    FROM syscolumns c
+    JOIN systypes t ON c.xusertype = t.xusertype
+    WHERE c.id = OBJECT_ID(@TableName)";
 
                 var command = new SqlCommand(query, connection);
                 command.Parameters.AddWithValue("@TableName", tablename);
@@ -298,6 +324,11 @@ namespace FreschOne.Controllers
             ViewBag.ColumnTypes = columnTypes; // Pass column types to the view
             ViewBag.ColumnLengths = columnLengths; // Pass column lengths to the view
 
+            //// Parse the .fo file and get the logic
+            //var parser = new FoFileParser();
+            //var logicLines = parser.ReadFoFile(tablename); // Read the logic from the .fo file
+            //ViewBag.LogicLines = logicLines;  // Pass the logic lines to the view
+
             // Create the view model
             var viewModel = new TableEditViewModel
             {
@@ -310,6 +341,8 @@ namespace FreschOne.Controllers
 
             return View(viewModel);
         }
+
+
 
         private string GetForeignKeyDescription(string tableName, object foreignKeyValue)
         {
@@ -675,5 +708,63 @@ namespace FreschOne.Controllers
             }
             return primaryKeyColumn;
         }
+
+        [HttpPost]
+        public IActionResult AddAttachments(string tablename, long PKID, string[] AttachmentDescriptions, List<IFormFile> Attachments)
+        {
+            if (Attachments == null || Attachments.Count == 0)
+            {
+                ModelState.AddModelError("", "Please upload at least one file.");
+                return RedirectToAction("Edit", new { id = PKID, tablename = tablename });
+            }
+
+            var rootPath = Directory.GetCurrentDirectory();
+            var attachmentsFolder = Path.Combine(rootPath, "Attachments");
+
+            // Ensure the directory exists
+            if (!Directory.Exists(attachmentsFolder))
+            {
+                Directory.CreateDirectory(attachmentsFolder);
+            }
+
+            for (int i = 0; i < Attachments.Count; i++)
+            {
+                var attachment = Attachments[i];
+                var description = AttachmentDescriptions.Length > i ? AttachmentDescriptions[i] : "No Description";
+
+                if (attachment.Length > 0)
+                {
+                    var filePath = Path.Combine(attachmentsFolder, attachment.FileName);
+
+                    // Save the file
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        attachment.CopyTo(stream);
+                    }
+
+                    // Insert attachment details into foTableAttachments
+                    string query = @"
+                INSERT INTO foTableAttachments (tablename, PKID, AttachmentDescription, Attachment) 
+                VALUES (@tablename, @PKID, @AttachmentDescription, @Attachment)";
+
+                    using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                    {
+                        connection.Open();
+                        using (var command = new SqlCommand(query, connection))
+                        {
+                            command.Parameters.AddWithValue("@tablename", tablename);
+                            command.Parameters.AddWithValue("@PKID", PKID);
+                            command.Parameters.AddWithValue("@AttachmentDescription", description);
+                            command.Parameters.AddWithValue("@Attachment", filePath);
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                }
+            }
+
+            return RedirectToAction("Edit", new { id = PKID, tablename = tablename });
+        }
+
+
     }
 }

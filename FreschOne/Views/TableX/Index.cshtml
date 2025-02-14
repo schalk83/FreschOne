@@ -78,7 +78,7 @@
             @if (ViewBag.pageNumber > 1)
             {
                 <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.pageNumber - 1 })" aria-label="Previous">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = ViewBag.pageNumber - 1 })" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
@@ -87,7 +87,7 @@
             @for (var i = 1; i <= ViewBag.totalPages; i++)
             {
                 <li class="page-item @(i == ViewBag.pageNumber ? "active" : "")">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = i })">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = i })">
                         @i
                     </a>
                 </li>
@@ -96,7 +96,7 @@
             @if (ViewBag.pageNumber < ViewBag.totalPages)
             {
                 <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.pageNumber + 1 })" aria-label="Next">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = ViewBag.pageNumber + 1 })" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
@@ -111,6 +111,13 @@
         <span class="popup-close" onclick="document.getElementById('popup').style.display='none'">&times;</span>
     </div>
     <div id="popup-content" class="popup-content"></div>
+</div>
+
+<!-- Back link styled as a simple hyperlink -->
+<div class="form-group text-right">
+    <a href="@Url.Action("Index", "TableX", new { userid, tablename })" class="btn btn-link">
+        Back to Index for @tablename
+    </a>
 </div>
 
 @section Styles {

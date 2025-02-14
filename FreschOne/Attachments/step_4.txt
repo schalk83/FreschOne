@@ -1,0 +1,37 @@
+
+[HttpPost]
+public IActionResult Update(int id, string tablename, Dictionary<string, object> updatedValues)
+{
+    if (updatedValues == null || updatedValues.Count == 0)
+    {
+        return View("Error"); // Handle error if no updated values are present
+    }
+
+    // Build the update query dynamically
+    var setClauses = updatedValues
+        .Where(kv => kv.Key != "ID") // Ensure you don't update the ID column
+        .Select(kv => $"{kv.Key} = @{kv.Key}")
+        .ToList();
+
+    var query = $"UPDATE {tablename} SET {string.Join(", ", setClauses)} WHERE ID = @Id";
+
+    using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    {
+        connection.Open();
+        using (var command = new SqlCommand(query, connection))
+        {
+            // Add the ID parameter
+            command.Parameters.AddWithValue("@Id", id);
+
+            // Add parameters for each updated value
+            foreach (var kv in updatedValues)
+            {
+                command.Parameters.AddWithValue($"@{kv.Key}", kv.Value ?? DBNull.Value);
+            }
+
+            command.ExecuteNonQuery();
+        }
+    }
+
+    return RedirectToAction("Index", new { tablename = tablename });
+}

@@ -5,10 +5,11 @@
     var tablename = ViewBag.tablename;
     var columnTypes = ViewBag.ColumnTypes; // Get column types from ViewBag
     var columnLengths = ViewBag.ColumnLengths; // Get column lengths from ViewBag
-
-    // Declare a variable to check if the form should be editable
-    var editable = readwriteaccess == "RW";
+    var editable = readwriteaccess == "RW"; // Check if the form should be editable
     var tableDescription = ViewBag.tableDescription;
+    var logicLines = ViewBag.LogicLines as List<string>; // Get the logic lines from ViewBag
+
+    var relatedTables = (List<Dictionary<string, object>>)ViewBag.RelatedTables;
 
 }
 
@@ -27,38 +28,43 @@
         var columnValue = Model.Record[column];
         var columnType = columnTypes.ContainsKey(column) ? columnTypes[column] : "string"; // Default to string if not found
         var columnLength = columnLengths.ContainsKey(column) ? columnLengths[column] : 255; // Default length if not found
+        string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1"); // Create formatted column label
 
         <div class="form-group">
             @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
             {
-                <label for="@column">@column.Replace("ID","")</label>
+                <label for="@column">@column.Replace("ID", "")</label>
             }
             else
             {
-                <label for="@column">@column</label>
+                <label for="@formattedColumn">@formattedColumn</label>
             }
 
             @if (editable)
             {
-                <!-- Editable rendering -->
+                <!-- Editable rendering with onchange event handler -->
                 @if (columnType == "varchar" && columnLength <= 255)
                 {
-                    <input type="text" name="@column" value="@columnValue" class="form-control" />
+                    <input type="text" name="@column" value="@columnValue" class="form-control"/>
                 }
                 else if (columnType == "varchar" && columnLength > 255)
                 {
-                    <textarea name="@column" class="form-control">@columnValue</textarea>
+                    <textarea name="@column" class="form-control" >@columnValue</textarea>
                 }
                 else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                 {
                     var foreignKey = Model.ForeignKeys.First(fk => fk.ColumnName == column);
                     @Html.DropDownList(
-                             foreignKey.ColumnName,
-                             new SelectList(
-                             Model.ForeignKeyOptions[foreignKey.ColumnName],
-                             "Value", "Text", columnValue),
-                             "Select...",
-                             new { @class = "form-control" })
+                                               foreignKey.ColumnName,
+                                               new SelectList(
+                                               Model.ForeignKeyOptions[foreignKey.ColumnName],
+                                               "Value", "Text", columnValue),
+                                               "Select...",
+                                               new
+                                               {
+                                                   @class = "form-control",
+                                                   onchange = string.Format("applyLogic('{0}', this.value)", column)
+                                               })
                 }
                 else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
                 {
@@ -70,15 +76,15 @@
                     @if (columnValue != DBNull.Value && (bool)columnValue)
                     {
                         <text>checked</text>
-                    } />
+                    }
+                    onchange="applyLogic('@column', this.checked ? 'True' : 'False')" />
                 }
                 else if (columnType == "datetime")
                 {
                     string formattedDate = columnValue != null ? DateTime.TryParse(columnValue.ToString(), out var dateValue)
                     ? dateValue.ToString("yyyy-MM-dd") : "" : "";
-                    <input type="date" name="@column" value="@formattedDate" class="form-control" />
+                    <input type="date" name="@column" value="@formattedDate" class="form-control"  />
                 }
-                
             }
             else
             {
@@ -95,12 +101,12 @@
                 {
                     var foreignKey = Model.ForeignKeys.First(fk => fk.ColumnName == column);
                     @Html.DropDownList(
-                             foreignKey.ColumnName,
-                             new SelectList(
-                             Model.ForeignKeyOptions[foreignKey.ColumnName],
-                             "Value", "Text", columnValue),
-                             "Select...",
-                             new { @class = "form-control", disabled = "disabled" })
+                                               foreignKey.ColumnName,
+                                               new SelectList(
+                                               Model.ForeignKeyOptions[foreignKey.ColumnName],
+                                               "Value", "Text", columnValue),
+                                               "Select...",
+                                               new { @class = "form-control", disabled = "disabled" })
                 }
                 else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
                 {
@@ -120,7 +126,6 @@
                     ? dateValue.ToString("yyyy-MM-dd") : "" : "";
                     <input type="date" name="@column" value="@formattedDate" class="form-control" readonly />
                 }
-               
             }
         </div>
     }
@@ -140,6 +145,151 @@
         <a href="@Url.Action("Index", "TableX", new { userid, tablename })" class="btn btn-link">
             Back to Previous Screen
         </a>
+      
     </div>
 
+    <br />
+    <hr />
+    @* <h1>Related tables</h1>
+     <div>
+     @foreach (var table in relatedTables)
+     {
+        var childTableName = table["ChildTable"].ToString();
+        var foreignKeyColumn = table["ForeignKey"].ToString();
+        var PKID = @Model.Record["ID"];
+        int pageNumber = 1;
+        string searchText = "";
+
+        <div class="form-group">
+            <button type="button" class="btn back-button"
+                    onclick="window.location.href='@Url.Action("Index", "TableY", new { userid, PKID, PKColumn = foreignKeyColumn, tablename = childTableName, pageNumber, searchText })'">
+                @table["ChildTableDescription"]
+            </button>
+        </div>
+
+        <style>
+            .back-button {
+                width: 100%;
+                background-color: #f8f9fa; /* Light grey background */
+                color: #000; /* Black text */
+                padding: 10px;
+                font-size: 16px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                text-align: center;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+
+                .back-button:hover {
+                    background-color: #e2e6ea; /* Slightly darker grey on hover */
+                }
+        </style>
+    }
+    </div> *@
 </form>
+
+<h4>
+    Attachments
+    <button type="button" id="toggleAttachmentForm" class="btn btn-link" style="font-size: 1.2em;">
+        <i class="fas fa-chevron-down" id="toggleIcon"></i>
+    </button>
+</h4>
+
+<form asp-action="AddAttachments" method="post" enctype="multipart/form-data" id="attachmentForm" style="display: none;">
+    <input type="hidden" name="tablename" value="@ViewBag.tablename" />
+    <input type="hidden" name="PKID" value="@Model.Record["ID"]" />
+
+    <div id="attachmentContainer">
+        <div class="attachment-group d-flex align-items-center">
+            <div style="flex-grow: 1;">
+                <div class="form-group">
+                    <label for="AttachmentDescription">Attachment Description</label>
+                    <input type="text" name="AttachmentDescriptions" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label for="Attachment">Upload Attachment</label>
+                    <input type="file" name="Attachments" class="form-control" required />
+                </div>
+            </div>
+            <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
+                <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <button type="button" id="addAttachmentButton" class="btn btn-success" style="font-size: 1.5em; padding: 10px 20px; margin-top: 10px;">
+        <i class="fas fa-plus"></i>
+    </button>
+    <br /><br />
+    <button type="submit" class="btn btn-primary">Upload Attachments</button>
+</form>
+
+<!-- Include Font Awesome -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+
+<script>
+    // Toggle visibility of the attachment form
+    document.getElementById('toggleAttachmentForm').addEventListener('click', function () {
+        var form = document.getElementById('attachmentForm');
+        var icon = document.getElementById('toggleIcon');
+
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        } else {
+            form.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+    });
+
+    // Add another attachment block
+    document.getElementById('addAttachmentButton').addEventListener('click', function () {
+        var container = document.getElementById('attachmentContainer');
+        var attachmentGroup = document.createElement('div');
+        attachmentGroup.classList.add('attachment-group', 'd-flex', 'align-items-center');
+        attachmentGroup.innerHTML = `
+            <div style="flex-grow: 1;">
+                <div class="form-group">
+                    <label for="AttachmentDescription">Attachment Description</label>
+                    <input type="text" name="AttachmentDescriptions" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label for="Attachment">Upload Attachment</label>
+                    <input type="file" name="Attachments" class="form-control" required />
+                </div>
+            </div>
+            <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
+                <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(attachmentGroup);
+
+        // Add event listener to the remove button
+        attachmentGroup.querySelector('.removeAttachmentButton').addEventListener('click', function () {
+            container.removeChild(attachmentGroup);
+        });
+    });
+
+    // Initial remove button listener
+    document.querySelectorAll('.removeAttachmentButton').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var container = document.getElementById('attachmentContainer');
+            var attachmentGroup = button.closest('.attachment-group');
+            container.removeChild(attachmentGroup);
+        });
+    });
+
+    // Ensure form doesn't submit when hidden
+    document.getElementById('attachmentForm').addEventListener('submit', function (e) {
+        if (this.style.display === 'none') {
+            e.preventDefault(); // Prevent submission if hidden
+        }
+    });
+</script>

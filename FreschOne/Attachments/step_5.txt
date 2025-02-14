@@ -1,0 +1,47 @@
+
+private List<ForeignKeyInfo> GetForeignKeyColumns(string tablename)
+{
+    var foreignKeys = new List<ForeignKeyInfo>();
+    string query = @"
+        SELECT 
+            c.name AS ColumnName,
+            ref_tab.name AS ReferencedTableName
+        FROM 
+            sys.foreign_key_columns AS fkc
+        INNER JOIN 
+            sys.columns AS c ON fkc.parent_object_id = c.object_id 
+            AND fkc.parent_column_id = c.column_id
+        INNER JOIN 
+            sys.tables AS parent_tab ON parent_tab.object_id = fkc.parent_object_id
+        INNER JOIN 
+            sys.tables AS ref_tab ON ref_tab.object_id = fkc.referenced_object_id
+        WHERE 
+            parent_tab.name = @TableName
+            AND c.name LIKE '%ID'";
+
+    using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    {
+        connection.Open();
+        using (var command = new SqlCommand(query, connection))
+        {
+            command.Parameters.AddWithValue("@TableName", tablename);
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var columnName = reader.GetString(0);
+                    if (columnName.EndsWith("ID"))
+                    {
+                        columnName = columnName.Substring(0, columnName.Length - 2); // Remove the "ID" suffix
+                    }
+                    foreignKeys.Add(new ForeignKeyInfo
+                    {
+                        ColumnName = reader.GetString(0),
+                        TableName = reader.GetString(1) // Reference to the related 'tbl_md_*' table
+                    });
+                }
+            }
+        }
+    }
+    return foreignKeys;
+}

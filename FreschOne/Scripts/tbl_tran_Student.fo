@@ -1,0 +1,9 @@
+﻿FirstName = "Schalk1" => LastName = "van der Merwe1";
+FirstName = "Schalk2" => LastName = "van der Merwe2";
+FirstName = "Schalk3" => LastName = "van der Merwe3";
+FirstName = "Schalk4" => LastName = "van der Merwe4";
+FirstName = "Schalk4" => DOB = 2024/01/01;
+FirstName = "Schalk4" => Active = False;
+FirstName = "Schalk4" => Campus = "Johburg";
+FirstName = "Schalk4" => Province = "Western Cape";
+

@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Customised\" />
     <Folder Include="Services\" />
   </ItemGroup>
 
