@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FreschOne")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+636bae626b76558f8f71d39c7eafa9df0f6be9fb")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+91b46b068b94a6c30ddeaff083d5b6c5c3991cc1")]
 [assembly: System.Reflection.AssemblyProductAttribute("FreschOne")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FreschOne")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
