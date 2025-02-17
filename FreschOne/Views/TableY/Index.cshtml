@@ -8,7 +8,6 @@
     var PKColumn = ViewBag.PKColumn;
     var tableDescription = ViewBag.tableDescription;
 
-
 }
 
 <partial name="_Sidebar" />
@@ -24,7 +23,7 @@
 <table class="table table-bordered">
     <thead>
         <tr>
-                       @foreach (var column in Model.Columns)
+            @foreach (var column in Model.Columns)
             {
                 string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
 
@@ -40,19 +39,16 @@
                     }
                     else
                     {
-
-                        @if (column == "ID")
+                        @if ( column == "ID")
                         {
                             <th>@column</th>
-
                         }
                         else
                         {
-                            <th>@formattedColumn</th>
+                         <th>@formattedColumn</th>
                         }                    }
                 }
             }
-
 
             <th>Actions</th>
         </tr>
@@ -66,7 +62,6 @@
                     if (@column == PKColumn)
                     {
                         <td style="display: none;" onclick="showPopup(event, '@tablename', '@row["ID"]')">@row[column]</td>
-
                     }
                     else
                     {
@@ -99,7 +94,7 @@
             @if (ViewBag.pageNumber > 1)
             {
                 <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableY", new { PKID = PKID, PKColumn = PKColumn, userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.pageNumber - 1 })" aria-label="Previous">
+                    <a class="page-link" href="@Url.Action("Index", "TableY", new { PKID = PKID, PKColumn = PKColumn, userid = userid, tablename = tablename, pageNumber = ViewBag.pageNumber - 1 })" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
@@ -108,7 +103,7 @@
             @for (var i = 1; i <= ViewBag.totalPages; i++)
             {
                 <li class="page-item @(i == ViewBag.pageNumber ? "active" : "")">
-                    <a class="page-link" href="@Url.Action("Index", "TableY", new { PKID = PKID, PKColumn = PKColumn,userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = i })">
+                    <a class="page-link" href="@Url.Action("Index", "TableY", new { PKID = PKID, PKColumn = PKColumn,userid = userid, tablename = tablename, pageNumber = i })">
                         @i
                     </a>
                 </li>
@@ -117,7 +112,7 @@
             @if (ViewBag.pageNumber < ViewBag.totalPages)
             {
                 <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableY", new { PKID = PKID, PKColumn = PKColumn,userid = ViewBag.userid, tablename = ViewBag.tablename,  pageNumber = ViewBag.pageNumber + 1 })" aria-label="Next">
+                    <a class="page-link" href="@Url.Action("Index", "TableY", new { PKID = PKID, PKColumn = PKColumn,userid = userid, tablename = tablename,  pageNumber = ViewBag.pageNumber + 1 })" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
@@ -133,6 +128,15 @@
     </div>
     <div id="popup-content" class="popup-content"></div>
 </div>
+
+<!-- Back link styled as a simple hyperlink -->
+<div class="form-group text-right">
+    <a href="@Url.Action("Index", "TableY", new { userid, PKID, PKColumn, tablename })" class="btn btn-link">
+        Back to Index for @tablename
+    </a>
+</div>
+
+
 
 @section Styles {
     <style>

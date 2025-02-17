@@ -4,6 +4,7 @@ using FreschOne.Models;
 using System.Collections.Generic;
 using System.Data;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace FreschOne.Controllers
 {
@@ -18,6 +19,7 @@ namespace FreschOne.Controllers
 
             var columns = GetTableColumns(tablename);  // Get the columns for the table
             var tableData = GetTableData(tablename);   // Get the data for the table
+
 
             // Apply column-based filtering if any column's search text is provided
             if (!string.IsNullOrEmpty(searchText))
@@ -55,8 +57,7 @@ namespace FreschOne.Controllers
 
             ViewBag.userid = userid;
             ViewBag.tablename = tablename;
-            
-             
+                         
             var tablePrefixes = GetTablePrefixes();
             var tableDescription = "";
             // Check if the ChildTable name starts with any prefix and remove it
@@ -134,8 +135,6 @@ namespace FreschOne.Controllers
             }
         }
 
-
-
         private List<Dictionary<string, object>> GetForeignTables(string tablename, List<string> userTables)
         {
             var result = new List<Dictionary<string, object>>();
@@ -194,6 +193,31 @@ namespace FreschOne.Controllers
             return prefixes;
         }
 
+        private List<Dictionary<string, object>> GetRelatedTables(string tablename, int userid)
+        {
+            var userAccessList = GetUserTables(userid).Where(x => x.Active).ToList();
+            var userTables = userAccessList.Select(x => x.TableName).ToList();
+            var relatedTables = GetForeignTables(tablename, userTables);
+            var tablePrefixes = GetTablePrefixes();
+
+            foreach (var table in relatedTables)
+            {
+                var childTableName = table["ChildTable"].ToString();
+                foreach (var prefix in tablePrefixes)
+                {
+                    if (childTableName.StartsWith(prefix.Prefix))
+                    {
+                        table["ChildTable"] = childTableName;
+                        table["ChildTableDescription"] = childTableName.Substring(prefix.Prefix.Length);
+                        table["PKColumn"] = GetTableColumns(childTableName).Skip(1).FirstOrDefault();
+                        break;
+                    }
+                }
+            }
+
+            return relatedTables;
+        }
+
         private List<ForeignKeyInfo> GetForeignKeyColumns(string tablename)
         {
             var foreignKeys = new List<ForeignKeyInfo>();
@@ -238,7 +262,10 @@ namespace FreschOne.Controllers
             return foreignKeys;
         }
 
-        public IActionResult Edit(int id, string tablename, int userid, string readwriteaccess)
+   
+
+
+        public IActionResult Edit(int id, string tablename, int userid)
         {
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
@@ -249,6 +276,9 @@ namespace FreschOne.Controllers
             // Get columns and their types for the table
             var columns = GetTableColumns(tablename);
             var foreignKeys = GetForeignKeyColumns(tablename);
+
+            var relatedTables = GetRelatedTables(tablename, userid);
+            ViewBag.RelatedTables = relatedTables;
 
             // Get column types and lengths from systypes and syscolumns
             var columnTypes = new Dictionary<string, string>(); // Dictionary to hold column types
@@ -284,7 +314,6 @@ namespace FreschOne.Controllers
 
             var tablePrefixes = GetTablePrefixes();
             var tableDescription = "";
-            // Check if the ChildTable name starts with any prefix and remove it
             foreach (var prefix in tablePrefixes)
             {
                 tableDescription = tablename.Substring(prefix.Prefix.Length);
@@ -295,8 +324,43 @@ namespace FreschOne.Controllers
             ViewBag.id = id;
             ViewBag.userid = userid;
             ViewBag.tablename = tablename;
-            ViewBag.ColumnTypes = columnTypes; // Pass column types to the view
-            ViewBag.ColumnLengths = columnLengths; // Pass column lengths to the view
+            ViewBag.ColumnTypes = columnTypes;
+            ViewBag.ColumnLengths = columnLengths;
+
+            // Fetch existing attachments for this record
+            string attachmentQuery = @"
+        SELECT ID, AttachmentDescription, Attachment , DateAdded, ( select FirstName + ' ' + LastName from foUsers where ID = UserID ) AS UserAdded
+        FROM foTableAttachments 
+        WHERE tablename = @tablename AND PKID = @PKID";
+
+            var attachments = new List<Dictionary<string, object>>();
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                using (var command = new SqlCommand(attachmentQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@tablename", tablename);
+                    command.Parameters.AddWithValue("@PKID", id);
+
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            attachments.Add(new Dictionary<string, object>
+                            {
+                                { "ID", reader["ID"] },
+                                { "AttachmentDescription", reader["AttachmentDescription"] },
+                                { "Attachment", reader["Attachment"] },
+                                { "DateAdded", reader["DateAdded"] },
+                                { "UserAdded", reader["UserAdded"] }
+                              });
+                        }
+                    }
+                }
+            }
+
+            ViewBag.Attachments = attachments; // Pass attachments to the view
 
             // Create the view model
             var viewModel = new TableEditViewModel
@@ -310,6 +374,7 @@ namespace FreschOne.Controllers
 
             return View(viewModel);
         }
+
 
         private string GetForeignKeyDescription(string tableName, object foreignKeyValue)
         {
@@ -502,11 +567,15 @@ namespace FreschOne.Controllers
             }
             ViewBag.tableDescription = tableDescription.Replace("_", " ");
 
+
             // Prepare the ViewBag for additional parameters
             ViewBag.userid = userid;
             ViewBag.tablename = tablename;
             ViewBag.ColumnTypes = columnTypes; // Pass column types to the view
             ViewBag.ColumnLengths = columnLengths; // Pass column lengths to the view
+
+
+
 
             // Create the view model for TableCreateViewModel
             var viewModel = new TableCreateViewModel
@@ -526,7 +595,7 @@ namespace FreschOne.Controllers
 
 
         [HttpPost]
-        public IActionResult Create(int userid, string tablename, string readwriteaccess, Dictionary<string, string> formData)
+        public IActionResult Create(int userid, string tablename, string readwriteaccess, Dictionary<string, string> formData, string[] AttachmentDescriptions, List<IFormFile> Attachments)
         {
             SetUserAccess(userid);
 
@@ -557,9 +626,11 @@ namespace FreschOne.Controllers
             var columnNames = string.Join(", ", tableColumns);
             var valuePlaceholdersString = string.Join(", ", valuePlaceholders);
 
-            var query = $"INSERT INTO {tablename} ({columnNames}) VALUES ({valuePlaceholdersString})";
+            string query = $"INSERT INTO {tablename} ({columnNames}) OUTPUT INSERTED.ID VALUES ({valuePlaceholdersString})"; // Output the newly created ID
 
-            // Execute the insert query
+            long newPKID;
+
+            // Execute the insert query and get the newly generated ID
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
@@ -571,13 +642,66 @@ namespace FreschOne.Controllers
                         command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
                     }
 
-                    // Execute the insert query
-                    command.ExecuteNonQuery();
+                    // Execute query and retrieve the newly generated ID
+                    newPKID = (long)command.ExecuteScalar();
                 }
             }
 
-            return RedirectToAction("Index", new { userid = userid, tablename = tablename, readwriteaccess = readwriteaccess });
+            // If attachments exist, insert them into foTableAttachments
+            if (Attachments != null && Attachments.Any())
+            {
+                var rootPath = Directory.GetCurrentDirectory();
+                var attachmentsFolder = Path.Combine(rootPath, "Attachments");
+
+                // Ensure the directory exists
+                if (!Directory.Exists(attachmentsFolder))
+                {
+                    Directory.CreateDirectory(attachmentsFolder);
+                }
+
+                for (int i = 0; i < Attachments.Count; i++)
+                {
+                    var attachment = Attachments[i];
+                    var description = (AttachmentDescriptions != null && AttachmentDescriptions.Length > i) ? AttachmentDescriptions[i] : "No Description";
+
+                    if (attachment.Length > 0)
+                    {
+                        var filePath = Path.Combine(attachmentsFolder, Guid.NewGuid() + Path.GetExtension(attachment.FileName));
+
+                        // Save the file
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            attachment.CopyTo(stream);
+                        }
+
+                        // Insert attachment details into foTableAttachments
+                        string attachmentQuery = @"
+                INSERT INTO foTableAttachments (tablename, PKID, AttachmentDescription, Attachment, UserID, DateAdded) 
+                VALUES (@tablename, @PKID, @AttachmentDescription, @Attachment, @userid, @Dateadded)";
+
+                        using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                        {
+                            connection.Open();
+                            using (var command = new SqlCommand(attachmentQuery, connection))
+                            {
+                                command.Parameters.AddWithValue("@tablename", tablename);
+                                command.Parameters.AddWithValue("@PKID", newPKID);
+                                command.Parameters.AddWithValue("@AttachmentDescription", description);
+                                command.Parameters.AddWithValue("@Attachment", filePath);
+                                command.Parameters.AddWithValue("@userid", userid);
+                                command.Parameters.AddWithValue("@Dateadded", DateTime.Now);
+
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+
+            return RedirectToAction("Index", new { userid = userid, tablename = tablename });
         }
+
+
 
         private List<SelectListItem> GetForeignKeyDropdownData(string referencedTableName)
         {
@@ -675,5 +799,83 @@ namespace FreschOne.Controllers
             }
             return primaryKeyColumn;
         }
+
+        [HttpPost]
+        public IActionResult AddAttachments(string tablename, long PKID, int userid, string[] AttachmentDescriptions, List<IFormFile> Attachments)
+        {
+            if (Attachments == null || Attachments.Count == 0)
+            {
+                ModelState.AddModelError("", "Please upload at least one file.");
+                return RedirectToAction("Edit", new { id = PKID, tablename = tablename });
+            }
+
+            var rootPath = Directory.GetCurrentDirectory();
+            var attachmentsFolder = Path.Combine(rootPath, "Attachments");
+
+            // Ensure the directory exists
+            if (!Directory.Exists(attachmentsFolder))
+            {
+                Directory.CreateDirectory(attachmentsFolder);
+            }
+
+            for (int i = 0; i < Attachments.Count; i++)
+            {
+                var attachment = Attachments[i];
+                var description = AttachmentDescriptions.Length > i ? AttachmentDescriptions[i] : "No Description";
+
+                if (attachment.Length > 0)
+                {
+                    var filePath = Path.Combine(attachmentsFolder, attachment.FileName);
+
+                    // Save the file
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        attachment.CopyTo(stream);
+                    }
+
+                    // Insert attachment details into foTableAttachments
+                    string query = @"
+                INSERT INTO foTableAttachments (tablename, PKID, AttachmentDescription, Attachment, UserID, DateAdded) 
+                VALUES (@tablename, @PKID, @AttachmentDescription, @Attachment, @userid, @Dateadded)";
+
+                    using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                    {
+                        connection.Open();
+                        using (var command = new SqlCommand(query, connection))
+                        {
+                            command.Parameters.AddWithValue("@tablename", tablename);
+                            command.Parameters.AddWithValue("@PKID", PKID);
+                            command.Parameters.AddWithValue("@AttachmentDescription", description);
+                            command.Parameters.AddWithValue("@Attachment", filePath);
+                            command.Parameters.AddWithValue("@userid", userid);
+                            command.Parameters.AddWithValue("@Dateadded", DateTime.Now);
+
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                }
+            }
+
+            return RedirectToAction("Edit", new { id = PKID, tablename = tablename, userid = userid });
+        }
+
+        [HttpPost]
+        public IActionResult DeleteAttachment(int attachmentId, string tablename, long PKID, int userid)
+        {
+            string query = "DELETE FROM foTableAttachments WHERE ID = @ID";
+
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@ID", attachmentId);
+                    command.ExecuteNonQuery();
+                }
+            }
+
+            return RedirectToAction("Edit", new { id = PKID, tablename = tablename, userid = userid });
+        }
+
     }
 }
