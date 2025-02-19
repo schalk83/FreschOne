@@ -26,7 +26,10 @@ namespace FreschOne.Controllers
             ViewBag.readwriteaccess = readwriteaccess;
         }
 
-
+        protected void EnsureAuditFieldsExist(string tablename)
+        {
+            _dbHelper.EnsureAuditFieldsExist(tablename);
+        }
 
     }
 }

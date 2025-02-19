@@ -12,8 +12,10 @@ namespace FreschOne.Controllers
     {
         public TableXController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
 
-        public IActionResult Index(int userid, string tablename, string readwriteaccess, int pageNumber = 1, string searchText = "")
+        public IActionResult Index(int userid, string tablename, int pageNumber = 1, string searchText = "")
         {
+
+            EnsureAuditFieldsExist(tablename);
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
 
@@ -63,7 +65,10 @@ namespace FreschOne.Controllers
             // Check if the ChildTable name starts with any prefix and remove it
             foreach (var prefix in tablePrefixes)
             {
-                tableDescription = tablename.Substring(prefix.Prefix.Length);
+                if (tablename.Contains(prefix.Prefix))
+                {
+                    tableDescription = tablename.Replace(prefix.Prefix.ToString(), "");
+                }
             }
             ViewBag.tableDescription = tableDescription.Replace("_"," "); 
 
@@ -316,7 +321,10 @@ namespace FreschOne.Controllers
             var tableDescription = "";
             foreach (var prefix in tablePrefixes)
             {
-                tableDescription = tablename.Substring(prefix.Prefix.Length);
+                if (tablename.Contains(prefix.Prefix))
+                {
+                    tableDescription = tablename.Replace(prefix.Prefix.ToString(), "");
+                }
             }
             ViewBag.tableDescription = tableDescription.Replace("_", " ");
 
@@ -450,9 +458,8 @@ namespace FreschOne.Controllers
 
 
         [HttpPost]
-        public IActionResult Update(int id, int userid, string tablename, string readwriteaccess, IFormCollection form)
+        public IActionResult Update(int id, int userid, string tablename, IFormCollection form)
         {
-         
             // Create a dictionary to store the updated values
             var updatedValues = new Dictionary<string, object>();
 
@@ -462,24 +469,56 @@ namespace FreschOne.Controllers
             // Loop through the form collection to get all keys and values
             foreach (var key in form.Keys)
             {
-                // Skip the ID field, which is handled above
-                if (key == "ID") continue;
+                if (key == "ID") continue; // Skip the ID field, which is handled separately
 
-                // Convert the value from StringValues to string (or appropriate type)
-                updatedValues[key] = form[key].ToString();  // Convert StringValues to string
+                string value = form[key].ToString().Trim(); // Trim to avoid whitespace issues
+
+                // Handle empty values as NULL
+                if (string.IsNullOrEmpty(value))
+                {
+                    updatedValues[key] = DBNull.Value;
+                }
+                else if (key.ToLower().Contains("is") || key.ToLower().Contains("active") || key.ToLower().EndsWith("flag"))
+                {
+                    // Convert to bit (Boolean) - 1 for true, 0 for false
+                    updatedValues[key] = (value.ToLower() == "true" || value == "1") ? 1 : 0;
+                }
+                else if (DateTime.TryParse(value, out DateTime parsedDate))
+                {
+                    // Convert to DateTime if valid
+                    updatedValues[key] = parsedDate;
+                }
+                else if (int.TryParse(value, out int parsedInt))
+                {
+                    // Convert to int if valid
+                    updatedValues[key] = parsedInt;
+                }
+                else
+                {
+                    // Default to string
+                    updatedValues[key] = value;
+                }
             }
 
             // Log the dictionary to verify the data
             foreach (var kv in updatedValues)
             {
-                Console.WriteLine($"Key: {kv.Key}, Value: {kv.Value}");
+                Console.WriteLine($"Key: {kv.Key}, Value: {(kv.Value == DBNull.Value ? "NULL" : kv.Value)}");
             }
+
+            // Add standard columns for tracking modifications
+            updatedValues["ModifiedUserID"] = userid;
+
+            // Use SQL GETDATE() directly (no quotes)
+            string modifiedDateField = "ModifiedDate = GETDATE()";
 
             // If you need to update the database, build the update query here
             var setClauses = updatedValues
-                .Where(kv => kv.Key != "ID")  // Skip the ID column
+                .Where(kv => kv.Key != "ID") // Skip the ID column
                 .Select(kv => $"{kv.Key} = @{kv.Key}")
                 .ToList();
+
+            setClauses.Add(modifiedDateField); // Add GETDATE() field directly
 
             var query = $"UPDATE {tablename} SET {string.Join(", ", setClauses)} WHERE ID = @Id";
 
@@ -496,8 +535,18 @@ namespace FreschOne.Controllers
                     {
                         if (kv.Key != "ID")
                         {
-                            // Ensure the value is not a StringValues object
-                            command.Parameters.AddWithValue($"@{kv.Key}", kv.Value ?? DBNull.Value);
+                            var parameter = command.Parameters.Add($"@{kv.Key}", SqlDbType.NVarChar); // Default to string
+
+                            // Assign NULL if the value is DBNull.Value
+                            if (kv.Value == DBNull.Value)
+                            {
+                                parameter.Value = DBNull.Value;
+                                parameter.IsNullable = true;
+                            }
+                            else
+                            {
+                                parameter.Value = kv.Value;
+                            }
                         }
                     }
 
@@ -505,15 +554,52 @@ namespace FreschOne.Controllers
                 }
             }
 
-            return RedirectToAction("Index", new { userid = userid, tablename = tablename, readwriteaccess = readwriteaccess });
+            return RedirectToAction("Index", new { userid, tablename });
         }
 
-
-        public IActionResult Delete(int id, string tablename)
+        [HttpPost]
+        public IActionResult Delete(int id, string tablename, int userid)
         {
-            // Logic for deleting a record based on PK
-            return RedirectToAction("Index");
+            // Construct the SQL query to update the record
+            var setClauses = new List<string>
+    {
+        "Active = 0",  // Set Active to false
+        "DeletedUserID = @UserID",  // Set the DeletedUserID
+        "DeletedDate = GETDATE()"  // Set the DeletedDate to current date
+    };
+
+            var query = $"UPDATE {tablename} SET {string.Join(", ", setClauses)} WHERE ID = @Id";
+
+            // Execute the SQL query
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    // Add parameters to prevent SQL injection
+                    command.Parameters.AddWithValue("@Id", id);
+                    command.Parameters.AddWithValue("@UserID", userid);
+
+                    // Execute the query
+                    var rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                    {
+                        // Optionally, add a message or log here if needed
+                        TempData["Message"] = "Record deactivated successfully.";
+                    }
+                    else
+                    {
+                        // Handle the case where no rows were updated (e.g., record not found)
+                        TempData["ErrorMessage"] = "Record not found or already deactivated.";
+                    }
+                }
+            }
+
+            // Redirect or return a result based on your needs
+            return RedirectToAction("Index", new { userid, tablename });
         }
+
 
         public IActionResult Create(int userid, string tablename, string readwriteaccess) 
         {
@@ -563,7 +649,10 @@ namespace FreschOne.Controllers
             // Check if the ChildTable name starts with any prefix and remove it
             foreach (var prefix in tablePrefixes)
             {
-                tableDescription = tablename.Substring(prefix.Prefix.Length);
+                if (tablename.Contains(prefix.Prefix))
+                {
+                    tableDescription = tablename.Replace(prefix.Prefix.ToString(), "");
+                }
             }
             ViewBag.tableDescription = tableDescription.Replace("_", " ");
 
@@ -595,9 +684,8 @@ namespace FreschOne.Controllers
 
 
         [HttpPost]
-        public IActionResult Create(int userid, string tablename, string readwriteaccess, Dictionary<string, string> formData, string[] AttachmentDescriptions, List<IFormFile> Attachments)
+        public IActionResult Create(int userid, string tablename, Dictionary<string, string> formData, string[] AttachmentDescriptions, List<IFormFile> Attachments)
         {
-            SetUserAccess(userid);
 
             // Prepare the data for insertion into the table
             var columns = GetTableColumns(tablename);
@@ -621,6 +709,17 @@ namespace FreschOne.Controllers
                     parameters.Add(parameterName, formData[column]);
                 }
             }
+
+            // Add standard columns
+            tableColumns.Add("Active");
+            valuePlaceholders.Add("@Active");
+            parameters["@Active"] = "1";
+
+            tableColumns.Add("CreateUserID");
+            valuePlaceholders.Add("@CreateUserID");
+            parameters["@CreateUserID"] = userid;
+            tableColumns.Add("CreateDate");
+            valuePlaceholders.Add("GETDATE()");
 
             // Construct the SQL insert statement dynamically
             var columnNames = string.Join(", ", tableColumns);
@@ -698,7 +797,7 @@ namespace FreschOne.Controllers
                 }
             }
 
-            return RedirectToAction("Index", new { userid = userid, tablename = tablename });
+            return RedirectToAction("Index", new { userid, tablename });
         }
 
 
@@ -731,12 +830,12 @@ namespace FreschOne.Controllers
             return dropdownData;
         }
 
-
-
         private List<string> GetTableColumns(string tablename)
         {
             var columns = new List<string>();
-            string query = $"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
+            string query = $@"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName 
+                                    AND COLUMN_NAME NOT IN('Active', 'CreateUserID', 'CreateDate', 
+                                    'ModifiedUserID', 'ModifiedDate', 'DeletedUserID', 'DeletedDate')";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
@@ -756,14 +855,48 @@ namespace FreschOne.Controllers
             return columns;
         }
 
-        private List<Dictionary<string, object>> GetTableData(string tablename)
+        private List<Dictionary<string, object>> GetTableData(string tableName)
         {
             var tableData = new List<Dictionary<string, object>>();
-            string query = $"SELECT * FROM {tablename}";
+            var excludedColumns = new HashSet<string>
+    {
+        "Active", "CreateUserID", "CreateDate",
+        "ModifiedUserID", "ModifiedDate", "DeletedUserID", "DeletedDate"
+    };
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
+
+                // Get only required column names (excluding the audit fields)
+                string columnQuery = $@"
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = @tableName 
+            AND COLUMN_NAME NOT IN ('Active', 'CreateUserID', 'CreateDate', 
+                                    'ModifiedUserID', 'ModifiedDate', 'DeletedUserID', 'DeletedDate')";
+
+                var columns = new List<string>();
+                using (var columnCmd = new SqlCommand(columnQuery, connection))
+                {
+                    columnCmd.Parameters.AddWithValue("@tableName", tableName);
+                    using (var reader = columnCmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            columns.Add(reader["COLUMN_NAME"].ToString());
+                        }
+                    }
+                }
+
+                if (columns.Count == 0)
+                {
+                    return tableData; // No data to fetch
+                }
+
+                // Construct the final SELECT query with only the required columns
+                string query = $"SELECT {string.Join(", ", columns)} FROM {tableName} WHERE Active = 1";
+
                 using (var command = new SqlCommand(query, connection))
                 {
                     using (var reader = command.ExecuteReader())
@@ -782,6 +915,7 @@ namespace FreschOne.Controllers
             }
             return tableData;
         }
+
 
         private string GetPrimaryKeyColumn(string tablename)
         {
@@ -810,7 +944,7 @@ namespace FreschOne.Controllers
             }
 
             var rootPath = Directory.GetCurrentDirectory();
-            var attachmentsFolder = Path.Combine(rootPath, "Attachments");
+            var attachmentsFolder = Path.Combine(rootPath, "Attachments\\" + tablename);
 
             // Ensure the directory exists
             if (!Directory.Exists(attachmentsFolder))

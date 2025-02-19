@@ -193,4 +193,65 @@ public FoUser AuthenticateUser(string username, string password)
         return readwriteaccess;
     }
 
+    public void EnsureAuditFieldsExist(string tableName)
+    {
+        var requiredColumns = new Dictionary<string, string>
+    {
+        { "Active", "BIT DEFAULT(1)" },
+        { "CreateUserID", "BIGINT" },
+        { "CreateDate", "DATETIME" },
+        { "ModifiedUserID", "BIGINT" },
+        { "ModifiedDate", "DATETIME" },
+        { "DeletedUserID", "BIGINT" },
+        { "DeletedDate", "DATETIME" }
+    };
+
+        using (SqlConnection conn = new SqlConnection(_connectionString))
+        {
+            conn.Open();
+
+            // Get existing columns in the specified table
+            string checkColumnsQuery = @"
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = @tableName";
+
+            HashSet<string> existingColumns = new HashSet<string>();
+
+            using (SqlCommand cmd = new SqlCommand(checkColumnsQuery, conn))
+            {
+                cmd.Parameters.AddWithValue("@tableName", tableName);
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        existingColumns.Add(reader["COLUMN_NAME"].ToString());
+                    }
+                }
+            }
+
+            // Prepare ALTER TABLE script
+            List<string> alterStatements = new List<string>();
+            foreach (var column in requiredColumns)
+            {
+                if (!existingColumns.Contains(column.Key))
+                {
+                    alterStatements.Add($"{column.Key} {column.Value}");
+                }
+            }
+
+            // Apply ALTER TABLE script if needed
+            if (alterStatements.Count > 0)
+            {
+                string alterQuery = $"ALTER TABLE {tableName} ADD {string.Join(", ", alterStatements)};";
+                using (SqlCommand alterCmd = new SqlCommand(alterQuery, conn))
+                {
+                    alterCmd.ExecuteNonQuery();
+                }
+            }
+        }
+    }
+
+
 }

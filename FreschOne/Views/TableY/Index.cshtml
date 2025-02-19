@@ -73,7 +73,8 @@
                     @if (readwriteaccess == "RW")
                     {
                         <a href="@Url.Action("Edit", new { id = @row["ID"], PKID = PKID, PKColumn = PKColumn,tablename = tablename, userid = userid })" class="btn btn-warning">Edit</a>
-                        <a href="@Url.Action("Delete", new { id = @row["ID"], tablename = tablename })" class="btn btn-danger">Delete</a>
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete(@row["ID"], '@tablename')">Delete</button>
+
                     }
                     @if (readwriteaccess == "R")
                     {
@@ -86,6 +87,26 @@
         }
     </tbody>
 </table>
+
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" tabindex="-1" id="deleteModal" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Deactivation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to deactivate this record? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirm</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Pagination Controls (Bootstrap Pagination) -->
 <div class="d-flex justify-content-center mt-3">
@@ -276,5 +297,39 @@
                 popup.style.display = 'none';
             }
         });
+
+        function confirmDelete(recordId, tableName) {
+    console.log("Deleting record:", recordId, "from table:", tableName);
+    $('#deleteModal').modal('show');
+
+    $('#confirmDeleteBtn').off('click').on('click', function () {
+        $('#deleteModal').modal('hide');
+
+                $.ajax({
+            url: '@Url.Action("Delete", "TableY")',
+            method: 'POST',
+            headers: {
+                "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+            },
+            data: {
+                id: recordId,
+                PKID: @PKID,
+                PKColumn: '@PKColumn',
+                tablename: tableName,
+                userid: @userid
+            },
+            success: function(response) {
+                alert('Record deactivated successfully');
+                                       location.reload();
+
+            },
+            error: function(xhr, status, error) {
+                alert('Error deactivating record: ' + xhr.responseText);
+            }
+        });
+
+    });
+}
+
     </script>
 }

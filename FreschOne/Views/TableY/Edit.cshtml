@@ -11,6 +11,9 @@
     // Declare a variable to check if the form should be editable
     var editable = readwriteaccess == "RW";
     var tableDescription = ViewBag.tableDescription;
+    var relatedTables = (List<Dictionary<string, object>>)ViewBag.RelatedTables;
+
+    var attachments = ViewBag.Attachments as List<Dictionary<string, object>>;
 
 }
 
@@ -47,7 +50,6 @@
                 {
                     string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
                     <label for="@formattedColumn">@formattedColumn</label>
-
                 }
             }           
 
@@ -172,3 +174,163 @@
     </div>
 
 </form>
+
+<!-- Existing Attachments -->
+<h4>
+    Existing Attachments
+    <button type="button" id="toggleExistingAttachments" class="btn btn-link">
+        <i class="fas fa-chevron-down" id="existingIcon"></i>
+    </button>
+</h4>
+
+<!-- Display existing attachments -->
+<div id="existingAttachments" style="margin-bottom: 20px; display: none;">
+    <ul class="list-group">
+        @foreach (var attachment in attachments)
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>
+                    <a href="@attachment["Attachment"]" target="_blank" class="ml-3">@attachment["AttachmentDescription"]</a>
+                </span>
+                <label>@attachment["DateAdded"]</label>
+                <label>@attachment["UserAdded"]</label>
+                <form asp-action="DeleteAttachment" method="post" class="d-inline" onsubmit="return confirmDelete();">
+                    <input type="hidden" name="attachmentId" value="@attachment["ID"]" />
+                    <input type="hidden" name="tablename" value="@ViewBag.tablename" />
+                    <input type="hidden" name="PKColumn" value="@ViewBag.PKColumn" />
+                    <input type="hidden" name="id" value="@Model.Record["ID"]" />
+                    <input type="hidden" name="PKID" value="@PKID" />
+                    <input type="hidden" name="userid" value="@userid" />
+                    <button type="submit" class="btn btn-link text-danger" title="Delete Attachment">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </form>
+            </li>
+        }
+    </ul>
+</div>
+
+<!-- Add New Attachments -->
+<h4>
+    Add New Attachments
+    <button type="button" id="toggleAttachmentForm" class="btn btn-link">
+        <i class="fas fa-chevron-down" id="toggleIcon"></i>
+    </button>
+</h4>
+
+<!-- Form for adding new attachments -->
+<form asp-action="AddAttachments" method="post" enctype="multipart/form-data" id="attachmentForm" style="display: none;">
+    <input type="hidden" name="tablename" value="@ViewBag.tablename" />
+    <input type="hidden" name="id" value="@Model.Record["ID"]" />
+    <input type="hidden" name="PKID" value="@PKID" />
+    <input type="hidden" name="userid" value="@userid" />
+    <input type="hidden" name="PKColumn" value="@ViewBag.PKColumn" />
+    <input type="hidden" name="PKID" value="@PKID" />
+
+    <div id="attachmentContainer">
+        <div class="attachment-group d-flex align-items-center">
+            <div style="flex-grow: 1;">
+                <div class="form-group">
+                    <label for="AttachmentDescription">Attachment Description</label>
+                    <input type="text" name="AttachmentDescriptions" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label for="Attachment">Upload Attachment</label>
+                    <input type="file" name="Attachments" class="form-control" required />
+                </div>
+            </div>
+            <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
+                <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <button type="button" id="addAttachmentButton" class="btn btn-success" style="font-size: 1.5em; padding: 10px 20px; margin-top: 10px;">
+        <i class="fas fa-plus"></i>
+    </button>
+    <br /><br />
+    <button type="submit" class="btn btn-primary">Upload Attachments</button>
+</form>
+
+<!-- Include Font Awesome -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+<script>
+    // Toggle Existing Attachments
+    document.getElementById('toggleExistingAttachments').addEventListener('click', function () {
+        var section = document.getElementById('existingAttachments');
+        var icon = document.getElementById('existingIcon');
+
+        if (section.style.display === 'none' || section.style.display === '') {
+            section.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        } else {
+            section.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+    });
+
+    // Toggle Add Attachments Form
+    document.getElementById('toggleAttachmentForm').addEventListener('click', function () {
+        var form = document.getElementById('attachmentForm');
+        var icon = document.getElementById('toggleIcon');
+
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        } else {
+            form.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+    });
+
+    // Add another attachment dynamically
+    document.getElementById('addAttachmentButton').addEventListener('click', function () {
+        var container = document.getElementById('attachmentContainer');
+
+        // Create new attachment block
+        var attachmentGroup = document.createElement('div');
+        attachmentGroup.classList.add('attachment-group', 'd-flex', 'align-items-center', 'mt-2');
+
+        attachmentGroup.innerHTML = `
+            <div style="flex-grow: 1;">
+                <div class="form-group">
+                    <label for="AttachmentDescription">Attachment Description</label>
+                    <input type="text" name="AttachmentDescriptions" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label for="Attachment">Upload Attachment</label>
+                    <input type="file" name="Attachments" class="form-control" required />
+                </div>
+            </div>
+            <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
+                <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `;
+
+        container.appendChild(attachmentGroup);
+
+        // Attach event listener to new remove button
+        attachmentGroup.querySelector('.removeAttachmentButton').addEventListener('click', function () {
+            attachmentGroup.remove();
+        });
+    });
+
+    // Initial event listener for existing remove buttons
+    document.querySelectorAll('.removeAttachmentButton').forEach(function (button) {
+        button.addEventListener('click', function () {
+            this.closest('.attachment-group').remove();
+        });
+    });
+
+    function confirmDelete() {
+        return confirm("Are you sure you want to delete this attachment?");
+    }
+</script>
