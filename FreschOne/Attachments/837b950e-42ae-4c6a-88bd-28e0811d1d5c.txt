@@ -1,0 +1,27 @@
+
+private List<SelectListItem> GetForeignKeyOptions(string tableName)
+{
+    var options = new List<SelectListItem>();
+    string query = $"SELECT ID, Description FROM {tableName}";
+
+    using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    {
+        connection.Open();
+        using (var command = new SqlCommand(query, connection))
+        {
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    options.Add(new SelectListItem
+                    {
+                        Value = reader["ID"].ToString(),
+                        Text = reader["Description"].ToString()
+                    });
+                }
+            }
+        }
+    }
+
+    return options;
+}

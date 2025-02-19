@@ -1,0 +1,13 @@
+
+1. **Step 1 (Controller)**: In the `Edit` action, we use `GetForeignKeyColumns` to retrieve the foreign key columns and their related tables (as you already did). 
+   This will now handle the dynamic foreign key column fetching.
+
+2. **Step 2 (Foreign Key Options)**: The logic to fetch foreign key options from the related tables using `GetForeignKeyOptions` remains the same, 
+   but it now correctly uses the columns identified by the `GetForeignKeyColumns` method.
+
+3. **Step 3 (Rendering the View)**: The view rendering logic doesn't change significantly, but it dynamically handles the foreign key dropdowns based on the columns identified from `GetForeignKeyColumns`.
+
+4. **Step 4 (Form Submission)**: When the form is submitted, the `UpdatedValues` dictionary will include the foreign key values (selected from the dropdown), 
+   and the `Update` action will process these values to update the database.
+
+5. **Step 5 (Dynamic Query)**: The query construction in the `Update` action remains unchanged, as it already handles dynamic column updates from the `UpdatedValues` dictionary.

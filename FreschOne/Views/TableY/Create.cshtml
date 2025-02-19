@@ -4,20 +4,17 @@
     var userid = ViewBag.userid;
     var readwriteaccess = ViewBag.readwriteaccess;
     var tablename = ViewBag.tablename;
-    var columnTypes = ViewBag.ColumnTypes; // Get column types from ViewBag
-    var columnLengths = ViewBag.ColumnLengths; // Get column lengths from ViewBag
+    var columnTypes = ViewBag.ColumnTypes;
+    var columnLengths = ViewBag.ColumnLengths;
     var PKID = ViewBag.PKID;
-    var PKColumn = ViewBag.PKColumn; 
+    var PKColumn = ViewBag.PKColumn;
     var tableDescription = ViewBag.tableDescription;
-
-
 }
 
 <partial name="_Sidebar" />
-
 <h1>Create New @tableDescription</h1>
 
-<form method="post" action="@Url.Action("Create", new { userid = userid, PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName})">
+<form method="post" action="@Url.Action("Create", new { userid = userid, PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName })" enctype="multipart/form-data" id="createRecordForm">
     @foreach (var column in Model.Columns)
     {
         if (column == "ID") continue;  // Skip the ID column, it should be auto-generated
@@ -84,7 +81,7 @@
             {
                 <!-- Render checkbox for bit columns, handle DBNull -->
                 <input type="checkbox" name="@column" value="true" class="form-check-input" />
-                
+
             }
             else if (columnType == "datetime")
             {
@@ -93,21 +90,99 @@
                 ? dateValue.ToString("yyyy-MM-dd") : "" : ""; // If the value is null, set it to an empty string
                 <input type="date" name="@column" value="@formattedDate" class="form-control" />
             }
-           
+
         </div>
     }
 
-    <br />
     <hr />
+    <!-- Attachments Section -->
+    <h4>
+        Add Attachments
+        <button type="button" id="toggleAttachmentForm" class="btn btn-link" style="font-size: 1.2em;">
+            <i class="fas fa-chevron-down" id="toggleIcon"></i>
+        </button>
+    </h4>
+    <div id="attachmentForm" style="display: none;">
+        <div id="attachmentContainer"></div>
+        <button type="button" id="addAttachmentButton" class="btn btn-success" style="font-size: 1.5em; padding: 10px 20px; margin-top: 10px;">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+    <br />
     <div class="form-group text-center">
-        <button type="submit" class="btn btn-primary">Create</button>
+        <button type="submit" class="btn btn-primary">Create Record</button>
     </div>
-
-    <!-- Back link styled as a simple hyperlink -->
-    <div class="form-group text-right">
-        <a href="@Url.Action("Index", "TableX", new { userid, tablename })" class="btn btn-link">
-            Back to Previous Screen
-        </a>
-    </div>
-
 </form>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+<script>
+    document.getElementById('toggleAttachmentForm').addEventListener('click', function () {
+        var form = document.getElementById('attachmentForm');
+        var icon = document.getElementById('toggleIcon');
+        var attachmentFields = document.querySelectorAll('.attachment-field');
+
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+            attachmentFields.forEach(field => field.setAttribute('required', 'required'));
+        } else {
+            form.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+            attachmentFields.forEach(field => field.removeAttribute('required'));
+        }
+    });
+
+    document.getElementById('addAttachmentButton').addEventListener('click', function () {
+        var container = document.getElementById('attachmentContainer');
+        var attachmentGroup = document.createElement('div');
+        attachmentGroup.classList.add('attachment-group', 'd-flex', 'align-items-center', 'mt-2');
+
+        attachmentGroup.innerHTML = `
+            <div style="flex-grow: 1;">
+                <div class="form-group">
+                    <label for="AttachmentDescription">Attachment Description</label>
+                    <input type="text" name="AttachmentDescriptions" class="form-control attachment-field" required />
+                </div>
+                <div class="form-group">
+                    <label for="Attachment">Upload Attachment</label>
+                    <input type="file" name="Attachments" class="form-control attachment-field" required />
+                </div>
+            </div>
+            <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
+                <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `;
+
+        container.appendChild(attachmentGroup);
+    });
+
+    document.addEventListener('click', function (event) {
+        if (event.target.closest('.removeAttachmentButton')) {
+            event.target.closest('.attachment-group').remove();
+        }
+    });
+
+    document.getElementById('createRecordForm').addEventListener('submit', function (event) {
+        var attachmentForm = document.getElementById('attachmentForm');
+        var attachmentFields = document.querySelectorAll('.attachment-field');
+
+        if (attachmentForm.style.display !== 'none') {
+            let allFieldsFilled = true;
+            attachmentFields.forEach(function (field) {
+                if (!field.value.trim()) {
+                    allFieldsFilled = false;
+                }
+            });
+
+            if (!allFieldsFilled) {
+                alert('Please fill in all required attachment details before submitting.');
+                event.preventDefault();
+                return;
+            }
+        }
+    });
+</script>

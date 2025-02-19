@@ -5,7 +5,6 @@
     var tablename = ViewBag.tablename;
     var PKColumn = ViewBag.PKColumn;
     var tableDescription = ViewBag.tableDescription;
-
 }
 
 <partial name="_Sidebar" />
@@ -31,14 +30,13 @@
                 }
                 else
                 {
-                    @if ( column == "ID")
+                    @if (column == "ID")
                     {
                         <th>@column</th>
-
                     }
                     else
                     {
-                     <th>@formattedColumn</th>
+                        <th>@formattedColumn</th>
                     }
                 }
             }
@@ -56,20 +54,38 @@
                 <td>
                     @if (readwriteaccess == "RW")
                     {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"],  tablename = tablename, userid = userid })" class="btn btn-warning">Edit</a>
-                        <a href="@Url.Action("Delete", new { id = @row["ID"], tablename = tablename })" class="btn btn-danger">Delete</a>
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid })" class="btn btn-warning">Edit</a>
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete(@row["ID"], '@tablename')">Delete</button>
                     }
                     @if (readwriteaccess == "R")
                     {
                         <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid  })" class="btn btn-warning">View</a>
                     }
-                
                     <button class="btn btn-info" onclick="showPopup(event, '@tablename', '@row["ID"]')">More</button>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" tabindex="-1" id="deleteModal" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Deactivation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to deactivate this record? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirm</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Pagination Controls (Bootstrap Pagination) -->
 <div class="d-flex justify-content-center mt-3">
@@ -122,7 +138,6 @@
 
 @section Styles {
     <style>
-        /* Basic Popup Styling */
         /* Basic Popup Styling */
         .popup {
             display: none;
@@ -189,7 +204,6 @@
             .popup-content td a:hover {
                 text-decoration: underline;
             }
-                  
     </style>
 }
 
@@ -197,18 +211,17 @@
     <script>
         function showPopup(event, tablename, id) {
             console.log('showPopup called with tablename:', tablename, 'and id:', id); // Debugging line
-            //&PKColumn=${record.ForeignKey}
-            // Fetch related tables via AJAX, and pass the userid to check user access
-        fetch(`/TableX/ForeignTables_Index?tablename=${tablename}&userid=${@ViewBag.userid}&isAjax=true`)
-                        .then(response => response.json())
+
+            fetch(`/TableX/ForeignTables_Index?tablename=${tablename}&userid=${@ViewBag.userid}&isAjax=true`)
+                .then(response => response.json())
                 .then(data => {
                     if (data.length > 0) {
                         let content = '<table class="table table-bordered">';
                         content += '<thead><tr><th>Related Table</th></tr></thead><tbody>';
 
                         data.forEach(record => {
-                        const url = `/TableY/Index?&userid=${@ViewBag.userid}&tablename=${record.ChildTable}&PKID=${id}&PKColumn=${record.PKColumn}`;
-                                    content += `<tr><td><a href="${url}">${record.ChildTableDescription}</a></td></tr>`;
+                            const url = `/TableY/Index?&userid=${@ViewBag.userid}&tablename=${record.ChildTable}&PKID=${id}&PKColumn=${record.PKColumn}`;
+                            content += `<tr><td><a href="${url}">${record.ChildTableDescription}</a></td></tr>`;
                         });
 
                         content += '</tbody></table>';
@@ -219,24 +232,20 @@
                         var popup = document.getElementById('popup');
                         var rect = event.target.getBoundingClientRect();  // Get the position of the clicked cell
 
-                        // Ensure the popup stays within the viewport
                         var popupWidth = popup.offsetWidth;
                         var popupHeight = popup.offsetHeight;
 
                         var left = rect.left + window.scrollX + rect.width / 2 - popupWidth / 2;
                         var top = rect.top + window.scrollY + rect.height + 10;
 
-                        // Adjust position if the popup is off the right side of the screen
                         if (left + popupWidth > window.innerWidth) {
                             left = window.innerWidth - popupWidth - 10;
                         }
 
-                        // Adjust position if the popup is off the bottom of the screen
                         if (top + popupHeight > window.innerHeight) {
                             top = rect.top + window.scrollY - popupHeight - 10;  // Position above the cell
                         }
 
-                        // Apply the calculated position
                         popup.style.left = left + 'px';
                         popup.style.top = top + 'px';
                     } else {
@@ -249,12 +258,37 @@
                 });
         }
 
-
-            document.addEventListener('click', function (event) {
+        document.addEventListener('click', function (event) {
             var popup = document.getElementById('popup');
             if (!popup.contains(event.target) && event.target.tagName !== 'TD') {
                 popup.style.display = 'none';
             }
         });
+
+        function confirmDelete(recordId, tableName) {
+            $('#deleteModal').modal('show');
+
+            $('#confirmDeleteBtn').off('click').on('click', function() {
+                $('#deleteModal').modal('hide');
+
+                $.ajax({
+                    url: '@Url.Action("Delete", "TableX")',  // Correct the controller name here
+                    method: 'POST',
+                    data: {
+                        id: recordId,
+                        tablename: tableName,
+                        userid: @userid
+                    },
+                    success: function(response) {
+                        alert('Record deactivated successfully');
+                                        location.reload();
+
+                    },
+                    error: function() {
+                        alert('Error deactivating record');
+                    }
+                });
+            });
+        }
     </script>
 }
