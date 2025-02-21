@@ -3,28 +3,28 @@
   "WorkspaceRootPath": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\controllers\\tableycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\tableycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\controllers\\tablexcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\tablexcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\views\\tablex\\create.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\tablex\\create.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\views\\tabley\\create.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\tabley\\create.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\views\\tabley\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\tabley\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\views\\tablex\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\tablex\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\views\\tabley\\edit.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\tabley\\edit.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\controllers\\tablexcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\tablexcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\controllers\\tableycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\tableycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\views\\tablex\\edit.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\tablex\\edit.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,84 +34,84 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Create.cshtml",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableX\\Create.cshtml",
-              "RelativeDocumentMoniker": "FreschOne\\Views\\TableX\\Create.cshtml",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableX\\Create.cshtml",
-              "RelativeToolTip": "FreschOne\\Views\\TableX\\Create.cshtml",
-              "ViewState": "AgIAADIAAAAAAAAAAAAYwEAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-02-19T11:38:13.575Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "Create.cshtml",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableY\\Create.cshtml",
-              "RelativeDocumentMoniker": "FreschOne\\Views\\TableY\\Create.cshtml",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableY\\Create.cshtml",
-              "RelativeToolTip": "FreschOne\\Views\\TableY\\Create.cshtml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAcAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-02-19T11:02:23.086Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 0,
               "Title": "Index.cshtml",
               "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableY\\Index.cshtml",
               "RelativeDocumentMoniker": "FreschOne\\Views\\TableY\\Index.cshtml",
               "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableY\\Index.cshtml",
               "RelativeToolTip": "FreschOne\\Views\\TableY\\Index.cshtml",
-              "ViewState": "AgIAAB8BAAAAAAAAAAAYwEMBAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAADEAAAAAAAAAAAAYwE0AAACMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-02-19T08:04:04.995Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "Index.cshtml",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableX\\Index.cshtml",
-              "RelativeDocumentMoniker": "FreschOne\\Views\\TableX\\Index.cshtml",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableX\\Index.cshtml",
-              "RelativeToolTip": "FreschOne\\Views\\TableX\\Index.cshtml",
-              "ViewState": "AgIAAPUAAAAAAAAAAAAYwAQBAAA9AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-02-18T13:11:24.249Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "TableYController.cs",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\TableYController.cs",
-              "RelativeDocumentMoniker": "FreschOne\\Controllers\\TableYController.cs",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\TableYController.cs",
-              "RelativeToolTip": "FreschOne\\Controllers\\TableYController.cs",
-              "ViewState": "AgIAAJwCAAAAAAAAAAAAALoCAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-18T11:39:01.251Z",
+              "WhenOpened": "2025-02-21T11:56:40.808Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableX\\Index.cshtml",
+              "RelativeDocumentMoniker": "FreschOne\\Views\\TableX\\Index.cshtml",
+              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableX\\Index.cshtml",
+              "RelativeToolTip": "FreschOne\\Views\\TableX\\Index.cshtml",
+              "ViewState": "AgIAACYAAAAAAAAAAAAYwEUAAABzAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-02-21T11:56:25.823Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Edit.cshtml",
+              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableX\\Edit.cshtml",
+              "RelativeDocumentMoniker": "FreschOne\\Views\\TableX\\Edit.cshtml",
+              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableX\\Edit.cshtml",
+              "RelativeToolTip": "FreschOne\\Views\\TableX\\Edit.cshtml",
+              "ViewState": "AgIAACQBAAAAAAAAAAAYwEEBAABpAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-02-21T11:20:20.744Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Edit.cshtml",
+              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableY\\Edit.cshtml",
+              "RelativeDocumentMoniker": "FreschOne\\Views\\TableY\\Edit.cshtml",
+              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\TableY\\Edit.cshtml",
+              "RelativeToolTip": "FreschOne\\Views\\TableY\\Edit.cshtml",
+              "ViewState": "AgIAAIoAAAAAAAAAAAAYwKwAAABiAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-02-21T11:16:15.389Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "TableXController.cs",
               "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\TableXController.cs",
               "RelativeDocumentMoniker": "FreschOne\\Controllers\\TableXController.cs",
               "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\TableXController.cs",
               "RelativeToolTip": "FreschOne\\Controllers\\TableXController.cs",
-              "ViewState": "AgIAAMMCAAAAAAAAAAAAAMgCAAAHAAAAAAAAAA==",
+              "ViewState": "AgIAAAgCAAAAAAAAAAAAAMoBAABuAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-18T10:27:34.176Z",
+              "WhenOpened": "2025-02-21T11:15:42.127Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "TableYController.cs",
+              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\TableYController.cs",
+              "RelativeDocumentMoniker": "FreschOne\\Controllers\\TableYController.cs",
+              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\TableYController.cs",
+              "RelativeToolTip": "FreschOne\\Controllers\\TableYController.cs",
+              "ViewState": "AgIAAO0BAAAAAAAAAAAAABACAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-21T11:15:11.651Z",
               "EditorCaption": ""
             }
           ]

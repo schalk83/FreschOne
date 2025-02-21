@@ -15,7 +15,6 @@
 {
     <a href="@Url.Action("Create", new { userid = Model.UserId, tablename = Model.TableName})" class="btn btn-primary">Create</a>
 }
-
 <!-- Data Table -->
 <table class="table table-bordered">
     <thead>
@@ -42,24 +41,33 @@
             }
             <th>Actions</th>
         </tr>
+        <tr>
+            @foreach (var column in Model.Columns)
+            {
+                <th>
+                    <input type="text" class="form-control column-search" data-column="@column" placeholder="Search..." onkeyup="filterTable()">
+                </th>
+            }
+            <th></th> <!-- Empty column for actions -->
+        </tr>
     </thead>
-    <tbody>
+    <tbody id="tableBody">
         @foreach (var row in Model.TableData)
         {
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    <td onclick="showPopup(event, '@tablename', '@row["ID"]')">@row[column]</td>
+                    <td>@row[column]</td>
                 }
                 <td>
                     @if (readwriteaccess == "RW")
                     {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid })" class="btn btn-warning">Edit</a>
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning">Edit</a>
                         <button type="button" class="btn btn-danger" onclick="confirmDelete(@row["ID"], '@tablename')">Delete</button>
                     }
                     @if (readwriteaccess == "R")
                     {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid  })" class="btn btn-warning">View</a>
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning">View</a>
                     }
                     <button class="btn btn-info" onclick="showPopup(event, '@tablename', '@row["ID"]')">More</button>
                 </td>
@@ -67,6 +75,50 @@
         }
     </tbody>
 </table>
+
+<!-- Pagination Controls (Bootstrap Pagination) -->
+<div class="d-flex justify-content-center mt-3">
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            @if (ViewBag.pageNumber > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = 1 })">
+                        First
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.pageNumber - 1 })">
+                        &laquo; Prev
+                    </a>
+                </li>
+            }
+
+            @for (var i = Math.Max(1, ViewBag.pageNumber - 2); i <= Math.Min(ViewBag.totalPages, ViewBag.pageNumber + 2); i++)
+            {
+                <li class="page-item @(i == ViewBag.pageNumber ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = i })">
+                        @i
+                    </a>
+                </li>
+            }
+
+            @if (ViewBag.pageNumber < ViewBag.totalPages)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.pageNumber + 1 })">
+                        Next &raquo;
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.totalPages })">
+                        Last
+                    </a>
+                </li>
+            }
+        </ul>
+    </nav>
+</div>
 
 <!-- Delete Confirmation Modal -->
 <div class="modal" tabindex="-1" id="deleteModal" aria-labelledby="deleteModalLabel" aria-hidden="true">
@@ -87,39 +139,6 @@
     </div>
 </div>
 
-<!-- Pagination Controls (Bootstrap Pagination) -->
-<div class="d-flex justify-content-center mt-3">
-    <nav aria-label="Page navigation">
-        <ul class="pagination">
-            @if (ViewBag.pageNumber > 1)
-            {
-                <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = ViewBag.pageNumber - 1 })" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-            }
-
-            @for (var i = 1; i <= ViewBag.totalPages; i++)
-            {
-                <li class="page-item @(i == ViewBag.pageNumber ? "active" : "")">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = i })">
-                        @i
-                    </a>
-                </li>
-            }
-
-            @if (ViewBag.pageNumber < ViewBag.totalPages)
-            {
-                <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = ViewBag.pageNumber + 1 })" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-            }
-        </ul>
-    </nav>
-</div>
 
 <!-- Popup for Related Tables -->
 <div id="popup" class="popup" style="display:none;">
@@ -129,12 +148,6 @@
     <div id="popup-content" class="popup-content"></div>
 </div>
 
-<!-- Back link styled as a simple hyperlink -->
-<div class="form-group text-right">
-    <a href="@Url.Action("Index", "TableX", new { userid, tablename })" class="btn btn-link">
-        Back to Index for @tablename
-    </a>
-</div>
 
 @section Styles {
     <style>
@@ -212,14 +225,15 @@
         function showPopup(event, tablename, id) {
             console.log('showPopup called with tablename:', tablename, 'and id:', id); // Debugging line
 
-            fetch(`/TableX/ForeignTables_Index?tablename=${tablename}&userid=${@ViewBag.userid}&isAjax=true`)
-                .then(response => response.json())
+            // Fetch related tables via AJAX, and pass the userid to check user access
+        fetch(`/TableX/ForeignTables_Index?tablename=${tablename}&userid=${@ViewBag.userid}&isAjax=true`)
+                        .then(response => response.json())
                 .then(data => {
                     if (data.length > 0) {
                         let content = '<table class="table table-bordered">';
                         content += '<thead><tr><th>Related Table</th></tr></thead><tbody>';
 
-                        data.forEach(record => {
+                         data.forEach(record => {
                             const url = `/TableY/Index?&userid=${@ViewBag.userid}&tablename=${record.ChildTable}&PKID=${id}&PKColumn=${record.PKColumn}`;
                             content += `<tr><td><a href="${url}">${record.ChildTableDescription}</a></td></tr>`;
                         });
@@ -232,12 +246,15 @@
                         var popup = document.getElementById('popup');
                         var rect = event.target.getBoundingClientRect();  // Get the position of the clicked cell
 
+                        // Ensure the popup stays within the viewport
                         var popupWidth = popup.offsetWidth;
                         var popupHeight = popup.offsetHeight;
 
                         var left = rect.left + window.scrollX + rect.width / 2 - popupWidth / 2;
                         var top = rect.top + window.scrollY + rect.height + 10;
 
+                        // Adjust position if the popup is off the right side of the screen
+                        
                         if (left + popupWidth > window.innerWidth) {
                             left = window.innerWidth - popupWidth - 10;
                         }
@@ -264,6 +281,29 @@
                 popup.style.display = 'none';
             }
         });
+
+        function filterTable() {
+            var inputs = document.querySelectorAll('.column-search');
+            var tableRows = document.querySelectorAll("#tableBody tr");
+
+            tableRows.forEach(row => {
+                let showRow = true;
+
+                inputs.forEach(input => {
+                    let columnName = input.getAttribute('data-column');
+                    let searchValue = input.value.toLowerCase();
+                    let cell = row.querySelector(`td:nth-child(${Array.from(inputs).indexOf(input) + 1})`);
+
+                    if (cell && searchValue) {
+                        if (!cell.innerText.toLowerCase().includes(searchValue)) {
+                            showRow = false;
+                        }
+                    }
+                });
+
+                row.style.display = showRow ? "" : "none";
+            });
+        }
 
         function confirmDelete(recordId, tableName) {
             $('#deleteModal').modal('show');
