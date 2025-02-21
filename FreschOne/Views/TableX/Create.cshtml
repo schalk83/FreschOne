@@ -88,6 +88,41 @@
 <!-- JavaScript -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var tableName = "@tablename"; // Get the table name dynamically
+
+        // Load validation rules from JSON file
+        fetch(`/validations/${tableName}.json`)
+            .then(response => response.json())
+            .then(validationRules => 
+            {
+                applyValidations(validationRules);
+            })
+            .catch(error => console.error("Error loading validation rules:", error));
+
+        function applyValidations(rules) {
+            Object.keys(rules).forEach(field => {
+                var inputField = document.querySelector(`[name="${field}"]`);
+                if (inputField) {
+                    if (rules[field].required) {
+                        inputField.setAttribute("required", "required");
+                    }
+                    if (rules[field].regex) {
+                        inputField.addEventListener("input", function () {
+                            var regex = new RegExp(rules[field].regex);
+                            if (!regex.test(this.value)) {
+                                this.setCustomValidity(rules[field].errorMessage);
+                            } else {
+                                this.setCustomValidity("");
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    });
+
+    // Toggle attachment form
     document.getElementById('toggleAttachmentForm').addEventListener('click', function () {
         var form = document.getElementById('attachmentForm');
         var icon = document.getElementById('toggleIcon');
@@ -106,6 +141,7 @@
         }
     });
 
+    // Add new attachment field dynamically
     document.getElementById('addAttachmentButton').addEventListener('click', function () {
         var container = document.getElementById('attachmentContainer');
         var attachmentGroup = document.createElement('div');
@@ -132,6 +168,7 @@
         container.appendChild(attachmentGroup);
     });
 
+    // Remove attachment field dynamically
     document.addEventListener('click', function (event) {
         if (event.target.closest('.removeAttachmentButton')) {
             event.target.closest('.attachment-group').remove();

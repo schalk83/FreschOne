@@ -1,0 +1,17 @@
+{
+  "FirstName": {
+    "required": true,
+    "regex": "^[a-zA-Z]+$",
+    "errorMessage": "First Name should not contain numbers or special characters."
+  },
+  "LastName1": {
+    "required": true,
+    "regex": "^[a-zA-Z]+$",
+    "errorMessage": "Last Name should not contain numbers or special characters."
+  },
+  "LastName": {
+    "minLength": 5,
+    "maxLength": 30,
+    "errorMessage": "Combined First Name and Last Name should be between 5 and 30 characters."
+  }
+}
