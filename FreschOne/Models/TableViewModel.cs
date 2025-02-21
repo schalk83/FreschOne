@@ -9,6 +9,9 @@
         public string PrimaryKeyColumn { get; set; }
         public List<ForeignKeyInfo> ForeignKeys { get; set; }  // List of foreign key columns (for dropdowns)
 
+        public int PageNumber { get; set; }  // Current page number
+        public int TotalPages { get; set; }  // Total number of pages
+        public string TableDescription { get; set; }
     }
 
 }

@@ -1,0 +1,42 @@
+
+@model FreschOne.Models.TableEditViewModel
+
+<h1>Edit Record for Table: @Model.TableName</h1>
+
+<form method="post" action="@Url.Action("Update", new { id = Model.Record["ID"], tablename = Model.TableName })">
+    @foreach (var column in Model.Columns)
+    {
+        var columnValue = Model.Record[column];
+        var columnType = columnValue.GetType();
+
+        <div class="form-group">
+            <label for="@column">@column</label>
+
+            @if (columnType == typeof(string) && columnValue.ToString().Length < 255) 
+            {
+                <input type="text" name="UpdatedValues[@column]" value="@columnValue" class="form-control" />
+            }
+            else if (columnType == typeof(string) && columnValue.ToString().Length >= 255)
+            {
+                <textarea name="UpdatedValues[@column]" class="form-control">@columnValue</textarea>
+            }
+            else if (columnType == typeof(int) || columnType == typeof(decimal))
+            {
+                <input type="number" name="UpdatedValues[@column]" value="@columnValue" class="form-control" />
+            }
+            else if (columnType == typeof(DateTime))
+            {
+                <input type="date" name="UpdatedValues[@column]" value="@((DateTime)columnValue).ToString("yyyy-MM-dd")" class="form-control" />
+            }
+            else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+            {
+                var foreignKey = Model.ForeignKeys.First(fk => fk.ColumnName == column);
+                @Html.DropDownList(foreignKey.ColumnName, new SelectList(Model.ForeignKeyOptions[foreignKey.ColumnName], "Value", "Text", columnValue), "Select...", new { @class = "form-control" })
+
+                <input type="hidden" name="UpdatedValues[@column]" value="@columnValue" />
+            }
+        </div>
+    }
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+</form>

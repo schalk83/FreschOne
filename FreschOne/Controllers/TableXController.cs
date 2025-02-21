@@ -267,10 +267,7 @@ namespace FreschOne.Controllers
             return foreignKeys;
         }
 
-   
-
-
-        public IActionResult Edit(int id, string tablename, int userid)
+        public IActionResult Edit(int id, string tablename, int userid, int pageNumber)
         {
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
@@ -334,6 +331,7 @@ namespace FreschOne.Controllers
             ViewBag.tablename = tablename;
             ViewBag.ColumnTypes = columnTypes;
             ViewBag.ColumnLengths = columnLengths;
+            ViewBag.pageNumber = pageNumber; 
 
             // Fetch existing attachments for this record
             string attachmentQuery = @"
@@ -458,7 +456,7 @@ namespace FreschOne.Controllers
 
 
         [HttpPost]
-        public IActionResult Update(int id, int userid, string tablename, IFormCollection form)
+        public IActionResult Update(int id, int userid, string tablename, IFormCollection form, int pageNumber)
         {
             // Create a dictionary to store the updated values
             var updatedValues = new Dictionary<string, object>();
@@ -554,7 +552,7 @@ namespace FreschOne.Controllers
                 }
             }
 
-            return RedirectToAction("Index", new { userid, tablename });
+            return RedirectToAction("Index", new { userid, tablename, pageNumber });
         }
 
         [HttpPost]
@@ -840,17 +838,13 @@ namespace FreschOne.Controllers
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(query, connection))
+                using var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@TableName", tablename);
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
                 {
-                    command.Parameters.AddWithValue("@TableName", tablename);
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            columns.Add(reader.GetString(0));
-                        }
-                    }
-                }
+                    columns.Add(reader.GetString(0));
+                }            
             }
             return columns;
         }
@@ -880,12 +874,10 @@ namespace FreschOne.Controllers
                 using (var columnCmd = new SqlCommand(columnQuery, connection))
                 {
                     columnCmd.Parameters.AddWithValue("@tableName", tableName);
-                    using (var reader = columnCmd.ExecuteReader())
+                    using var reader = columnCmd.ExecuteReader();
+                    while (reader.Read())
                     {
-                        while (reader.Read())
-                        {
-                            columns.Add(reader["COLUMN_NAME"].ToString());
-                        }
+                        columns.Add(reader["COLUMN_NAME"].ToString());
                     }
                 }
 

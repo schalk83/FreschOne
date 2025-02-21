@@ -11,14 +11,14 @@
 
     var relatedTables = (List<Dictionary<string, object>>)ViewBag.RelatedTables;
     var attachments = ViewBag.Attachments as List<Dictionary<string, object>>;
-
+    var pageNumber = ViewBag.pageNumber;
 }
 
 <partial name="_Sidebar" />
 
 <h1>Edit @tableDescription</h1>
 
-<form method="post" action="@Url.Action("Update", new { id = Model.Record["ID"], tablename = Model.TableName, userid = userid })">
+<form method="post" action="@Url.Action("Update", new { id = Model.Record["ID"], tablename = Model.TableName, userid = userid, pageNumber = pageNumber })">
     <!-- Include hidden ID field -->
     <input type="hidden" name="ID" value="@Model.Record["ID"]" />
 
@@ -143,7 +143,7 @@
 
     <!-- Back link styled as a simple hyperlink -->
     <div class="form-group text-right">
-        <a href="@Url.Action("Index", "TableX", new { userid, tablename })" class="btn btn-link">
+        <a href="@Url.Action("Index", "TableX", new { userid, tablename, pageNumber })" class="btn btn-link">
             Back to Previous Screen
         </a>
       

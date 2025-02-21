@@ -36,9 +36,8 @@ namespace FreschOne.Controllers
                 {
                     if (foreignKey.ColumnName != PKColumn)
                     {
-                        if (row.ContainsKey(foreignKey.ColumnName))
+                        if (row.TryGetValue(foreignKey.ColumnName, out object? foreignKeyValue))
                         {
-                            var foreignKeyValue = row[foreignKey.ColumnName];
                             if (foreignKeyValue != DBNull.Value)
                             {
                                 row[foreignKey.ColumnName] = GetForeignKeyDescription(foreignKey.TableName, foreignKeyValue);
@@ -163,26 +162,22 @@ namespace FreschOne.Controllers
         WHERE tr.name = @TableName
         AND tp.name LIKE '%tbl_%' ORDER BY 1";
 
-                using (var command = new SqlCommand(query, connection))
+                using var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@TableName", tablename);
+
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
                 {
-                    command.Parameters.AddWithValue("@TableName", tablename);
-
-                    using (var reader = command.ExecuteReader())
+                    var row = new Dictionary<string, object>();
+                    for (int i = 0; i < reader.FieldCount; i++)
                     {
-                        while (reader.Read())
-                        {
-                            var row = new Dictionary<string, object>();
-                            for (int i = 0; i < reader.FieldCount; i++)
-                            {
-                                row[reader.GetName(i)] = reader.GetValue(i);
-                            }
+                        row[reader.GetName(i)] = reader.GetValue(i);
+                    }
 
-                            // Filter only those tables that the user has access to
-                            if (userTables.Contains(row["ChildTable"].ToString()))
-                            {
-                                result.Add(row);
-                            }
-                        }
+                    // Filter only those tables that the user has access to
+                    if (userTables.Contains(row["ChildTable"].ToString()))
+                    {
+                        result.Add(row);
                     }
                 }
             }
@@ -228,29 +223,25 @@ namespace FreschOne.Controllers
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@TableName", tablename);
-                    command.Parameters.AddWithValue("@PKColumn", PKColumn);
+                using var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@TableName", tablename);
+                command.Parameters.AddWithValue("@PKColumn", PKColumn);
 
-                    using (var reader = command.ExecuteReader())
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    foreignKeys.Add(new ForeignKeyInfo
                     {
-                        while (reader.Read())
-                        {
-                            foreignKeys.Add(new ForeignKeyInfo
-                            {
-                                ColumnName = reader.GetString(0),
-                                TableName = reader.GetString(1), // Reference to the related 'tbl_md_*' table
-                                ColumnDescription = reader.GetString(2)
-                            });
-                        }
-                    }
+                        ColumnName = reader.GetString(0),
+                        TableName = reader.GetString(1), // Reference to the related 'tbl_md_*' table
+                        ColumnDescription = reader.GetString(2)
+                    });
                 }
             }
             return foreignKeys;
         }
 
-        public IActionResult Edit(int id, int PKID, string PKColumn, string tablename, int userid)
+        public IActionResult Edit(int id, int PKID, string PKColumn, string tablename, int userid, int pageNumber)
         {
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
@@ -316,6 +307,8 @@ namespace FreschOne.Controllers
 
             ViewBag.PKID = PKID;
             ViewBag.PKColumn = PKColumn;
+            ViewBag.pageNumber = pageNumber;
+
 
             // Fetch existing attachments for this record
             string attachmentQuery = @"
@@ -327,17 +320,15 @@ namespace FreschOne.Controllers
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(attachmentQuery, connection))
+                using var command = new SqlCommand(attachmentQuery, connection);
+                command.Parameters.AddWithValue("@tablename", tablename);
+                command.Parameters.AddWithValue("@PKID", id);
+
+
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
                 {
-                    command.Parameters.AddWithValue("@tablename", tablename);
-                    command.Parameters.AddWithValue("@PKID", id);
-
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            attachments.Add(new Dictionary<string, object>
+                    attachments.Add(new Dictionary<string, object>
                             {
                                 { "ID", reader["ID"] },
                                 { "AttachmentDescription", reader["AttachmentDescription"] },
@@ -345,8 +336,6 @@ namespace FreschOne.Controllers
                                 { "DateAdded", reader["DateAdded"] },
                                 { "UserAdded", reader["UserAdded"] }
                               });
-                        }
-                    }
                 }
             }
 
@@ -374,11 +363,9 @@ namespace FreschOne.Controllers
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Id", foreignKeyValue);
-                    description = command.ExecuteScalar()?.ToString();
-                }
+                using var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@Id", foreignKeyValue);
+                description = command.ExecuteScalar()?.ToString();
             }
 
             return description;
@@ -393,18 +380,14 @@ namespace FreschOne.Controllers
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(query, connection))
+                using var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@Id", id);
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
                 {
-                    command.Parameters.AddWithValue("@Id", id);
-                    using (var reader = command.ExecuteReader())
+                    for (int i = 0; i < reader.FieldCount; i++)
                     {
-                        if (reader.Read())
-                        {
-                            for (int i = 0; i < reader.FieldCount; i++)
-                            {
-                                record[reader.GetName(i)] = reader[i];
-                            }
-                        }
+                        record[reader.GetName(i)] = reader[i];
                     }
                 }
             }
@@ -420,18 +403,16 @@ namespace FreschOne.Controllers
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(query, connection))
+                using var command = new SqlCommand(query, connection);
+                using (var reader = command.ExecuteReader())
                 {
-                    using (var reader = command.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        options.Add(new SelectListItem
                         {
-                            options.Add(new SelectListItem
-                            {
-                                Value = reader["ID"].ToString(),
-                                Text = reader["Description"].ToString()
-                            });
-                        }
+                            Value = reader["ID"].ToString(),
+                            Text = reader["Description"].ToString()
+                        });
                     }
                 }
             }
@@ -441,7 +422,7 @@ namespace FreschOne.Controllers
 
 
         [HttpPost]
-        public IActionResult Update(int id, int PKID, string PKColumn, string tablename, int userid, IFormCollection form)
+        public IActionResult Update(int id, int PKID, string PKColumn, string tablename, int userid, IFormCollection form, int pageNumber)
         {
             // Create a dictionary to store the updated values
             var updatedValues = new Dictionary<string, object>();
@@ -537,7 +518,7 @@ namespace FreschOne.Controllers
                 }
             }
 
-            return RedirectToAction("Index", new { userid, PKID, PKColumn, tablename });
+            return RedirectToAction("Index", new { userid, PKID, PKColumn, tablename, pageNumber });
         }
 
         [HttpPost]
