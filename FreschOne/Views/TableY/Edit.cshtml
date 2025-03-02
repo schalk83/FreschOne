@@ -7,24 +7,28 @@
     var columnLengths = ViewBag.ColumnLengths; // Get column lengths from ViewBag
     var PKID = ViewBag.PKID;
     var PKColumn = ViewBag.PKColumn;
-
-    // Declare a variable to check if the form should be editable
     var editable = readwriteaccess == "RW";
     var tableDescription = ViewBag.tableDescription;
     var relatedTables = (List<Dictionary<string, object>>)ViewBag.RelatedTables;
-
     var attachments = ViewBag.Attachments as List<Dictionary<string, object>>;
     var pageNumber = ViewBag.pageNumber;
-
-
 }
-
 
 <partial name="_Sidebar" />
 
 <h1>Edit @tableDescription</h1>
-
-<form method="post" action="@Url.Action("Update", new { id = Model.Record["ID"], PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName, userid = userid, pageNumber = pageNumber})">
+@if (ViewBag.DataManagementBreadcrumbY != null)
+{
+    <a href="@Url.Action("Index", new {
+        tablename = ViewBag.DataManagementBreadcrumbY.Parameters["tablename"],
+        userid = ViewBag.DataManagementBreadcrumbY.Parameters["userid"],
+        PKID = ViewBag.DataManagementBreadcrumbY.Parameters["PKID"],
+        PKColumn = ViewBag.DataManagementBreadcrumbY.Parameters["PKColumn"],
+        pageNumber = ViewBag.DataManagementBreadcrumbY.Parameters["pageNumber"]
+    })
+    " class="text-decoration-none">← Back</a>
+}
+<form method="post" enctype="multipart/form-data" action="@Url.Action("Update", new { id = Model.Record["ID"], PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName, userid = userid, pageNumber = pageNumber})">
     <!-- Include hidden ID field -->
     <input type="hidden" name="ID" value="@Model.Record["ID"]" />
 
@@ -35,36 +39,93 @@
         var columnValue = Model.Record[column];
         var columnType = columnTypes.ContainsKey(column) ? columnTypes[column] : "string"; // Default to string if not found
         var columnLength = columnLengths.ContainsKey(column) ? columnLengths[column] : 255; // Default length if not found
+        string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1"); // Create formatted column label
 
         <div class="form-group">
 
-            @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+            @if (column.StartsWith("attachment_"))
             {
-                <label for="@column">@column.Replace("ID", "")</label>
+                <br />
+                string columnLabel = formattedColumn.Replace("attachment_", "").Replace("_", " "); // Remove "attachment_" and replace "_" with spaces
+                <label>@columnLabel</label>
             }
             else
             {
-                if (@column == PKColumn)
+                @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                 {
-                    <label for="@column" style="display: none;">@column</label>
+                    <label for="@column">@column.Replace("ID", "")</label>
                 }
                 else
                 {
-                    string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
-                    <label for="@formattedColumn">@formattedColumn</label>
-                }
-            }           
+                    if (@column == PKColumn)
+                    {
+                        <label for="@column" style="display: none;">@column</label>
+                    }
+                    else
+                    {
+                        <label for="@formattedColumn">@formattedColumn</label>
+                    }
+                }           
+            }
 
             @if (editable)
             {
-                <!-- Editable rendering -->
+                @if (column.StartsWith("attachment_"))
+                {
+                    string[] attachmentParts = columnValue?.ToString().Split(';') ?? new string[2];
+                    string attachmentDescription = attachmentParts.Length > 0 ? attachmentParts[0] : "";
+                    string attachmentFilePath = attachmentParts.Length > 1 ? attachmentParts[1] : "";
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label>Description</label>
+                            <input type="text" id="desc_@column" value="@attachmentDescription" class="form-control" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label>Upload @formattedColumn.Replace("attachment_", "").Replace("_", " ")</label>
+                            <input type="file" name="file_@column" id="file_@column" class="form-control" onchange="updateAttachmentField('@column')" />
+                        </div>
+                    </div>
+
+
+                    <!-- ✅ This hidden input ensures only ONE field (attachment_StudentPass) is sent -->
+                    <input type="hidden" name="@column" id="hidden_@column" value="@attachmentDescription;@attachmentFilePath" />
+
+                    @if (!string.IsNullOrEmpty(attachmentFilePath))
+                    {
+                        string fileUrl = attachmentFilePath.StartsWith("Attachments/")
+                        ? Url.Content("~/" + attachmentFilePath)
+                        : Url.Content("~/Attachments/" + attachmentFilePath);
+
+                        <p>Current File: <a href="@fileUrl" target="_blank">@System.IO.Path.GetFileName(attachmentFilePath)</a></p>
+                    }
+
+                }
+                <!-- Editable rendering with onchange event handler -->
                 @if (columnType == "varchar" && columnLength <= 255)
                 {
-                    <input type="text" name="@column" value="@columnValue" class="form-control" />
+                    @if (column.StartsWith("attachment_"))
+                    {
+                        <input type="text" name="@column" style="display: none;" value="@columnValue" class="form-control" />
+
+                    }
+                    else
+                    {
+                        <input type="text" name="@column" value="@columnValue" class="form-control" />
+                    }
                 }
                 else if (columnType == "varchar" && columnLength > 255)
                 {
-                    <textarea name="@column" class="form-control">@columnValue</textarea>
+                    @if (column.StartsWith("attachment_"))
+                    {
+                        <textarea name="@column" class="form-control" style="display: none;">@columnValue</textarea>
+
+                    }
+                    else
+                    {
+                        <textarea name="@column" class="form-control">@columnValue</textarea>
+                    }
                 }
                 else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                 {
@@ -107,14 +168,55 @@
             }
             else
             {
+                @if (column.StartsWith("attachment_"))
+                {
+                    string[] attachmentParts = columnValue?.ToString().Split(';') ?? new string[2];
+                    string attachmentDescription = attachmentParts.Length > 0 ? attachmentParts[0] : "";
+                    string attachmentFilePath = attachmentParts.Length > 1 ? attachmentParts[1] : "";
+
+                    <label>Attachment Description</label>
+                    <input type="text" id="desc_@column" value="@attachmentDescription" class="form-control" />
+
+                    <label>Upload Attachment</label>
+                    <input type="file" name="file_@column" id="file_@column" class="form-control" onchange="updateAttachmentField('@column')" />
+
+                    <!-- ✅ This hidden input ensures only ONE field (attachment_StudentPass) is sent -->
+                    <input type="hidden" name="@column" id="hidden_@column" value="@attachmentDescription;@attachmentFilePath" />
+
+                    @if (!string.IsNullOrEmpty(attachmentFilePath))
+                    {
+                        string fileUrl = attachmentFilePath.StartsWith("Attachments/")
+                        ? Url.Content("~/" + attachmentFilePath)
+                        : Url.Content("~/Attachments/" + attachmentFilePath);
+
+                        <p>Current File: <a href="@fileUrl" target="_blank">@System.IO.Path.GetFileName(attachmentFilePath)</a></p>
+                    }
+                }
+                <!-- Read-only rendering (using readonly attribute for form elements) -->
                 <!-- Read-only rendering (using readonly attribute for form elements) -->
                 @if (columnType == "varchar" && columnLength <= 255)
                 {
-                    <input type="text" name="@column" value="@columnValue" class="form-control" readonly />
+                    @if (column.StartsWith("attachment_"))
+                    {
+                        <input type="text" name="@column" style="display: none;" value="@columnValue" class="form-control" />
+
+                    }
+                    else
+                    {
+                        <input type="text" name="@column" value="@columnValue" class="form-control" />
+                    }
                 }
                 else if (columnType == "varchar" && columnLength > 255)
                 {
-                    <textarea name="@column" class="form-control" readonly>@columnValue</textarea>
+                    @if (column.StartsWith("attachment_"))
+                    {
+                        <textarea name="@column" class="form-control" style="display: none;">@columnValue</textarea>
+
+                    }
+                    else
+                    {
+                        <textarea name="@column" class="form-control">@columnValue</textarea>
+                    }
                 }
                 else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                 {
@@ -159,8 +261,19 @@
     }
 
     <br />
+    @if (ViewBag.DataManagementBreadcrumbY != null)
+    {
+        <a href="@Url.Action("Index", new {
+        tablename = ViewBag.DataManagementBreadcrumbY.Parameters["tablename"],
+        userid = ViewBag.DataManagementBreadcrumbY.Parameters["userid"],
+        PKID = ViewBag.DataManagementBreadcrumbY.Parameters["PKID"],
+        PKColumn = ViewBag.DataManagementBreadcrumbY.Parameters["PKColumn"],
+        pageNumber = ViewBag.DataManagementBreadcrumbY.Parameters["pageNumber"]
+    })" class="text-decoration-none">← Back</a>
+
+    }
     <hr />
-    @if (editable)
+    @if (editable)  
     {
         <!-- Only show Save button if editable -->
         <div class="form-group text-center">
@@ -180,7 +293,7 @@
 <!-- Existing Attachments -->
 <h4>
     Existing Attachments
-    <button type="button" id="toggleExistingAttachments" class="btn btn-link">
+    <button type="button" id="toggleExistingAttachments" class="btn btn-link" style="font-size: 1.2em;">
         <i class="fas fa-chevron-down" id="existingIcon"></i>
     </button>
 </h4>
@@ -215,7 +328,7 @@
 <!-- Add New Attachments -->
 <h4>
     Add New Attachments
-    <button type="button" id="toggleAttachmentForm" class="btn btn-link">
+    <button type="button" id="toggleAttachmentForm" class="btn btn-link" style="font-size: 1.2em;">
         <i class="fas fa-chevron-down" id="toggleIcon"></i>
     </button>
 </h4>
@@ -224,7 +337,6 @@
 <form asp-action="AddAttachments" method="post" enctype="multipart/form-data" id="attachmentForm" style="display: none;">
     <input type="hidden" name="tablename" value="@ViewBag.tablename" />
     <input type="hidden" name="id" value="@Model.Record["ID"]" />
-    <input type="hidden" name="PKID" value="@PKID" />
     <input type="hidden" name="userid" value="@userid" />
     <input type="hidden" name="PKColumn" value="@ViewBag.PKColumn" />
     <input type="hidden" name="PKID" value="@PKID" />
@@ -259,80 +371,115 @@
 <!-- Include Font Awesome -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
 <script>
-    // Toggle Existing Attachments
-    document.getElementById('toggleExistingAttachments').addEventListener('click', function () {
-        var section = document.getElementById('existingAttachments');
-        var icon = document.getElementById('existingIcon');
+        document.addEventListener("DOMContentLoaded", function () {
 
-        if (section.style.display === 'none' || section.style.display === '') {
-            section.style.display = 'block';
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
-        } else {
-            section.style.display = 'none';
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-        }
-    });
+        // Toggle Existing Attachments
+        document.getElementById('toggleExistingAttachments')?.addEventListener('click', function () {
+            var section = document.getElementById('existingAttachments');
+            var icon = document.getElementById('existingIcon');
 
-    // Toggle Add Attachments Form
-    document.getElementById('toggleAttachmentForm').addEventListener('click', function () {
-        var form = document.getElementById('attachmentForm');
-        var icon = document.getElementById('toggleIcon');
-
-        if (form.style.display === 'none') {
-            form.style.display = 'block';
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
-        } else {
-            form.style.display = 'none';
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-        }
-    });
-
-    // Add another attachment dynamically
-    document.getElementById('addAttachmentButton').addEventListener('click', function () {
-        var container = document.getElementById('attachmentContainer');
-
-        // Create new attachment block
-        var attachmentGroup = document.createElement('div');
-        attachmentGroup.classList.add('attachment-group', 'd-flex', 'align-items-center', 'mt-2');
-
-        attachmentGroup.innerHTML = `
-            <div style="flex-grow: 1;">
-                <div class="form-group">
-                    <label for="AttachmentDescription">Attachment Description</label>
-                    <input type="text" name="AttachmentDescriptions" class="form-control" required />
-                </div>
-                <div class="form-group">
-                    <label for="Attachment">Upload Attachment</label>
-                    <input type="file" name="Attachments" class="form-control" required />
-                </div>
-            </div>
-            <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
-                <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
-        `;
-
-        container.appendChild(attachmentGroup);
-
-        // Attach event listener to new remove button
-        attachmentGroup.querySelector('.removeAttachmentButton').addEventListener('click', function () {
-            attachmentGroup.remove();
+            if (section.style.display === 'none' || section.style.display === '') {
+                section.style.display = 'block';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                section.style.display = 'none';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
         });
-    });
 
-    // Initial event listener for existing remove buttons
-    document.querySelectorAll('.removeAttachmentButton').forEach(function (button) {
-        button.addEventListener('click', function () {
-            this.closest('.attachment-group').remove();
+        // Toggle Add Attachments Form
+        document.getElementById('toggleAttachmentForm')?.addEventListener('click', function () {
+            var form = document.getElementById('attachmentForm');
+            var icon = document.getElementById('toggleIcon');
+
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                form.style.display = 'none';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
         });
+
+        // Function to update hidden input field with attachment data
+        function updateAttachmentField(columnName) {
+            let descInput = document.getElementById("desc_" + columnName);
+            let fileInput = document.getElementById("file_" + columnName);
+            let hiddenInput = document.getElementById("hidden_" + columnName);
+
+            let newDescription = descInput.value.trim();
+            let filePath = fileInput.files.length > 0 ? fileInput.files[0].name : "";
+
+            // ✅ Get the existing file path from hidden input
+            let existingValue = hiddenInput.value.split(";");
+            let existingFilePath = existingValue.length > 1 ? existingValue[1].trim() : "";
+
+            // ✅ If no new file is selected, keep only the previous **file path**
+            if (filePath === "") {
+                filePath = existingFilePath;
+            }
+
+            // ✅ Ensure we replace the previous value completely, without appending
+            hiddenInput.value = `${newDescription};${filePath}`;
+            console.log(`📌 Updated Hidden Input: ${hiddenInput.value}`);
+        }
+
+        // Ensure the description change updates the hidden field
+        document.querySelectorAll("[id^=desc_]").forEach(descField => {
+            descField.addEventListener("input", function () {
+                let columnName = this.id.replace("desc_", "");
+                updateAttachmentField(columnName);
+            });
+        });
+
+        // Add another attachment dynamically
+        document.getElementById('addAttachmentButton').addEventListener('click', function () {
+            var container = document.getElementById('attachmentContainer');
+
+            // Generate a unique ID for each new field
+            var uniqueId = new Date().getTime();
+
+            var attachmentGroup = document.createElement('div');
+            attachmentGroup.classList.add('attachment-group', 'd-flex', 'align-items-center', 'mt-2');
+
+            attachmentGroup.innerHTML = `
+                <div style="flex-grow: 1;">
+                    <div class="form-group">
+                        <label for="desc_${uniqueId}">Attachment Description</label>
+                        <input type="text" id="desc_${uniqueId}" name="AttachmentDescriptions[]" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="file_${uniqueId}">Upload Attachment</label>
+                        <input type="file" id="file_${uniqueId}" name="Attachments[]" class="form-control" required />
+                    </div>
+                </div>
+                <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
+                    <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `;
+
+            container.appendChild(attachmentGroup);
+        });
+
+        // Event delegation for dynamically added remove buttons
+        document.getElementById('attachmentContainer').addEventListener('click', function (e) {
+            if (e.target.closest('.removeAttachmentButton')) {
+                e.target.closest('.attachment-group').remove();
+            }
+        });
+
+        // Confirmation before deleting an attachment
+        function confirmDelete() {
+            return confirm("Are you sure you want to delete this attachment?");
+        }
+
     });
 
-    function confirmDelete() {
-        return confirm("Are you sure you want to delete this attachment?");
-    }
+
 </script>
