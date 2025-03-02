@@ -5,6 +5,7 @@
     var tablename = ViewBag.tablename;
     var PKColumn = ViewBag.PKColumn;
     var tableDescription = ViewBag.tableDescription;
+    var _previousTask = ViewBag.Yourehere;
 }
 
 <partial name="_Sidebar" />
@@ -16,12 +17,18 @@
     <a href="@Url.Action("Create", new { userid = Model.UserId, tablename = Model.TableName})" class="btn btn-primary">Create</a>
 }
 <!-- Data Table -->
-<table class="table table-bordered">
+@* <table class="table table-bordered">
     <thead>
         <tr>
             @foreach (var column in Model.Columns)
             {
                 string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
+
+                // Remove "attachment_" prefix from column header
+                if (column.StartsWith("attachment_"))
+                {
+                    formattedColumn = column.Replace("attachment_", ""); // Remove prefix
+                }
 
                 if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                 {
@@ -39,13 +46,24 @@
                     }
                 }
             }
-            <th>Actions</th>
+            <th class="actions-column">Actions</th>
         </tr>
         <tr>
             @foreach (var column in Model.Columns)
             {
                 <th>
-                    <input type="text" class="form-control column-search" data-column="@column" placeholder="Search..." onkeyup="filterTable()">
+                    @if (column.StartsWith("attachment_"))
+                    {
+                        <select class="form-control column-search" data-column="@column" onchange="filterTable()">
+                            <option value="">All</option>
+                            <option value="true">With Attachment</option>
+                            <option value="false">No Attachment</option>
+                        </select>
+                    }
+                    else
+                    {
+                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search..." onkeyup="filterTable()">
+                    }
                 </th>
             }
             <th></th> <!-- Empty column for actions -->
@@ -57,24 +75,132 @@
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    <td>@row[column]</td>
+                        @if (column.StartsWith("attachment_"))
+                        {
+                        <td class="text-center">
+
+                            @if (row[column] != null && !string.IsNullOrEmpty(row[column]?.ToString()))
+                            {
+                                <span>✅</span>
+                            }
+                        </td>
+
+                        }
+                        else
+                        {
+                            <td>@row[column]</td>
+                        }
+                    
                 }
-                <td>
+                <td class="text-center action-buttons">
                     @if (readwriteaccess == "RW")
                     {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning">Edit</a>
-                        <button type="button" class="btn btn-danger" onclick="confirmDelete(@row["ID"], '@tablename')">Delete</button>
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning btn-sm">Edit</a>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete(@row["ID"], '@tablename')">Delete</button>
                     }
                     @if (readwriteaccess == "R")
                     {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning">View</a>
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning btn-sm">View</a>
                     }
-                    <button class="btn btn-info" onclick="showPopup(event, '@tablename', '@row["ID"]')">More</button>
+                    <button class="btn btn-info btn-sm" onclick="showPopup(event, '@tablename', '@row["ID"]')">More</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table> *@
+
+<!-- Data Table -->
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            @foreach (var column in Model.Columns)
+            {
+                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
+
+                // Remove "attachment_" prefix from column header
+                if (column.StartsWith("attachment_"))
+                {
+                    formattedColumn = column.Replace("attachment_", ""); // Remove prefix
+                }
+
+                if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+                {
+                    <th id="@column">@column.Replace("ID", "")</th>
+                }
+                else
+                {
+                    @if (column == "ID")
+                    {
+                        <th>@column</th>
+                    }
+                    else
+                    {
+                        <th>@formattedColumn</th>
+                    }
+                }
+            }
+            <th class="actions-column">Actions</th>
+        </tr>
+        <tr>
+            @foreach (var column in Model.Columns)
+            {
+                <th>
+                    @if (column.StartsWith("attachment_"))
+                    {
+                        <select class="form-control column-search" data-column="@column" onchange="filterTable()">
+                            <option value="">All</option>
+                            <option value="true">With Attachment</option>
+                            <option value="false">No Attachment</option>
+                        </select>
+                    }
+                    else
+                    {
+                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search..." onkeyup="filterTable()">
+                    }
+                </th>
+            }
+            <th></th> <!-- Empty column for actions -->
+        </tr>
+    </thead>
+    <tbody id="tableBody">
+        @foreach (var row in Model.TableData)
+        {
+            <tr>
+                @foreach (var column in Model.Columns)
+                {
+                    <td data-column="@column" data-description="@row[column]">
+                        @if (column.StartsWith("attachment_"))
+                        {
+                            <div class="text-center">
+                                @if (row[column] != null && !string.IsNullOrEmpty(row[column]?.ToString()))
+                                {
+                                    <span>✅</span>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            @row[column]
+                        }
+                    </td>
+                }
+                <td class="text-center action-buttons">
+                    @if (readwriteaccess == "RW")
+                    {
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid, pageNumber = ViewBag.pageNumber })" class="btn btn-warning btn-sm">Edit</a>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete(@row["ID"], '@tablename')">Delete</button>
+                    }
+                    @if (readwriteaccess == "R")
+                    {
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid, pageNumber = ViewBag.pageNumber })" class="btn btn-warning btn-sm">View</a>
+                    }
+                    <button class="btn btn-info btn-sm" onclick="showPopup(event, '@tablename', '@row["ID"]')">More</button>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+
 
 <!-- Pagination Controls (Bootstrap Pagination) -->
 <div class="d-flex justify-content-center mt-3">
@@ -283,27 +409,55 @@
         });
 
         function filterTable() {
-            var inputs = document.querySelectorAll('.column-search');
-            var tableRows = document.querySelectorAll("#tableBody tr");
+            console.log("🔍 Filtering table..."); // ✅ Debugging log
+
+            let inputs = document.querySelectorAll('.column-search'); // Get all search input fields
+            let tableRows = document.querySelectorAll("#tableBody tr"); // Get all table rows
 
             tableRows.forEach(row => {
-                let showRow = true;
+                let showRow = true; // Default to showing the row
 
                 inputs.forEach(input => {
-                    let columnName = input.getAttribute('data-column');
-                    let searchValue = input.value.toLowerCase();
-                    let cell = row.querySelector(`td:nth-child(${Array.from(inputs).indexOf(input) + 1})`);
+                    let columnName = input.getAttribute('data-column'); // Get column name
+                    let searchValue = input.value.trim().toLowerCase(); // Get search text
 
-                    if (cell && searchValue) {
-                        if (!cell.innerText.toLowerCase().includes(searchValue)) {
-                            showRow = false;
+                    let cell = row.querySelector(`td[data-column="${columnName}"]`); // Find correct column
+
+                    if (cell) {
+                        let cellText = cell.innerText.trim().toLowerCase();
+
+                        // 🔹 Handle attachment search via dropdown (Has attachment / No attachment)
+                        if (columnName.startsWith("attachment_")) {
+                            let hasAttachment = cell.querySelector("span") !== null; // ✅ Check if it has ✅ icon
+
+                            if ((searchValue === "true" && !hasAttachment) || (searchValue === "false" && hasAttachment)) {
+                                showRow = false;
+                            }
+                        }
+                        else if (searchValue) {
+                            // 🔹 Normal text search
+                            if (!cellText.includes(searchValue)) {
+                                showRow = false;
+                            }
                         }
                     }
                 });
 
-                row.style.display = showRow ? "" : "none";
+                row.style.display = showRow ? "" : "none"; // ✅ Show or hide row
             });
         }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Attach event listeners properly
+            document.querySelectorAll('.column-search').forEach(input => {
+                input.addEventListener("keyup", filterTable); // Text inputs
+                input.addEventListener("change", filterTable); // Select dropdowns
+            });
+
+            console.log("✅ Search filter initialized!"); // ✅ Debugging log
+        });
+
+
 
         function confirmDelete(recordId, tableName) {
             $('#deleteModal').modal('show');

@@ -87,7 +87,7 @@ body {
         /* Add a consistent hover effect for all items */
         .nav-item .nav-link:hover,
         .sub-menu .nav-link:hover {
-            background: rgba(0, 0, 0, 0.1); /* Slightly darker grey */
+            background: rgba(0, 0, 0, 0.1); /* Slightly darker grey */  
             color: black;
         }
 
@@ -107,5 +107,31 @@ body {
     /* Rotate arrow when expanded */
     .toggle-arrow.open {
         transform: rotate(180deg);
+    }
+
+
+.text-center {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.actions-column {
+    width: 180px; /* Fixed width for the action column */
+    min-width: 180px; /* Ensures it never shrinks */
+    max-width: 180px; /* Prevents expansion */
+    text-align: center;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px; /* Space between buttons */
+    flex-wrap: nowrap; /* Prevents buttons from wrapping */
+}
+
+    .action-buttons .btn {
+        padding: 5px 10px; /* Makes buttons more compact */
+        white-space: nowrap; /* Prevents text from wrapping */
     }
 

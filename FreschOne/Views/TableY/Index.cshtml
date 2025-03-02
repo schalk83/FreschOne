@@ -7,7 +7,6 @@
     var PKColumn = ViewBag.PKColumn;
     var tableDescription = ViewBag.tableDescription;
 }
-
 <partial name="_Sidebar" />
 
 <h1>Data for @tableDescription</h1>
@@ -16,7 +15,6 @@
 {
     <a href="@Url.Action("Create", new { PKID, PKColumn, userid = Model.UserId, tablename = Model.TableName })" class="btn btn-primary">Create</a>
 }
-
 <!-- Data Table -->
 <table class="table table-bordered">
     <thead>
@@ -24,13 +22,33 @@
             @foreach (var column in Model.Columns)
             {
                 string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
+                // Remove "attachment_" prefix from column header
+
+                if (column.StartsWith("attachment_"))
+                {
+                    formattedColumn = column.Replace("attachment_", ""); // Remove prefix
+                }
                 if (column == PKColumn)
                 {
                     <th style="display: none;" data-column="@column">@column</th>
                 }
                 else
                 {
-                    <th data-column="@column">@formattedColumn</th>
+                    if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+                    {
+                        <th id="@column">@column.Replace("ID", "")</th>
+                    }
+                    else
+                    {
+                        @if (column == "ID")
+                        {
+                            <th>@column</th>
+                        }
+                        else
+                        {
+                            <th>@formattedColumn</th>
+                        }
+                    }
                 }
             }
             <th>Actions</th>
@@ -45,7 +63,18 @@
                 else
                 {
                     <th>
-                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search..." onkeyup="filterTable()">
+                        @if (column.StartsWith("attachment_"))
+                        {
+                            <select class="form-control column-search" data-column="@column" onchange="filterTable()">
+                                <option value="">All</option>
+                                <option value="true">With Attachment</option>
+                                <option value="false">No Attachment</option>
+                            </select>
+                        }
+                        else
+                        {
+                            <input type="text" class="form-control column-search" data-column="@column" placeholder="Search..." onkeyup="filterTable()">
+                        }
                     </th>
                 }
             }
@@ -64,10 +93,26 @@
                     }
                     else
                     {
-                        <td data-column="@column">@row[column]</td>
+
+                        <td data-column="@column" data-description="@row[column]">
+                            @if (column.StartsWith("attachment_"))
+                            {
+                                <div class="text-center">
+                                    @if (row[column] != null && !string.IsNullOrEmpty(row[column]?.ToString()))
+                                    {
+                                        <span>✅</span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                @row[column]
+                            }
+                        </td>
+                        
                     }
                 }
-                <td>
+                <td class="text-center action-buttons">
                     @if (readwriteaccess == "RW")
                     {
                         <a href="@Url.Action("Edit", new { id = row["ID"], PKID, PKColumn, tablename, userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning">Edit</a>
@@ -82,26 +127,6 @@
         }
     </tbody>
 </table>
-
-
-<!-- Delete Confirmation Modal -->
-<div class="modal" tabindex="-1" id="deleteModal" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Confirm Deactivation</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to deactivate this record? This action cannot be undone.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirm</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Pagination Controls (Bootstrap Pagination) -->
 <div class="d-flex justify-content-center mt-3">
@@ -145,6 +170,25 @@
             }
         </ul>
     </nav>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" tabindex="-1" id="deleteModal" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Deactivation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to deactivate this record? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirm</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 
@@ -298,27 +342,54 @@
         });
 
         function filterTable() {
-            var inputs = document.querySelectorAll('.column-search');
-            var tableRows = document.querySelectorAll("#tableBody tr");
+             console.log("🔍 Filtering table..."); // ✅ Debugging log
 
-            tableRows.forEach(row => {
-                let showRow = true;
+             let inputs = document.querySelectorAll('.column-search'); // Get all search input fields
+             let tableRows = document.querySelectorAll("#tableBody tr"); // Get all table rows
 
-                inputs.forEach(input => {
-                    let columnName = input.getAttribute('data-column');
-                    let searchValue = input.value.trim().toLowerCase();
-                    let cell = row.querySelector(`td[data-column='${columnName}']`);
+             tableRows.forEach(row => {
+                 let showRow = true; // Default to showing the row
 
-                    if (cell && searchValue) {
-                        if (!cell.innerText.trim().toLowerCase().includes(searchValue)) {
-                            showRow = false;
-                        }
-                    }
-                });
+                 inputs.forEach(input => {
+                     let columnName = input.getAttribute('data-column'); // Get column name
+                     let searchValue = input.value.trim().toLowerCase(); // Get search text
 
-                row.style.display = showRow ? "" : "none";
-            });
-        }
+                     let cell = row.querySelector(`td[data-column="${columnName}"]`); // Find correct column
+
+                     if (cell) {
+                         let cellText = cell.innerText.trim().toLowerCase();
+
+                         // 🔹 Handle attachment search via dropdown (Has attachment / No attachment)
+                         if (columnName.startsWith("attachment_")) {
+                             let hasAttachment = cell.querySelector("span") !== null; // ✅ Check if it has ✅ icon
+
+                             if ((searchValue === "true" && !hasAttachment) || (searchValue === "false" && hasAttachment)) {
+                                 showRow = false;
+                             }
+                         }
+                         else if (searchValue) {
+                             // 🔹 Normal text search
+                             if (!cellText.includes(searchValue)) {
+                                 showRow = false;
+                             }
+                         }
+                     }
+                 });
+
+                 row.style.display = showRow ? "" : "none"; // ✅ Show or hide row
+             });
+         }
+
+         document.addEventListener("DOMContentLoaded", function () {
+             // Attach event listeners properly
+             document.querySelectorAll('.column-search').forEach(input => {
+                 input.addEventListener("keyup", filterTable); // Text inputs
+                 input.addEventListener("change", filterTable); // Select dropdowns
+             });
+
+             console.log("✅ Search filter initialized!"); // ✅ Debugging log
+         });
+
 
         function confirmDelete(recordId, tableName) {
             $('#deleteModal').modal('show');

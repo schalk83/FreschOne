@@ -4,6 +4,8 @@ using FreschOne.Models;
 using System.Collections.Generic;
 using System.Data;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Newtonsoft.Json;
 
 namespace FreschOne.Controllers
 {
@@ -13,6 +15,22 @@ namespace FreschOne.Controllers
 
         public IActionResult Index(int userid, int PKID, string PKColumn, string tablename,  int pageNumber = 1, string searchText = "")
         {
+            // Set the breadcrumb for tracking
+            TempData["DataManagementBreadcrumbY"] = JsonConvert.SerializeObject(new DataManagementBreadcrumbY
+            {
+                PreviousScreen = "Index",
+                Parameters = new Dictionary<string, string>
+                {
+                    { "tablename", tablename },
+                    { "userid", userid.ToString() },
+                    { "PKID" , PKID.ToString() },
+                    { "PKColumn", PKColumn.ToString() },
+                    { "pageNumber", pageNumber.ToString() }
+                }
+            });
+
+            TempData.Keep("DataManagementBreadcrumbY");
+
             EnsureAuditFieldsExist(tablename);
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
@@ -241,8 +259,80 @@ namespace FreschOne.Controllers
             return foreignKeys;
         }
 
+        private string GetForeignKeyDescription(string tableName, object foreignKeyValue)
+        {
+            string description = string.Empty;
+            string query = $"SELECT Description FROM {tableName} WHERE ID = @Id";
+
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                using var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@Id", foreignKeyValue);
+                description = command.ExecuteScalar()?.ToString();
+            }
+
+            return description;
+        }
+
+
+        private Dictionary<string, object> GetRecordById(string tablename, int id)
+        {
+            var record = new Dictionary<string, object>();
+            string query = $"SELECT * FROM {tablename} WHERE ID = @Id";
+
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                using var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@Id", id);
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
+                {
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        record[reader.GetName(i)] = reader[i];
+                    }
+                }
+            }
+
+            return record;
+        }
+
+        private List<SelectListItem> GetForeignKeyOptions(string tableName)
+        {
+            var options = new List<SelectListItem>();
+            string query = $"SELECT ID, Description FROM {tableName}";
+
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                using var command = new SqlCommand(query, connection);
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        options.Add(new SelectListItem
+                        {
+                            Value = reader["ID"].ToString(),
+                            Text = reader["Description"].ToString()
+                        });
+                    }
+                }
+            }
+
+            return options;
+        }
+
         public IActionResult Edit(int id, int PKID, string PKColumn, string tablename, int userid, int pageNumber)
         {
+            if (TempData["DataManagementBreadcrumbY"] != null)
+            {
+                ViewBag.DataManagementBreadcrumbY = JsonConvert.DeserializeObject<DataManagementBreadcrumbX>(TempData["DataManagementBreadcrumbY"].ToString());
+            }
+
+            TempData.Keep("DataManagementBreadcrumbY");
+
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
 
@@ -282,8 +372,8 @@ namespace FreschOne.Controllers
 
             foreach (var foreignKey in foreignKeys)
             {
-                
-                    foreignKeyOptions[foreignKey.ColumnName] = GetForeignKeyOptions(foreignKey.TableName);
+
+                foreignKeyOptions[foreignKey.ColumnName] = GetForeignKeyOptions(foreignKey.TableName);
             }
 
             var tablePrefixes = GetTablePrefixes();
@@ -354,73 +444,6 @@ namespace FreschOne.Controllers
             return View(viewModel);
         }
 
-
-        private string GetForeignKeyDescription(string tableName, object foreignKeyValue)
-        {
-            string description = string.Empty;
-            string query = $"SELECT Description FROM {tableName} WHERE ID = @Id";
-
-            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                connection.Open();
-                using var command = new SqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Id", foreignKeyValue);
-                description = command.ExecuteScalar()?.ToString();
-            }
-
-            return description;
-        }
-
-
-        private Dictionary<string, object> GetRecordById(string tablename, int id)
-        {
-            var record = new Dictionary<string, object>();
-            string query = $"SELECT * FROM {tablename} WHERE ID = @Id";
-
-            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                connection.Open();
-                using var command = new SqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Id", id);
-                using var reader = command.ExecuteReader();
-                if (reader.Read())
-                {
-                    for (int i = 0; i < reader.FieldCount; i++)
-                    {
-                        record[reader.GetName(i)] = reader[i];
-                    }
-                }
-            }
-
-            return record;
-        }
-
-        private List<SelectListItem> GetForeignKeyOptions(string tableName)
-        {
-            var options = new List<SelectListItem>();
-            string query = $"SELECT ID, Description FROM {tableName}";
-
-            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                connection.Open();
-                using var command = new SqlCommand(query, connection);
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        options.Add(new SelectListItem
-                        {
-                            Value = reader["ID"].ToString(),
-                            Text = reader["Description"].ToString()
-                        });
-                    }
-                }
-            }
-
-            return options;
-        }
-
-
         [HttpPost]
         public IActionResult Update(int id, int PKID, string PKColumn, string tablename, int userid, IFormCollection form, int pageNumber)
         {
@@ -442,6 +465,60 @@ namespace FreschOne.Controllers
                 {
                     updatedValues[key] = DBNull.Value;
                 }
+                else if (key.StartsWith("attachment_"))
+                {
+                    // ✅ Extract the existing values from the database entry
+                    string[] parts = value.Split(';');
+                    string newDescription = parts.Length > 0 ? parts[0].Trim() : ""; // Extract description
+                    string existingFilePath = (parts.Length > 1 ? parts[1].Trim() : "").Split(',')[0]; // Extract ONLY the file path
+
+                    Console.WriteLine($"📌 Processing Attachment: Key={key}, New Desc='{newDescription}', Existing File='{existingFilePath}'");
+
+                    string finalFilePath = existingFilePath; // Default to the existing file path unless a new file is uploaded
+
+                    // ✅ Fetch new file from form input
+                    var file = form.Files["file_" + key];
+
+                    if (file != null && file.Length > 0)
+                    {
+                        var rootPath = Directory.GetCurrentDirectory();
+                        var uploadsFolder = Path.Combine(rootPath, "Attachments", tablename);
+
+                        if (!Directory.Exists(uploadsFolder))
+                        {
+                            Directory.CreateDirectory(uploadsFolder);
+                        }
+
+                        string newFileName = Path.GetFileName(file.FileName);
+                        finalFilePath = Path.Combine("Attachments", tablename, newFileName);
+
+                        using (var stream = new FileStream(Path.Combine(rootPath, finalFilePath), FileMode.Create))
+                        {
+                            file.CopyTo(stream);
+                        }
+
+                        Console.WriteLine($"✅ File '{newFileName}' uploaded successfully to '{finalFilePath}'");
+                    }
+
+                    // ✅ Store NULL if both description & file path are empty
+                    if (string.IsNullOrWhiteSpace(newDescription) && string.IsNullOrWhiteSpace(finalFilePath))
+                    {
+                        updatedValues[key] = DBNull.Value;
+                    }
+                    else
+                    {
+                        updatedValues[key] = $"{newDescription};{finalFilePath}";
+                    }
+
+                    // 🚀 REMOVE any `file_attachment_*` keys to prevent SQL errors
+                    string fileKey = "file_" + key;
+                    if (updatedValues.ContainsKey(fileKey))
+                    {
+                        updatedValues.Remove(fileKey);
+                        Console.WriteLine($"🗑️ Removed invalid key from SQL query: {fileKey}");
+                    }
+                }
+
                 else if (key.ToLower().Contains("is") || key.ToLower().Contains("active") || key.ToLower().EndsWith("flag"))
                 {
                     // Convert to bit (Boolean) - 1 for true, 0 for false
@@ -567,6 +644,13 @@ namespace FreschOne.Controllers
 
         public IActionResult Create(int userid, int PKID, string PKColumn, string tablename) 
         {
+            if (TempData["DataManagementBreadcrumbY"] != null)
+            {
+                ViewBag.DataManagementBreadcrumbY = JsonConvert.DeserializeObject<DataManagementBreadcrumbX>(TempData["DataManagementBreadcrumbY"].ToString());
+            }
+
+            TempData.Keep("DataManagementBreadcrumbY");
+
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
 
@@ -660,15 +744,15 @@ namespace FreschOne.Controllers
 
             foreach (var column in columns)
             {
-                if (formData.TryGetValue(column, out string? value))
+                if (formData.ContainsKey(column))
                 {
                     tableColumns.Add(column);
-                    values.Add(value);
+                    values.Add(formData[column]);
 
                     // Use column name as parameter name
                     string parameterName = $"@{column}";
                     valuePlaceholders.Add(parameterName);
-                    parameters.Add(parameterName, value);
+                    parameters.Add(parameterName, formData[column]);
                 }
             }
 
@@ -834,12 +918,10 @@ namespace FreschOne.Controllers
                 using (var columnCmd = new SqlCommand(columnQuery, connection))
                 {
                     columnCmd.Parameters.AddWithValue("@tableName", tablename);
-                    using (var reader = columnCmd.ExecuteReader())
+                    using var reader = columnCmd.ExecuteReader();
+                    while (reader.Read())
                     {
-                        while (reader.Read())
-                        {
-                            columns.Add(reader["COLUMN_NAME"].ToString());
-                        }
+                        columns.Add(reader["COLUMN_NAME"].ToString());
                     }
                 }
 
@@ -927,7 +1009,7 @@ namespace FreschOne.Controllers
                     connection.Open();
                     using var command = new SqlCommand(query, connection);
                     command.Parameters.AddWithValue("@tablename", tablename);
-                    command.Parameters.AddWithValue("@PKID", PKID);
+                    command.Parameters.AddWithValue("@PKID", id);
                     command.Parameters.AddWithValue("@AttachmentDescription", description);
                     command.Parameters.AddWithValue("@Attachment", filePath);
                     command.Parameters.AddWithValue("@userid", userid);

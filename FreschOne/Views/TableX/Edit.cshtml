@@ -12,13 +12,22 @@
     var relatedTables = (List<Dictionary<string, object>>)ViewBag.RelatedTables;
     var attachments = ViewBag.Attachments as List<Dictionary<string, object>>;
     var pageNumber = ViewBag.pageNumber;
+
 }
 
 <partial name="_Sidebar" />
 
 <h1>Edit @tableDescription</h1>
-
-<form method="post" action="@Url.Action("Update", new { id = Model.Record["ID"], tablename = Model.TableName, userid = userid, pageNumber = pageNumber })">
+@if (ViewBag.DataManagementBreadcrumbX != null)
+{
+    <a href="@Url.Action("Index", new {
+        tablename = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"],
+        userid = ViewBag.DataManagementBreadcrumbX.Parameters["userid"],
+        pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
+    })
+    " class="text-decoration-none">← Back</a>
+}
+<form method="post" enctype="multipart/form-data" action="@Url.Action("Update", new { id = Model.Record["ID"], tablename = Model.TableName, userid = userid, pageNumber = pageNumber })">
     <!-- Include hidden ID field -->
     <input type="hidden" name="ID" value="@Model.Record["ID"]" />
 
@@ -32,7 +41,14 @@
         string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1"); // Create formatted column label
 
         <div class="form-group">
-            @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+
+            @if (column.StartsWith("attachment_"))
+            {
+                <br />
+                string columnLabel = formattedColumn.Replace("attachment_", "").Replace("_", " "); // Remove "attachment_" and replace "_" with spaces
+                <label>@columnLabel</label>
+            }
+            else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
             {
                 <label for="@column">@column.Replace("ID", "")</label>
             }
@@ -43,14 +59,60 @@
 
             @if (editable)
             {
+                @if (column.StartsWith("attachment_"))
+                {
+                    string[] attachmentParts = columnValue?.ToString().Split(';') ?? new string[2];
+                    string attachmentDescription = attachmentParts.Length > 0 ? attachmentParts[0] : "";
+                    string attachmentFilePath = attachmentParts.Length > 1 ? attachmentParts[1] : "";
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label>Description</label>
+                            <input type="text" id="desc_@column" value="@attachmentDescription" class="form-control" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label>Upload @formattedColumn.Replace("attachment_", "").Replace("_", " ")</label>
+                            <input type="file" name="file_@column" id="file_@column" class="form-control" onchange="updateAttachmentField('@column')" />
+                        </div>
+                    </div>
+
+                    <!-- ✅ This hidden input ensures only ONE field (attachment_StudentPass) is sent -->
+                    <input type="hidden" name="@column" id="hidden_@column" value="@attachmentDescription;@attachmentFilePath" />
+
+                    @if (!string.IsNullOrEmpty(attachmentFilePath))
+                    {
+                        string fileUrl = attachmentFilePath.StartsWith("Attachments/")
+                        ? Url.Content("~/" + attachmentFilePath)
+                        : Url.Content("~/Attachments/" + attachmentFilePath);
+
+                        <p>Current File: <a href="@fileUrl" target="_blank">@System.IO.Path.GetFileName(attachmentFilePath)</a></p>
+                    }
+                }
                 <!-- Editable rendering with onchange event handler -->
                 @if (columnType == "varchar" && columnLength <= 255)
                 {
-                    <input type="text" name="@column" value="@columnValue" class="form-control"/>
+                    @if (column.StartsWith("attachment_"))
+                    {
+                        <input type="text" name="@column" style="display: none;" value="@columnValue" class="form-control" />
+
+                    }
+                    else
+                    {
+                        <input type="text" name="@column" value="@columnValue" class="form-control" />
+                    }
                 }
                 else if (columnType == "varchar" && columnLength > 255)
                 {
-                    <textarea name="@column" class="form-control" >@columnValue</textarea>
+                    @if (column.StartsWith("attachment_"))
+                    {
+                        <textarea name="@column" class="form-control" style="display: none;">@columnValue</textarea>
+
+                    }
+                    else
+                    {
+                        <textarea name="@column" class="form-control" >@columnValue</textarea>
+                    }
                 }
                 else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                 {
@@ -89,14 +151,55 @@
             }
             else
             {
+                @if (column.StartsWith("attachment_"))
+                {
+                    string[] attachmentParts = columnValue?.ToString().Split(';') ?? new string[2];
+                    string attachmentDescription = attachmentParts.Length > 0 ? attachmentParts[0] : "";
+                    string attachmentFilePath = attachmentParts.Length > 1 ? attachmentParts[1] : "";
+
+                    <label>Attachment Description</label>
+                    <input type="text" id="desc_@column" value="@attachmentDescription" class="form-control" />
+
+                    <label>Upload Attachment</label>
+                    <input type="file" name="file_@column" id="file_@column" class="form-control" onchange="updateAttachmentField('@column')" />
+
+                    <!-- ✅ This hidden input ensures only ONE field (attachment_StudentPass) is sent -->
+                    <input type="hidden" name="@column" id="hidden_@column" value="@attachmentDescription;@attachmentFilePath" />
+
+                    @if (!string.IsNullOrEmpty(attachmentFilePath))
+                    {
+                        string fileUrl = attachmentFilePath.StartsWith("Attachments/")
+                        ? Url.Content("~/" + attachmentFilePath)
+                        : Url.Content("~/Attachments/" + attachmentFilePath);
+
+                        <p>Current File: <a href="@fileUrl" target="_blank">@System.IO.Path.GetFileName(attachmentFilePath)</a></p>
+                    }
+                }
+
                 <!-- Read-only rendering (using readonly attribute for form elements) -->
                 @if (columnType == "varchar" && columnLength <= 255)
                 {
-                    <input type="text" name="@column" value="@columnValue" class="form-control" readonly />
+                    @if (column.StartsWith("attachment_"))
+                    {
+                        <input type="text" name="@column" style="display: none;" value="@columnValue" class="form-control" />
+
+                    }
+                    else
+                    {
+                        <input type="text" name="@column" value="@columnValue" class="form-control" />
+                    }
                 }
                 else if (columnType == "varchar" && columnLength > 255)
                 {
-                    <textarea name="@column" class="form-control" readonly>@columnValue</textarea>
+                    @if (column.StartsWith("attachment_"))
+                    {
+                        <textarea name="@column" class="form-control" style="display: none;">@columnValue</textarea>
+
+                    }
+                    else
+                    {
+                        <textarea name="@column" class="form-control">@columnValue</textarea>
+                    }
                 }
                 else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                 {
@@ -132,7 +235,16 @@
     }
 
     <br />
+    
     <hr />
+    @if (ViewBag.DataManagementBreadcrumbX != null)
+    {
+        <a href="@Url.Action("Index", new {
+        tablename = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"],
+        userid = ViewBag.DataManagementBreadcrumbX.Parameters["userid"],
+        pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
+    })" class="text-decoration-none">← Back</a>
+    }
     @if (editable)
     {
         <!-- Only show Save button if editable -->
@@ -141,54 +253,8 @@
         </div>
     }
 
-    <!-- Back link styled as a simple hyperlink -->
-    <div class="form-group text-right">
-        <a href="@Url.Action("Index", "TableX", new { userid, tablename, pageNumber })" class="btn btn-link">
-            Back to Previous Screen
-        </a>
-      
-    </div>
-
     <br />
     <hr />
-@*      <h4>Related tables</h4>
-     <div>
-     @foreach (var table in relatedTables)
-     {
-        var childTableName = table["ChildTable"].ToString();
-        var foreignKeyColumn = table["ForeignKey"].ToString();
-        var PKID = @Model.Record["ID"];
-        int pageNumber = 1;
-        string searchText = "";
-
-        <div class="form-group">
-            <button type="button" class="btn back-button"
-                    onclick="window.location.href='@Url.Action("Index", "TableY", new { userid, PKID, PKColumn = foreignKeyColumn, tablename = childTableName, pageNumber, searchText })'">
-                @table["ChildTableDescription"]
-            </button>
-        </div>
-
-        <style>
-            .back-button {
-                width: 100%;
-                background-color: #f8f9fa; /* Light grey background */
-                color: #000; /* Black text */
-                padding: 10px;
-                font-size: 16px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                text-align: center;
-                cursor: pointer;
-                transition: background-color 0.3s ease;
-            }
-
-                .back-button:hover {
-                    background-color: #e2e6ea; /* Slightly darker grey on hover */
-                }
-        </style>
-    }
-    </div> 
-    *@
 </form>
 
 
@@ -298,6 +364,38 @@
             icon.classList.remove('fa-chevron-up');
             icon.classList.add('fa-chevron-down');
         }
+    });
+
+            function updateAttachmentField(columnName) {
+        let descInput = document.getElementById("desc_" + columnName);
+        let fileInput = document.getElementById("file_" + columnName);
+        let hiddenInput = document.getElementById("hidden_" + columnName);
+
+        let newDescription = descInput.value.trim();
+        let filePath = fileInput.files.length > 0 ? fileInput.files[0].name : "";
+
+        // ✅ Get the existing file path from hidden input
+        let existingValue = hiddenInput.value.split(";");
+        let existingFilePath = existingValue.length > 1 ? existingValue[1].trim() : "";
+
+        // ✅ If no new file is selected, keep only the previous **file path**
+        if (filePath === "") {
+            filePath = existingFilePath;
+        }
+
+        // ✅ Ensure we replace the previous value completely, without appending
+        hiddenInput.value = `${newDescription};${filePath}`;
+        console.log(`📌 Updated Hidden Input: ${hiddenInput.value}`);
+    }
+
+    // ✅ Ensure the description change updates the hidden field
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("[id^=desc_]").forEach(descField => {
+            descField.addEventListener("input", function () {
+                let columnName = this.id.replace("desc_", "");
+                updateAttachmentField(columnName);
+            });
+        });
     });
 
     // Add another attachment dynamically
