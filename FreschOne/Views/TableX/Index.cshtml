@@ -12,102 +12,14 @@
 
 <h1>Data for @tableDescription</h1>
 
-@if (readwriteaccess == "RW")
-{
-    <a href="@Url.Action("Create", new { userid = Model.UserId, tablename = Model.TableName})" class="btn btn-primary">Create</a>
-}
-<!-- Data Table -->
-@* <table class="table table-bordered">
-    <thead>
-        <tr>
-            @foreach (var column in Model.Columns)
-            {
-                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
+<div class="d-flex justify-content-between align-items-center mb-2">
+    @if (readwriteaccess == "RW")
+    {
+        <a href="@Url.Action("Create", new { userid = Model.UserId, tablename = Model.TableName})" class="btn btn-primary">Create</a>
+    }
 
-                // Remove "attachment_" prefix from column header
-                if (column.StartsWith("attachment_"))
-                {
-                    formattedColumn = column.Replace("attachment_", ""); // Remove prefix
-                }
-
-                if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
-                {
-                    <th id="@column">@column.Replace("ID", "")</th>
-                }
-                else
-                {
-                    @if (column == "ID")
-                    {
-                        <th>@column</th>
-                    }
-                    else
-                    {
-                        <th>@formattedColumn</th>
-                    }
-                }
-            }
-            <th class="actions-column">Actions</th>
-        </tr>
-        <tr>
-            @foreach (var column in Model.Columns)
-            {
-                <th>
-                    @if (column.StartsWith("attachment_"))
-                    {
-                        <select class="form-control column-search" data-column="@column" onchange="filterTable()">
-                            <option value="">All</option>
-                            <option value="true">With Attachment</option>
-                            <option value="false">No Attachment</option>
-                        </select>
-                    }
-                    else
-                    {
-                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search..." onkeyup="filterTable()">
-                    }
-                </th>
-            }
-            <th></th> <!-- Empty column for actions -->
-        </tr>
-    </thead>
-    <tbody id="tableBody">
-        @foreach (var row in Model.TableData)
-        {
-            <tr>
-                @foreach (var column in Model.Columns)
-                {
-                        @if (column.StartsWith("attachment_"))
-                        {
-                        <td class="text-center">
-
-                            @if (row[column] != null && !string.IsNullOrEmpty(row[column]?.ToString()))
-                            {
-                                <span>✅</span>
-                            }
-                        </td>
-
-                        }
-                        else
-                        {
-                            <td>@row[column]</td>
-                        }
-                    
-                }
-                <td class="text-center action-buttons">
-                    @if (readwriteaccess == "RW")
-                    {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning btn-sm">Edit</a>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete(@row["ID"], '@tablename')">Delete</button>
-                    }
-                    @if (readwriteaccess == "R")
-                    {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning btn-sm">View</a>
-                    }
-                    <button class="btn btn-info btn-sm" onclick="showPopup(event, '@tablename', '@row["ID"]')">More</button>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table> *@
+    <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">+</button>
+</div>
 
 <!-- Data Table -->
 <table class="table table-bordered">
@@ -115,7 +27,7 @@
         <tr>
             @foreach (var column in Model.Columns)
             {
-                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
+                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
 
                 // Remove "attachment_" prefix from column header
                 if (column.StartsWith("attachment_"))
@@ -141,9 +53,15 @@
             }
             <th class="actions-column">Actions</th>
         </tr>
-        <tr>
+        <!-- Toggle Button Row -->
+        
+
+        <!-- Search Inputs Row (Initially Hidden) -->
+        <tr id="searchRow" style="display: none;">
             @foreach (var column in Model.Columns)
             {
+                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+
                 <th>
                     @if (column.StartsWith("attachment_"))
                     {
@@ -155,12 +73,12 @@
                     }
                     else
                     {
-                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search..." onkeyup="filterTable()">
+                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @formattedColumn" onkeyup="filterTable()">
                     }
                 </th>
             }
-            <th></th> <!-- Empty column for actions -->
         </tr>
+
     </thead>
     <tbody id="tableBody">
         @foreach (var row in Model.TableData)
@@ -484,5 +402,18 @@
                 });
             });
         }
+
+        function toggleSearch() {
+                    let searchRow = document.getElementById("searchRow");
+                    let toggleLink = document.getElementById("toggleSearchLink");
+
+                    if (searchRow.style.display === "none") {
+                        searchRow.style.display = "table-row";  // Show search row
+                        toggleLink.innerText = "-"; // Change text
+                    } else {
+                        searchRow.style.display = "none";  // Hide search row
+                        toggleLink.innerText = "+"; // Change text
+                    }
+                }
     </script>
 }
