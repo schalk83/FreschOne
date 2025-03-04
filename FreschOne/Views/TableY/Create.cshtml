@@ -12,7 +12,18 @@
 }
 
 <partial name="_Sidebar" />
+
+@if (ViewBag.DataManagementBreadcrumbX != null)
+{
+    <a href="@Url.Action("Index", "TableX", new {
+        tablename = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"],
+        userid = ViewBag.DataManagementBreadcrumbX.Parameters["userid"],
+        pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
+    })" class="text-decoration-none">← Back to @tablename</a>
+}
+
 <h1>Create New @tableDescription</h1>
+
 @if (ViewBag.DataManagementBreadcrumbY != null)
 {
     <a href="@Url.Action("Index", new {

@@ -9,8 +9,26 @@
 }
 <partial name="_Sidebar" />
 
+@if (ViewBag.DataManagementBreadcrumbX != null)
+{
+    <a href="@Url.Action("Index", "TableX", new {
+        tablename = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"],
+        userid = ViewBag.DataManagementBreadcrumbX.Parameters["userid"],
+        pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
+    })" class="text-decoration-none">← Back to Main</a>
+}
 <h1>Data for @tableDescription</h1>
 
+@if (ViewBag.DataManagementBreadcrumbY != null)
+{
+    <a href="@Url.Action("Index", new {
+        tablename = ViewBag.DataManagementBreadcrumbY.Parameters["tablename"],
+        userid = ViewBag.DataManagementBreadcrumbY.Parameters["userid"],
+        PKID = ViewBag.DataManagementBreadcrumbY.Parameters["PKID"],
+        PKColumn = ViewBag.DataManagementBreadcrumbY.Parameters["PKColumn"],
+        pageNumber = ViewBag.DataManagementBreadcrumbY.Parameters["pageNumber"]
+    })" class="text-decoration-none">← Back</a>
+}
 <div class="d-flex justify-content-between align-items-center mb-2">
     @if (readwriteaccess == "RW")
     {
@@ -19,7 +37,7 @@
         </a>
     }
     
-    <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">+</button>
+    <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">+ Show Search</button>
 </div>
 
 <!-- Data Table -->
@@ -28,40 +46,38 @@
         <tr>
             @foreach (var column in Model.Columns)
             {
-                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1");
-                // Remove "attachment_" prefix from column header
+                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
 
+                // Remove "attachment_" prefix
                 if (column.StartsWith("attachment_"))
                 {
-                    formattedColumn = column.Replace("attachment_", ""); // Remove prefix
+                    formattedColumn = column.Replace("attachment_", "");
                 }
-                if (column == PKColumn)
+
+                @if (column == PKColumn)
                 {
                     <th style="display: none;" data-column="@column">@column</th>
                 }
                 else
                 {
-                    if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
-                    {
-                        <th id="@column">@column.Replace("ID", "")</th>
-                    }
-                    else
-                    {
-                        @if (column == "ID")
+                    <th>
+                        @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                         {
-                            <th>@column</th>
+                            @column.Replace("ID", "")
+                        }
+                        else if (column == "ID")
+                        {
+                            @column
                         }
                         else
                         {
-                            <th>@formattedColumn</th>
+                            @formattedColumn
                         }
-                    }
+                    </th>
                 }
             }
             <th>Actions</th>
         </tr>
-
-      
 
         <!-- Search Inputs Row (Initially Hidden) -->
         <tr id="searchRow" style="display: none;">
@@ -69,7 +85,7 @@
             {
                 string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
 
-                if (column == PKColumn)
+                @if (column == PKColumn)
                 {
                     <th style="display: none;"></th>
                 }
@@ -86,28 +102,30 @@
                         }
                         else
                         {
-                            <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @formattedColumn" onkeyup="filterTable()">
+                            <input type="text" class="form-control column-search"
+                                   data-column="@column"
+                                   placeholder="Search @formattedColumn"
+                                   onkeyup="filterTable()">
                         }
                     </th>
                 }
             }
             <th></th> <!-- Empty column for actions -->
         </tr>
-
     </thead>
+
     <tbody id="tableBody">
         @foreach (var row in Model.TableData)
         {
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    if (column == PKColumn)
+                    @if (column == PKColumn)
                     {
                         <td style="display: none;" data-column="@column">@row[column]</td>
                     }
                     else
                     {
-
                         <td data-column="@column" data-description="@row[column]">
                             @if (column.StartsWith("attachment_"))
                             {
@@ -123,24 +141,26 @@
                                 @row[column]
                             }
                         </td>
-                        
                     }
                 }
                 <td class="text-center action-buttons">
                     @if (readwriteaccess == "RW")
                     {
-                        <a href="@Url.Action("Edit", new { id = row["ID"], PKID, PKColumn, tablename, userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning">Edit</a>
+                        <a href="@Url.Action("Edit", new { id = row["ID"], PKID, PKColumn, tablename, userid, pageNumber = ViewBag.pageNumber })"
+                           class="btn btn-warning">Edit</a>
                         <button type="button" class="btn btn-danger" onclick="confirmDelete(@row["ID"], '@tablename')">Delete</button>
                     }
                     @if (readwriteaccess == "R")
                     {
-                        <a href="@Url.Action("Edit", new { id = row["ID"], PKID, PKColumn, tablename, userid,pageNumber = ViewBag.pageNumber })" class="btn btn-warning">View</a>
+                        <a href="@Url.Action("Edit", new { id = row["ID"], PKID, PKColumn, tablename, userid, pageNumber = ViewBag.pageNumber })"
+                           class="btn btn-warning">View</a>
                     }
                 </td>
             </tr>
         }
     </tbody>
 </table>
+
 
 <!-- Pagination Controls (Bootstrap Pagination) -->
 <div class="d-flex justify-content-center mt-3">
@@ -439,7 +459,7 @@
 
         function toggleSearch() {
                     let searchRow = document.getElementById("searchRow");
-                    let toggleLink = document.getElementById("toggleSearchLink");
+                    let toggleLink = document.getElementById("toggleSearchBtn");
 
                     if (searchRow.style.display === "none") {
                         searchRow.style.display = "table-row";  // Show search row
@@ -449,7 +469,6 @@
                         toggleLink.innerText = "+ Show Search"; // Change text
                     }
                 }
-
 
 
     </script>

@@ -135,3 +135,24 @@ body {
         white-space: nowrap; /* Prevents text from wrapping */
     }
 
+/* Make table layout fixed */
+#dataTable {
+    table-layout: fixed;
+    width: 100%;
+}
+
+    /* Ensure columns have a fixed width */
+    #dataTable th,
+    #dataTable td {
+        min-width: 120px; /* Adjust based on content */
+        max-width: 200px; /* Prevent expansion */
+        white-space: nowrap; /* Prevent text wrapping */
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+/* Ensure search inputs fit within columns */
+#searchRow th select,
+#searchRow th input {
+    width: 100%;
+}

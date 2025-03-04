@@ -17,7 +17,6 @@
 
 <partial name="_Sidebar" />
 
-<h1>Edit @tableDescription</h1>
 @if (ViewBag.DataManagementBreadcrumbX != null)
 {
     <a href="@Url.Action("Index", new {
@@ -25,8 +24,10 @@
         userid = ViewBag.DataManagementBreadcrumbX.Parameters["userid"],
         pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
     })
-    " class="text-decoration-none">← Back</a>
+        " class="text-decoration-none">← Back</a>
 }
+<h1>Edit @tableDescription</h1>
+
 <form method="post" enctype="multipart/form-data" action="@Url.Action("Update", new { id = Model.Record["ID"], tablename = Model.TableName, userid = userid, pageNumber = pageNumber })">
     <!-- Include hidden ID field -->
     <input type="hidden" name="ID" value="@Model.Record["ID"]" />
