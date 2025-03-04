@@ -15,16 +15,16 @@
 
 <partial name="_Sidebar" />
 
-<h1>Create New @tableDescription</h1>
 @if (ViewBag.DataManagementBreadcrumbX != null)
 {
     <a href="@Url.Action("Index", new {
         tablename = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"],
         userid = ViewBag.DataManagementBreadcrumbX.Parameters["userid"],
         pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
-    })
-        " class="text-decoration-none">← Back</a>
+    })" class="text-decoration-none">← Back</a>
 }
+<h1>Create New @tableDescription</h1>
+
 
 <!-- Main Form for Creating Record and Attachments -->
 <form method="post" action="@Url.Action("Create", new { userid = userid, PKColumn = PKColumn, tablename = Model.TableName })" enctype="multipart/form-data" id="createRecordForm">

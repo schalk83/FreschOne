@@ -18,43 +18,43 @@
         <a href="@Url.Action("Create", new { userid = Model.UserId, tablename = Model.TableName})" class="btn btn-primary">Create</a>
     }
 
-    <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">+</button>
+    <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">+ Show Search</button>
 </div>
 
 <!-- Data Table -->
-<table class="table table-bordered">
+<table class="table table-bordered" id="dataTable">
     <thead>
         <tr>
             @foreach (var column in Model.Columns)
             {
                 string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
 
-                // Remove "attachment_" prefix from column header
-                if (column.StartsWith("attachment_"))
-                {
-                    formattedColumn = column.Replace("attachment_", ""); // Remove prefix
-                }
-
-                if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
-                {
-                    <th id="@column">@column.Replace("ID", "")</th>
-                }
-                else
-                {
-                    @if (column == "ID")
+                <th class="fixed-width">
+                    @if (column.StartsWith("attachment_"))
                     {
-                        <th>@column</th>
+                        formattedColumn = column.Replace("attachment_", ""); // Remove prefix
+                    }
+
+                    @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+                    {
+                        @column.Replace("ID", "")
                     }
                     else
                     {
-                        <th>@formattedColumn</th>
+                        @if (column == "ID")
+                        {
+                            @column
+                        }
+                        else
+                        {
+                            @formattedColumn
+                        }
+
                     }
-                }
+                </th>
             }
             <th class="actions-column">Actions</th>
         </tr>
-        <!-- Toggle Button Row -->
-        
 
         <!-- Search Inputs Row (Initially Hidden) -->
         <tr id="searchRow" style="display: none;">
@@ -62,10 +62,10 @@
             {
                 string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
 
-                <th>
+                <th class="fixed-width">
                     @if (column.StartsWith("attachment_"))
                     {
-                        <select class="form-control column-search" data-column="@column" onchange="filterTable()">
+                        <select class="form-control column-search" data-column="@column" onchange="filterTable()" style="width: 100%;">
                             <option value="">All</option>
                             <option value="true">With Attachment</option>
                             <option value="false">No Attachment</option>
@@ -73,12 +73,11 @@
                     }
                     else
                     {
-                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @formattedColumn" onkeyup="filterTable()">
+                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @formattedColumn" onkeyup="filterTable()" style="width: 100%;">
                     }
                 </th>
             }
         </tr>
-
     </thead>
     <tbody id="tableBody">
         @foreach (var row in Model.TableData)
@@ -86,7 +85,7 @@
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    <td data-column="@column" data-description="@row[column]">
+                    <td class="fixed-width" data-column="@column" data-description="@row[column]">
                         @if (column.StartsWith("attachment_"))
                         {
                             <div class="text-center">
@@ -118,6 +117,7 @@
         }
     </tbody>
 </table>
+
 
 
 <!-- Pagination Controls (Bootstrap Pagination) -->
@@ -405,14 +405,14 @@
 
         function toggleSearch() {
                     let searchRow = document.getElementById("searchRow");
-                    let toggleLink = document.getElementById("toggleSearchLink");
+                    let toggleLink = document.getElementById("toggleSearchBtn");
 
                     if (searchRow.style.display === "none") {
                         searchRow.style.display = "table-row";  // Show search row
-                        toggleLink.innerText = "-"; // Change text
+                        toggleLink.innerText = "- Hide Search"; // Change text
                     } else {
                         searchRow.style.display = "none";  // Hide search row
-                        toggleLink.innerText = "+"; // Change text
+                        toggleLink.innerText = "+ Show Search"; // Change text
                     }
                 }
     </script>

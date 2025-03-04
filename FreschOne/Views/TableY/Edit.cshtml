@@ -16,7 +16,16 @@
 
 <partial name="_Sidebar" />
 
+@if (ViewBag.DataManagementBreadcrumbX != null)
+{
+    <a href="@Url.Action("Index", "TableX", new {
+        tablename = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"],
+        userid = ViewBag.DataManagementBreadcrumbX.Parameters["userid"],
+        pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
+    })" class="text-decoration-none">← Back to @tablename</a>
+}
 <h1>Edit @tableDescription</h1>
+
 @if (ViewBag.DataManagementBreadcrumbY != null)
 {
     <a href="@Url.Action("Index", new {
@@ -280,13 +289,6 @@
             <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>
     }
-
-    <!-- Back link styled as a simple hyperlink -->
-    <div class="form-group text-right">
-        <a href="@Url.Action("Index", "TableY", new { userid, PKID, PKColumn, tablename,pageNumber })" class="btn btn-link">
-            Back to Previous Screen
-        </a>
-    </div>
 
 </form>
 

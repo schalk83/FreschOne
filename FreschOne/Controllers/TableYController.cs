@@ -15,6 +15,7 @@ namespace FreschOne.Controllers
 
         public IActionResult Index(int userid, int PKID, string PKColumn, string tablename,  int pageNumber = 1, string searchText = "")
         {
+
             // Set the breadcrumb for tracking
             TempData["DataManagementBreadcrumbY"] = JsonConvert.SerializeObject(new DataManagementBreadcrumbY
             {
@@ -30,6 +31,13 @@ namespace FreschOne.Controllers
             });
 
             TempData.Keep("DataManagementBreadcrumbY");
+
+            if (TempData["DataManagementBreadcrumbX"] != null)
+            {
+                ViewBag.DataManagementBreadcrumbX = JsonConvert.DeserializeObject<DataManagementBreadcrumbX>(TempData["DataManagementBreadcrumbX"].ToString());
+            }
+
+            TempData.Keep("DataManagementBreadcrumbX");
 
             EnsureAuditFieldsExist(tablename);
             SetUserAccess(userid);
@@ -326,6 +334,16 @@ namespace FreschOne.Controllers
 
         public IActionResult Edit(int id, int PKID, string PKColumn, string tablename, int userid, int pageNumber)
         {
+
+            TempData.Keep("DataManagementBreadcrumbY");
+
+            if (TempData["DataManagementBreadcrumbX"] != null)
+            {
+                ViewBag.DataManagementBreadcrumbX = JsonConvert.DeserializeObject<DataManagementBreadcrumbX>(TempData["DataManagementBreadcrumbX"].ToString());
+            }
+
+            TempData.Keep("DataManagementBreadcrumbX");
+
             if (TempData["DataManagementBreadcrumbY"] != null)
             {
                 ViewBag.DataManagementBreadcrumbY = JsonConvert.DeserializeObject<DataManagementBreadcrumbX>(TempData["DataManagementBreadcrumbY"].ToString());
@@ -644,6 +662,15 @@ namespace FreschOne.Controllers
 
         public IActionResult Create(int userid, int PKID, string PKColumn, string tablename) 
         {
+            TempData.Keep("DataManagementBreadcrumbY");
+
+            if (TempData["DataManagementBreadcrumbX"] != null)
+            {
+                ViewBag.DataManagementBreadcrumbX = JsonConvert.DeserializeObject<DataManagementBreadcrumbX>(TempData["DataManagementBreadcrumbX"].ToString());
+            }
+
+            TempData.Keep("DataManagementBreadcrumbX");
+
             if (TempData["DataManagementBreadcrumbY"] != null)
             {
                 ViewBag.DataManagementBreadcrumbY = JsonConvert.DeserializeObject<DataManagementBreadcrumbX>(TempData["DataManagementBreadcrumbY"].ToString());
