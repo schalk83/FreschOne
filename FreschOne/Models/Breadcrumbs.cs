@@ -4,10 +4,14 @@
     {
         public string PreviousScreen { get; set; }
         public Dictionary<string, string> Parameters { get; set; }
+        public string Description { get; set; }
+
     }
     public class DataManagementBreadcrumbY
     {
         public string PreviousScreen { get; set; }
         public Dictionary<string, string> Parameters { get; set; }
+        public string Description { get; set; }
+        
     }
 }

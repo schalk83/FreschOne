@@ -16,21 +16,6 @@ namespace FreschOne.Controllers
         public IActionResult Index(int userid, string tablename, int pageNumber = 1, string searchText = "")
         {
 
-            // Set the breadcrumb for tracking
-            TempData["DataManagementBreadcrumbX"] = JsonConvert.SerializeObject(new DataManagementBreadcrumbX
-            {
-                PreviousScreen = "Index",
-                Parameters = new Dictionary<string, string>
-                {
-                    { "tablename", tablename },
-                    { "userid", userid.ToString() },
-                    { "pageNumber", pageNumber.ToString() }
-                }
-            });
-
-            TempData.Keep("DataManagementBreadcrumbX");
-
-
             EnsureAuditFieldsExist(tablename);
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
@@ -86,7 +71,23 @@ namespace FreschOne.Controllers
                     tableDescription = tablename.Replace(prefix.Prefix.ToString(), "");
                 }
             }
-            ViewBag.tableDescription = tableDescription.Replace("_"," "); 
+            ViewBag.tableDescription = tableDescription.Replace("_"," ");
+
+            // Set the breadcrumb for tracking
+            TempData["DataManagementBreadcrumbX"] = JsonConvert.SerializeObject(new DataManagementBreadcrumbX
+            {
+                PreviousScreen = "Index",
+                Parameters = new Dictionary<string, string>
+                {
+                    { "tablename", tablename },
+                    { "description",tableDescription.Replace("_"," ")},
+                    { "userid", userid.ToString() },
+                    { "pageNumber", pageNumber.ToString() }
+                }
+            });
+
+            TempData.Keep("DataManagementBreadcrumbX");
+
 
             var viewModel = new TableViewModel
             {
@@ -747,9 +748,6 @@ namespace FreschOne.Controllers
             ViewBag.ColumnTypes = columnTypes; // Pass column types to the view
             ViewBag.ColumnLengths = columnLengths; // Pass column lengths to the view
 
-
-
-
             // Create the view model for TableCreateViewModel
             var viewModel = new TableCreateViewModel
             {
@@ -764,7 +762,6 @@ namespace FreschOne.Controllers
 
             return View(viewModel);
         }
-
 
 
         [HttpPost]

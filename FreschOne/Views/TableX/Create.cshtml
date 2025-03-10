@@ -10,6 +10,8 @@
     var PKColumn = ViewBag.PKColumn;
     var tableDescription = ViewBag.tableDescription;
     var relatedTables = (List<Dictionary<string, object>>)ViewBag.RelatedTables;
+    var tablenameX = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"];
+
 }
 
 
@@ -151,17 +153,20 @@
         </button>
     </div>
     <br />
+    <hr />
     @if (ViewBag.DataManagementBreadcrumbX != null)
     {
         <a href="@Url.Action("Index", new {
         tablename = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"],
         userid = ViewBag.DataManagementBreadcrumbX.Parameters["userid"],
         pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
-    })" class="btn btn-secondary">Back</a>
+    })  " class="text-decoration-none">← Back</a>
     }
     <div class="form-group text-center">
         <button type="submit" class="btn btn-primary">Create Record</button>
     </div>
+    <br />
+    <hr />
 </form>
 
 <!-- JavaScript -->
