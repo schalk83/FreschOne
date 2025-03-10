@@ -13,9 +13,8 @@ namespace FreschOne.Controllers
     {
         public TableYController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
 
-        public IActionResult Index(int userid, int PKID, string PKColumn, string tablename,  int pageNumber = 1, string searchText = "")
+        public IActionResult Index(int userid, int PKID, string PKColumn, string tablename,  int pageNumber = 1, string searchText = "",string returnURL = "")
         {
-
             // Set the breadcrumb for tracking
             TempData["DataManagementBreadcrumbY"] = JsonConvert.SerializeObject(new DataManagementBreadcrumbY
             {
@@ -332,7 +331,7 @@ namespace FreschOne.Controllers
             return options;
         }
 
-        public IActionResult Edit(int id, int PKID, string PKColumn, string tablename, int userid, int pageNumber)
+        public IActionResult Edit(int id, int PKID, string PKColumn, string tablename, int userid, int pageNumber, string returnURL)
         {
 
             TempData.Keep("DataManagementBreadcrumbY");
@@ -463,7 +462,7 @@ namespace FreschOne.Controllers
         }
 
         [HttpPost]
-        public IActionResult Update(int id, int PKID, string PKColumn, string tablename, int userid, IFormCollection form, int pageNumber)
+        public IActionResult Update(int id, int PKID, string PKColumn, string tablename, int userid, IFormCollection form, int pageNumber, string returnURL)
         {
             // Create a dictionary to store the updated values
             var updatedValues = new Dictionary<string, object>();
@@ -660,9 +659,8 @@ namespace FreschOne.Controllers
 
         }
 
-        public IActionResult Create(int userid, int PKID, string PKColumn, string tablename) 
+        public IActionResult Create(int userid, int PKID, string PKColumn, string tablename, string returnURL) 
         {
-            TempData.Keep("DataManagementBreadcrumbY");
 
             if (TempData["DataManagementBreadcrumbX"] != null)
             {
@@ -677,6 +675,7 @@ namespace FreschOne.Controllers
             }
 
             TempData.Keep("DataManagementBreadcrumbY");
+
 
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
@@ -756,7 +755,7 @@ namespace FreschOne.Controllers
 
 
         [HttpPost]
-        public IActionResult Create(int userid, int PKID, string PKColumn, string tablename, Dictionary<string, string> formData, string[] AttachmentDescriptions, List<IFormFile> Attachments)
+        public IActionResult Create(int userid, int PKID, string PKColumn, string tablename, Dictionary<string, string> formData, string[] AttachmentDescriptions, List<IFormFile> Attachments, string returnURL)
         {
             //SetUserAccess(userid);
 

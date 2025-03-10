@@ -9,6 +9,10 @@
     var PKID = ViewBag.PKID;
     var PKColumn = ViewBag.PKColumn;
     var tableDescription = ViewBag.tableDescription;
+    var tablenameX = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"];
+    var descriptionX = ViewBag.DataManagementBreadcrumbX.Parameters["description"];
+    var returnURL = ViewBag.ReturnURL; 
+
 }
 
 <partial name="_Sidebar" />
@@ -19,12 +23,16 @@
         tablename = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"],
         userid = ViewBag.DataManagementBreadcrumbX.Parameters["userid"],
         pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
-    })" class="text-decoration-none">← Back to @tablename</a>
+    })" class="text-decoration-none">← Back to @descriptionX</a>
 }
 
 <h1>Create New @tableDescription</h1>
 
-@if (ViewBag.DataManagementBreadcrumbY != null)
+@if (!string.IsNullOrEmpty(Context.Request.Query["returnUrl"]))
+{
+    <a href="@Context.Request.Query["returnUrl"]" class="text-decoration-none">← Back</a>
+}
+else if (ViewBag.DataManagementBreadcrumbY != null)
 {
     <a href="@Url.Action("Index", new {
         tablename = ViewBag.DataManagementBreadcrumbY.Parameters["tablename"],
@@ -32,10 +40,10 @@
         PKID = ViewBag.DataManagementBreadcrumbY.Parameters["PKID"],
         PKColumn = ViewBag.DataManagementBreadcrumbY.Parameters["PKColumn"],
         pageNumber = ViewBag.DataManagementBreadcrumbY.Parameters["pageNumber"]
-    })" class="btn btn-secondary">Back</a>
-}
+    })  " class="text-decoration-none">← Back</a>
 
-<form method="post" action="@Url.Action("Create", new { userid = userid, PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName })" enctype="multipart/form-data" id="createRecordForm">
+}
+<form method="post" action="@Url.Action("Create", new { userid = userid, PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName,returnURL })" enctype="multipart/form-data" id="createRecordForm">
     @foreach (var column in Model.Columns)
     {
         if (column == "ID") continue;  // Skip the ID column, it should be auto-generated
@@ -179,7 +187,8 @@
         </button>
     </div>
     <br />
-    @if (ViewBag.DataManagementBreadcrumbY != null)
+    <hr />
+    @* @if (ViewBag.DataManagementBreadcrumbY != null)
     {
         <a href="@Url.Action("Index", new {
         tablename = ViewBag.DataManagementBreadcrumbY.Parameters["tablename"],
@@ -187,12 +196,17 @@
         PKID = ViewBag.DataManagementBreadcrumbY.Parameters["PKID"],
         PKColumn = ViewBag.DataManagementBreadcrumbY.Parameters["PKColumn"],
         pageNumber = ViewBag.DataManagementBreadcrumbY.Parameters["pageNumber"]
-    })" class="btn btn-secondary">Back</a>
+    })  " class="text-decoration-none">← Back</a>
+    } *@
+    @if (!string.IsNullOrEmpty(Context.Request.Query["returnUrl"]))
+    {
+        <a href="@Context.Request.Query["returnUrl"]" class="text-decoration-none">← Back</a>
     }
-
     <div class="form-group text-center">
         <button type="submit" class="btn btn-primary">Create Record</button>
     </div>
+    <br />
+    <hr />
 </form>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>

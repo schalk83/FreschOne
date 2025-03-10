@@ -139,20 +139,198 @@ body {
 #dataTable {
     table-layout: fixed;
     width: 100%;
+    border-collapse: collapse;
 }
 
-    /* Ensure columns have a fixed width */
-    #dataTable th,
-    #dataTable td {
-        min-width: 120px; /* Adjust based on content */
-        max-width: 200px; /* Prevent expansion */
+    /* Ensure the first column (ID column) has a fixed width of 5% */
+    #dataTable th:first-child,
+    #dataTable td:first-child {
+        width: 5%;
+        min-width: 50px; /* Ensure it doesn't become too small */
+        max-width: 5%;
+        text-align: center; /* Center align ID values */
+    }
+
+    /* Ensure the rest of the columns have a reasonable width */
+    #dataTable th:not(:first-child),
+    #dataTable td:not(:first-child) {
+        min-width: 120px; /* Ensure minimum column width */
+        max-width: 220px; /* Prevent overly wide columns */
         white-space: nowrap; /* Prevent text wrapping */
         overflow: hidden;
-        text-overflow: ellipsis;
+        text-overflow: ellipsis; /* Show "..." for overflow text */
+        padding: 4px 6px; /* Reduced padding for compact rows */
+        font-size: 14px; /* Adjust font size if needed */
+        border: 1px solid #ddd;
     }
+
+    /* Reduce row height by decreasing padding */
+    #dataTable th,
+    #dataTable td {
+        padding: 4px 6px; /* Make cells more compact */
+        line-height: 1.2; /* Reduce line height */
+    }
+
+    /* Improve table header styling */
+    #dataTable thead th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+        text-align: left;
+        padding: 6px;
+    }
+
+    /* Alternate row colors for readability */
+    #dataTable tbody tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    /* Hover effect for rows */
+    #dataTable tbody tr:hover {
+        background-color: #e6f7ff;
+    }
+
+    /* Ensure checkboxes and small content align properly */
+    #dataTable td {
+        vertical-align: middle; /* Aligns content to center vertically */
+    }
+
+        /* Reduce button size for compact design */
+        #dataTable td .btn {
+            padding: 3px 5px;
+            font-size: 12px; /* Slightly smaller buttons */
+        }
+
+/* Ensure pagination stays aligned */
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 992px) {
+    #dataTable th:not(:first-child),
+    #dataTable td:not(:first-child) {
+        max-width: 160px;
+        font-size: 13px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    #dataTable {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+        #dataTable th:not(:first-child),
+        #dataTable td:not(:first-child) {
+            max-width: 140px;
+            font-size: 12px;
+        }
+}
+
 
 /* Ensure search inputs fit within columns */
 #searchRow th select,
 #searchRow th input {
     width: 100%;
+    padding: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
 }
+
+/* Improve table responsiveness */
+@media screen and (max-width: 992px) {
+    #dataTable th:not(:first-child),
+    #dataTable td:not(:first-child) {
+        max-width: 160px;
+        font-size: 14px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    #dataTable {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+        #dataTable th:not(:first-child),
+        #dataTable td:not(:first-child) {
+            max-width: 140px;
+            font-size: 13px;
+        }
+}
+
+/* Ensure pagination stays aligned */
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 260px; /* Make popup smaller */
+    max-width: 90%;
+    background-color: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+    border: 1px solid #ddd;
+    padding: 5px; /* Reduce padding */
+    z-index: 1000;
+}
+
+.popup-content table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.popup-content th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    padding: 6px;
+    text-align: left;
+}
+
+    .popup-content th:first-child {
+        width: 80%;
+    }
+
+    .popup-content th:last-child {
+        text-align: right;
+        width: 20%;
+    }
+
+.popup-close {
+    cursor: pointer;
+    font-size: 1.6em; /* Make close button bigger */
+    font-weight: bold;
+    color: #666;
+    margin-left: auto;
+}
+
+    .popup-close:hover {
+        color: #333;
+    }
+
+.popup-content td {
+    padding: 6px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.clickable-row {
+    cursor: pointer;
+}
+
+    .clickable-row:hover {
+        background-color: #f0f0f0;
+    }

@@ -5,7 +5,6 @@
     var tablename = ViewBag.tablename;
     var PKColumn = ViewBag.PKColumn;
     var tableDescription = ViewBag.tableDescription;
-    var _previousTask = ViewBag.Yourehere;
 }
 
 <partial name="_Sidebar" />
@@ -104,12 +103,14 @@
                 <td class="text-center action-buttons">
                     @if (readwriteaccess == "RW")
                     {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid, pageNumber = ViewBag.pageNumber })" class="btn btn-warning btn-sm">Edit</a>
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid, pageNumber = ViewBag.pageNumber })" 
+                            class="btn btn-warning btn-sm">Edit</a>
                         <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete(@row["ID"], '@tablename')">Delete</button>
                     }
                     @if (readwriteaccess == "R")
                     {
-                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid, pageNumber = ViewBag.pageNumber })" class="btn btn-warning btn-sm">View</a>
+                        <a href="@Url.Action("Edit", new { id = @row["ID"], tablename = tablename, userid = userid, pageNumber = ViewBag.pageNumber })" 
+                            class="btn btn-warning btn-sm">View</a>
                     }
                     <button class="btn btn-info btn-sm" onclick="showPopup(event, '@tablename', '@row["ID"]')">More</button>
                 </td>
@@ -184,11 +185,15 @@
 </div>
 
 
-<!-- Popup for Related Tables -->
+@* <!-- Popup for Related Tables -->
 <div id="popup" class="popup" style="display:none;">
     <div class="popup-header">
         <span class="popup-close" onclick="document.getElementById('popup').style.display='none'">&times;</span>
     </div>
+    <div id="popup-content" class="popup-content"></div>
+</div>
+ *@
+<div id="popup" class="popup" style="display:none;">
     <div id="popup-content" class="popup-content"></div>
 </div>
 
@@ -269,64 +274,84 @@
         function showPopup(event, tablename, id) {
             console.log('showPopup called with tablename:', tablename, 'and id:', id); // Debugging line
 
-            // Fetch related tables via AJAX, and pass the userid to check user access
-        fetch(`/TableX/ForeignTables_Index?tablename=${tablename}&userid=${@ViewBag.userid}&isAjax=true`)
-                        .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        let content = '<table class="table table-bordered">';
-                        content += '<thead><tr><th>Related Table</th></tr></thead><tbody>';
+            // Get the current URL before navigating
+            let currentUrl = window.location.href;
 
-                         data.forEach(record => {
-                            const url = `/TableY/Index?&userid=${@ViewBag.userid}&tablename=${record.ChildTable}&PKID=${id}&PKColumn=${record.PKColumn}`;
-                            content += `<tr><td><a href="${url}">${record.ChildTableDescription}</a></td></tr>`;
+            fetch(`/TableX/ForeignTables_Index?tablename=${tablename}&userid=${@ViewBag.userid}&isAjax=true`)
+                .then(response => response.json())
+                .then(data => {
+                    let popup = document.getElementById('popup');
+                    let popupContent = document.getElementById('popup-content');
+
+                    if (data.length > 0) {
+                        let content = `
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Related Table</th>
+                                        <th style="width: 30px; text-align: right;">
+                                            <span class="popup-close" onclick="document.getElementById('popup').style.display='none'">&times;</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+
+                        data.forEach(record => {
+                            const url = `/TableY/Index?&userid=${@ViewBag.userid}&tablename=${record.ChildTable}&PKID=${id}&PKColumn=${record.PKColumn}&returnUrl=${encodeURIComponent(currentUrl)}`;
+
+                            // Make the row clickable
+                            content += `<tr class="clickable-row" data-url="${url}" style="cursor: pointer;">
+                                            <td>${record.ChildTableDescription}</td>
+                                            <td></td> <!-- Empty cell to balance layout -->
+                                        </tr>`;
                         });
 
                         content += '</tbody></table>';
-                        document.getElementById('popup-content').innerHTML = content;
-                        document.getElementById('popup').style.display = 'block';
+                        popupContent.innerHTML = content;
 
-                        // Position the popup near the clicked cell
-                        var popup = document.getElementById('popup');
-                        var rect = event.target.getBoundingClientRect();  // Get the position of the clicked cell
+                        // Attach click event to each row AFTER the content is set
+                        document.querySelectorAll(".clickable-row").forEach(row => {
+                            row.addEventListener("click", function () {
+                                window.location.href = this.getAttribute("data-url");
+                            });
+                        });
 
-                        // Ensure the popup stays within the viewport
-                        var popupWidth = popup.offsetWidth;
-                        var popupHeight = popup.offsetHeight;
-
-                        var left = rect.left + window.scrollX + rect.width / 2 - popupWidth / 2;
-                        var top = rect.top + window.scrollY + rect.height + 10;
-
-                        // Adjust position if the popup is off the right side of the screen
-                        
-                        if (left + popupWidth > window.innerWidth) {
-                            left = window.innerWidth - popupWidth - 10;
-                        }
-
-                        if (top + popupHeight > window.innerHeight) {
-                            top = rect.top + window.scrollY - popupHeight - 10;  // Position above the cell
-                        }
-
-                        popup.style.left = left + 'px';
-                        popup.style.top = top + 'px';
                     } else {
-                        document.getElementById('popup-content').innerHTML = '<p>No related records available.</p>';
-                        document.getElementById('popup').style.display = 'block';
+                        popupContent.innerHTML = '<p>No related records available.</p>';
                     }
+
+                    popup.style.display = 'block';
+
+                    // Position the popup near the clicked button
+                    var rect = event.target.getBoundingClientRect();
+                    var left = rect.left + window.scrollX + rect.width / 2 - popup.offsetWidth / 2;
+                    var top = rect.top + window.scrollY + rect.height + 10;
+
+                    let maxRight = window.innerWidth - popup.offsetWidth - 10;
+                    let maxBottom = window.innerHeight - popup.offsetHeight - 10;
+
+                    if (left < 10) left = 10;
+                    if (left > maxRight) left = maxRight;
+                    if (top > maxBottom) top = rect.top + window.scrollY - popup.offsetHeight - 10;
+
+                    popup.style.left = left + 'px';
+                    popup.style.top = top + 'px';
                 })
                 .catch(error => {
                     console.error('Error fetching related tables:', error);
                 });
         }
 
+
+        // Close popup when clicking outside
         document.addEventListener('click', function (event) {
             var popup = document.getElementById('popup');
-            if (!popup.contains(event.target) && event.target.tagName !== 'TD') {
+            if (popup.style.display === 'block' && !popup.contains(event.target) && event.target.tagName !== 'TD') {
                 popup.style.display = 'none';
             }
         });
-
-        function filterTable() {
+        
+        function filterTable() {            
             console.log("🔍 Filtering table..."); // ✅ Debugging log
 
             let inputs = document.querySelectorAll('.column-search'); // Get all search input fields

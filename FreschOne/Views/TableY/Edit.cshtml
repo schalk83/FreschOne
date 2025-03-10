@@ -12,6 +12,10 @@
     var relatedTables = (List<Dictionary<string, object>>)ViewBag.RelatedTables;
     var attachments = ViewBag.Attachments as List<Dictionary<string, object>>;
     var pageNumber = ViewBag.pageNumber;
+    var tablenameX = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"];
+    var descriptionX = ViewBag.DataManagementBreadcrumbX.Parameters["description"];
+    var returnURL = ViewBag.ReturnURL;
+
 }
 
 <partial name="_Sidebar" />
@@ -22,7 +26,7 @@
         tablename = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"],
         userid = ViewBag.DataManagementBreadcrumbX.Parameters["userid"],
         pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
-    })" class="text-decoration-none">← Back to @tablename</a>
+    })" class="text-decoration-none">← Back to @descriptionX</a>
 }
 <h1>Edit @tableDescription</h1>
 
@@ -34,10 +38,10 @@
         PKID = ViewBag.DataManagementBreadcrumbY.Parameters["PKID"],
         PKColumn = ViewBag.DataManagementBreadcrumbY.Parameters["PKColumn"],
         pageNumber = ViewBag.DataManagementBreadcrumbY.Parameters["pageNumber"]
-    })
-    " class="text-decoration-none">← Back</a>
+    })  " class="text-decoration-none">← Back</a>
+
 }
-<form method="post" enctype="multipart/form-data" action="@Url.Action("Update", new { id = Model.Record["ID"], PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName, userid = userid, pageNumber = pageNumber})">
+<form method="post" enctype="multipart/form-data" action="@Url.Action("Update", new { id = Model.Record["ID"], PKID = PKID, PKColumn = PKColumn, tablename = Model.TableName, userid = userid, pageNumber = pageNumber,returnURL})">
     <!-- Include hidden ID field -->
     <input type="hidden" name="ID" value="@Model.Record["ID"]" />
 
@@ -270,6 +274,8 @@
     }
 
     <br />
+    <hr />
+
     @if (ViewBag.DataManagementBreadcrumbY != null)
     {
         <a href="@Url.Action("Index", new {
@@ -281,7 +287,6 @@
     })" class="text-decoration-none">← Back</a>
 
     }
-    <hr />
     @if (editable)  
     {
         <!-- Only show Save button if editable -->
@@ -289,7 +294,8 @@
             <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>
     }
-
+    <br />
+    <hr />
 </form>
 
 <!-- Existing Attachments -->
