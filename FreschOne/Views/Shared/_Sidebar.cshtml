@@ -31,6 +31,12 @@
                     Data Management New
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" asp-controller="DynamicReport" asp-action="Index"
+                   asp-route-userId="@Context.Request.Query["userId"]">
+                    Reports
+               </a>
+            </li>
 
            @*  <li class="nav-item">
                 <div class="nav-link d-flex justify-content-between align-items-center">

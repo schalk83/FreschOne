@@ -334,3 +334,32 @@ body {
     .clickable-row:hover {
         background-color: #f0f0f0;
     }
+
+.freeform-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+
+.freeform-row {
+    display: flex;
+    gap: 10px;
+}
+
+.freeform-item {
+    flex: 1;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+    .freeform-item.empty {
+        background: transparent;
+        border: none;
+    }
+

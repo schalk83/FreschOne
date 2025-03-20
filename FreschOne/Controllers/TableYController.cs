@@ -167,8 +167,6 @@ namespace FreschOne.Controllers
             }
         }
 
-
-
         private List<Dictionary<string, object>> GetForeignTables(string tablename, List<string> userTables)
         {
             var result = new List<Dictionary<string, object>>();

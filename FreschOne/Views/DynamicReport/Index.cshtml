@@ -1,0 +1,172 @@
+﻿@{
+    ViewData["Title"] = "Dynamic Report Generator";
+}
+
+<h2>Dynamic Report Generator</h2>
+
+<!-- Search Form -->
+<form asp-controller="DynamicReport" asp-action="GenerateReport" method="post">
+    <label for="parentId">Enter Parent ID:</label>
+    <input type="number" id="parentId" name="parentId" required />
+    <button type="submit">Search</button>
+</form>
+
+<hr />
+
+@if (ViewBag.SearchResult != null)
+{
+    var tables = ViewBag.ReportTables as List<FreschOne.Controllers.ReportTable>;
+    var reportData = ViewBag.ReportData as Dictionary<string, Queue<System.Data.DataTable>>;
+    var tableDescriptions = ViewBag.TableDescriptions as Dictionary<string, string>;
+
+    @foreach (var table in tables)
+    {
+        // ✅ Ensure safe lookup for tableDescriptions
+        var tableNameToShow = (tableDescriptions != null && tableDescriptions.ContainsKey(table.TableName))
+            ? tableDescriptions[table.TableName]
+            : table.TableName;
+
+        <div class="report-section">
+            <h3>@tableNameToShow</h3> <!-- ✅ Show cleaned table name -->
+            @if (reportData != null && reportData.ContainsKey(table.TableName) && reportData[table.TableName].Count > 0)
+            {
+                var matchingDataset = reportData[table.TableName].Dequeue(); // ✅ Retrieve and remove the next dataset from the queue
+
+                if (matchingDataset.Rows.Count > 0)
+                {
+                    @if (table.FormType == "T") // ✅ Tabular View
+                    {
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    @foreach (System.Data.DataColumn column in matchingDataset.Columns)
+                                    {
+                                        string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.ColumnName.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+                                        @if (formattedColumn.StartsWith("attachment_"))
+                                        {
+                                            formattedColumn = formattedColumn.Replace("attachment_", ""); // ✅ Remove prefix
+                                        }
+
+                                        <th>@(column.ColumnName == "ID" ? column.ColumnName : formattedColumn)</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (System.Data.DataRow row in matchingDataset.Rows)
+                                {
+                                    <tr>
+                                        @foreach (var item in row.ItemArray)
+                                        {
+                                            <td>@item</td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                    @if (table.FormType == "F") // ✅ Freeform View (Multiple Records)
+                    {
+                        <p>Checking Freeform Data for @table.TableName</p>
+
+                        @foreach (System.Data.DataRow row in matchingDataset.Rows)
+                        {
+                            int totalColumns = matchingDataset.Columns.Count; // ✅ Exclude ID column
+                            int columnCount = table.ColumnCount ?? 2; // ✅ Default to 2 if null
+                            int rowsRequired = (int)Math.Ceiling((double)totalColumns / columnCount);
+
+                            <table class="table freeform-table">
+                                <tbody>
+                                    @for (int rowIdx = 0; rowIdx < rowsRequired; rowIdx++) // ✅ Create rows dynamically
+                                    {
+                                        <tr>
+                                            @for (int colIdx = 0; colIdx < columnCount; colIdx++)
+                                            {
+                                                int dataIndex = (rowIdx * columnCount) + colIdx;
+
+                                                if (dataIndex < totalColumns) // ✅ Ensure within range
+                                                {
+                                                    var columnName = matchingDataset.Columns[dataIndex].ColumnName;
+
+                                                    // ✅ Skip ID column
+                                                    if (columnName == "ID")
+                                                    {
+                                                        continue;
+                                                    }
+
+                                                    // ✅ Format column name (split PascalCase)
+                                                    string formattedColumn = System.Text.RegularExpressions.Regex.Replace(columnName.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+
+                                                    // ✅ Remove "attachment_" prefix
+                                                    if (formattedColumn.StartsWith("attachment_"))
+                                                    {
+                                                        formattedColumn = formattedColumn.Replace("attachment_", "");
+                                                    }
+
+                                                    <td class="freeform-label"><strong>@formattedColumn:</strong></td>
+                                                    <td class="freeform-value">@row[columnName]</td>
+                                                }
+                                                else // ✅ Ensure table structure remains even
+                                                {
+                                                    <td class="freeform-label empty">&nbsp;</td>
+                                                    <td class="freeform-value empty">&nbsp;</td>
+                                                }
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    }
+                }
+                else
+                {
+                    <p>No data found for @table.TableName</p>
+                }
+            }
+        </div>
+    }
+}
+
+<style>
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+        .table th, .table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+    .freeform-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    .freeform-label {
+        font-weight: bold;
+        background: #f7f7f7;
+        width: 30%;
+    }
+
+    .freeform-value {
+        background: #fff;
+    }
+
+    .empty {
+        background: transparent;
+        border: none;
+        visibility: hidden;
+    }
+
+    .report-section {
+        margin-top: 30px;
+        padding: 20px;
+        background: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+</style>
