@@ -121,28 +121,39 @@
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    @if (column == PKColumn)
-                    {
-                        <td style="display: none;" data-column="@column">@row[column]</td>
-                    }
-                    else
-                    {
-                        <td class="fixed-width"data-column="@column" data-description="@row[column]">
-                            @if (column.StartsWith("attachment_"))
-                            {
-                                <div class="text-center">
-                                    @if (row[column] != null && !string.IsNullOrEmpty(row[column]?.ToString()))
+                    <td class="fixed-width" data-column="@column" data-description="@row[column]">
+                        @if (column.StartsWith("attachment_"))
+                        {
+                            <div class="text-center">
+                                @{
+                                    var val = row[column]?.ToString() ?? "";
+                                    if (val.Contains(";"))
                                     {
-                                        <span>✅</span>
+                                        var parts = val.Split(';');
+                                        var desc = parts[0].Trim();
+                                        var url = parts.Length > 1 ? parts[1].Trim().Replace("\\", "/") : "";
+
+                                        if (!string.IsNullOrWhiteSpace(url))
+                                        {
+                                            <a href="@Url.Content("~/" + url)" target="_blank">@desc</a>
+                                        }
+                                        else
+                                        {
+                                            @desc
+                                        }
                                     }
-                                </div>
-                            }
-                            else
-                            {
-                                @row[column]
-                            }
-                        </td>
-                    }
+                                    else
+                                    {
+                                        @val
+                                    }
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            @row[column]
+                        }
+                    </td>
                 }
                 <td class="text-center action-buttons">
                     @if (readwriteaccess == "RW")
