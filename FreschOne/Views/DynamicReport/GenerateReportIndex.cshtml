@@ -1,0 +1,299 @@
+﻿@{
+    ViewData["Title"] = "Dynamic Report Generator";
+    var userID = ViewBag.UserID;
+    var reportName = ViewBag.ReportName;
+}
+<partial name="_Sidebar" />
+
+<h2>@reportName</h2>
+<div class="d-flex justify-content-end mb-2">
+    <button class="btn btn-outline-primary btn-sm me-2" onclick="expandAll()">Expand All</button>
+    <button class="btn btn-outline-secondary btn-sm" onclick="collapseAll()">Collapse All</button>
+</div>
+<hr />
+
+@if (ViewBag.SearchResult != null)
+{
+    var tables = ViewBag.ReportTables as List<FreschOne.Controllers.foReportTable>;
+    var reportData = ViewBag.ReportData as Dictionary<string, Queue<System.Data.DataTable>>;
+
+    <div class="accordion" id="reportAccordion">
+        @for (int i = 0; i < tables.Count; i++)
+        {
+            var table = tables[i];
+            var tableNameToShow = table.TableDescription;
+            var tableId = table.TableName;
+            var headingId = $"heading_{i}";
+            var collapseId = $"collapse_{i}";
+
+            <div class="accordion-item">
+                
+                @* <h2 class="accordion-header" id="@headingId">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="@(i == 0 ? "true" : "false")" aria-controls="@collapseId">
+                        @tableNameToShow
+                    </button>
+                </h2> *@
+
+                <h2 class="accordion-header" id="@headingId">
+                    <button class="accordion-button collapsed fw-bold fs-5" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#@collapseId" aria-expanded="@(i == 0 ? "true" : "false")" aria-controls="@collapseId">
+                        @tableNameToShow
+                    </button>
+                </h2>
+
+
+                <div id="@collapseId" class="accordion-collapse collapse show" aria-labelledby="@headingId" data-bs-parent="#reportAccordion">
+                    <div class="accordion-body">
+                        @if (reportData != null && reportData.ContainsKey(table.TableName) && reportData[table.TableName].Count > 0)
+                        {
+                            var matchingDataset = reportData[table.TableName].Dequeue();
+
+                            if (matchingDataset.Rows.Count > 0)
+                            {
+                                if (table.FormType == "T")
+                                {
+                                    <table class="table sortable">
+                                        <thead>
+                                            <tr>
+                                                @foreach (System.Data.DataColumn column in matchingDataset.Columns)
+                                                {
+                                                    string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.ColumnName.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+                                                    if (formattedColumn.StartsWith("attachment_"))
+                                                    {
+                                                        formattedColumn = formattedColumn.Replace("attachment_", "");
+                                                    }
+                                                    <th onclick="sortTable(this)">@(column.ColumnName == "ID" ? column.ColumnName : formattedColumn)</th>
+                                                }
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (System.Data.DataRow row in matchingDataset.Rows)
+                                            {
+                                                <tr>
+                                                    @* @foreach (var item in row.ItemArray)
+                                                    {
+                                                        <td>@item</td>
+                                                    } *@
+                                                    @for (int colIndex = 0; colIndex < matchingDataset.Columns.Count; colIndex++)
+                                                    {
+                                                        var col = matchingDataset.Columns[colIndex];
+                                                        var val = row[col];
+                                                        string strVal = val?.ToString() ?? "";
+
+                                                        if (col.ColumnName.StartsWith("attachment_") && strVal.Contains(";"))
+                                                        {
+                                                            var parts = strVal.Split(';');
+                                                            var desc = parts[0].Trim();
+                                                            var url = parts.Length > 1 ? parts[1].Trim().Replace("\\", "/") : "";
+
+                                                            <td>
+                                                                @if (!string.IsNullOrWhiteSpace(url))
+                                                                {
+                                                                    <a href="@Url.Content("~/" + url)" target="_blank">@desc</a>
+                                                                }
+                                                                else
+                                                                {
+                                                                    @desc
+                                                                }
+                                                            </td>
+                                                        }
+                                                        else
+                                                        {
+                                                            <td>@strVal</td>
+                                                        }
+                                                    }
+
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
+                                else if (table.FormType == "F")
+                                {
+                                    foreach (System.Data.DataRow row in matchingDataset.Rows)
+                                    {
+                                        var validColumns = matchingDataset.Columns.Cast<System.Data.DataColumn>()
+                                        .Where(col => col.ColumnName != "ID")
+                                        .ToList();
+
+                                        int totalColumns = validColumns.Count;
+                                        int columnCount = table.ColumnCount ?? 2;
+                                        int rowsRequired = (int)Math.Ceiling((double)totalColumns / columnCount);
+
+                                        <table class="table freeform-table">
+                                            <tbody>
+                                                @for (int rowIdx = 0; rowIdx < rowsRequired; rowIdx++)
+                                                {
+                                                    <tr>
+                                                        @for (int colIdx = 0; colIdx < columnCount; colIdx++)
+                                                        {
+                                                            int dataIndex = (rowIdx * columnCount) + colIdx;
+
+                                                            if (dataIndex < totalColumns)
+                                                            {
+                                                                var column = validColumns[dataIndex];
+                                                                string columnName = column.ColumnName;
+                                                                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(columnName.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+
+                                                                if (formattedColumn.StartsWith("attachment_"))
+                                                                {
+                                                                    formattedColumn = formattedColumn.Replace("attachment_", "");
+                                                                }
+
+                                                                <td class="freeform-label"><strong>@formattedColumn:</strong></td>
+                                                                <td class="freeform-value">
+                                                                    @{
+                                                                        var val = row[columnName]?.ToString() ?? "";
+                                                                        if (columnName.StartsWith("attachment_") && val.Contains(";"))
+                                                                        {
+                                                                            var parts = val.Split(';');
+                                                                            var desc = parts[0].Trim();
+                                                                            var url = parts.Length > 1 ? parts[1].Trim().Replace("\\", "/") : "";
+
+                                                                            if (!string.IsNullOrWhiteSpace(url))
+                                                                            {
+                                                                                <a href="@Url.Content("~/" + url)" target="_blank">@desc</a>
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                @desc
+                                                                            }
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            @val
+                                                                        }
+                                                                    }
+                                                                </td>
+                                                            }
+                                                            else
+                                                            {
+                                                                <td class="freeform-label empty">&nbsp;</td>
+                                                                <td class="freeform-value empty">&nbsp;</td>
+                                                            }
+                                                        }
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                <p>No data found</p>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<style>
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+        .table th, .table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .table th {
+            cursor: pointer;
+        }
+
+    .accordion-button {
+        background-color: #f8f9fa !important; /* Same for collapsed/expanded */
+        color: #212529 !important;
+        font-weight: bold;
+        border: none;
+        box-shadow: none;
+    }
+
+        .accordion-button:not(.collapsed) {
+            background-color: #f8f9fa !important;
+            color: #212529 !important;
+        }
+
+    .sorted-asc::after {
+        content: " \25B2";
+    }
+
+    .sorted-desc::after {
+        content: " \25BC";
+    }
+
+    .freeform-table td {
+        padding: 8px;
+        border: 1px solid #ddd;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .freeform-label {
+        font-weight: bold;
+        background: #f7f7f7;
+        width: 25%;
+        min-width: 150px;
+        white-space: nowrap;
+    }
+
+    .freeform-value {
+        background: #fff;
+        width: 25%;
+        min-width: 150px;
+        word-break: break-word;
+    }
+
+    .empty {
+        background: transparent;
+        border: none;
+        visibility: hidden;
+
+
+    }
+</style>
+
+<script>
+    function expandAll() {
+        document.querySelectorAll('.accordion-collapse').forEach(section => section.classList.add('show'));
+        document.querySelectorAll('.accordion-button').forEach(button => button.classList.remove('collapsed'));
+    }
+
+    function collapseAll() {
+        document.querySelectorAll('.accordion-collapse').forEach(section => section.classList.remove('show'));
+        document.querySelectorAll('.accordion-button').forEach(button => button.classList.add('collapsed'));
+    }
+
+    function sortTable(th) {
+        const table = th.closest("table");
+        const tbody = table.querySelector("tbody");
+        const index = Array.from(th.parentNode.children).indexOf(th);
+        const ascending = !th.classList.contains("sorted-asc");
+
+        Array.from(table.querySelectorAll("th")).forEach(th => th.classList.remove("sorted-asc", "sorted-desc"));
+        th.classList.add(ascending ? "sorted-asc" : "sorted-desc");
+
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+
+        rows.sort((rowA, rowB) => {
+            const cellA = rowA.children[index].textContent.trim().toLowerCase();
+            const cellB = rowB.children[index].textContent.trim().toLowerCase();
+            return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+   
+
+
+
+</script>
+

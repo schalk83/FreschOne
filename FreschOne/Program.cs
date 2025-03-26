@@ -1,4 +1,5 @@
 ﻿
+using DinkToPdf;
 using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,7 @@ builder.Services.AddSession(options =>
 
 builder.Services.AddSingleton<DatabaseHelper>();
 builder.Services.AddScoped<DatabaseHelper>();
+builder.Services.AddSingleton(typeof(DinkToPdf.Contracts.IConverter), new SynchronizedConverter(new PdfTools()));
 
 
 var app = builder.Build();

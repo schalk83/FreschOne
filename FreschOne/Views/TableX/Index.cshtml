@@ -88,9 +88,27 @@
                         @if (column.StartsWith("attachment_"))
                         {
                             <div class="text-center">
-                                @if (row[column] != null && !string.IsNullOrEmpty(row[column]?.ToString()))
-                                {
-                                    <span>✅</span>
+                                @{
+                                    var val = row[column]?.ToString() ?? "";
+                                    if (val.Contains(";"))
+                                    {
+                                        var parts = val.Split(';');
+                                        var desc = parts[0].Trim();
+                                        var url = parts.Length > 1 ? parts[1].Trim().Replace("\\", "/") : "";
+
+                                        if (!string.IsNullOrWhiteSpace(url))
+                                        {
+                                            <a href="@Url.Content("~/" + url)" target="_blank">@desc</a>
+                                        }
+                                        else
+                                        {
+                                            @desc
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @val
+                                    }
                                 }
                             </div>
                         }
