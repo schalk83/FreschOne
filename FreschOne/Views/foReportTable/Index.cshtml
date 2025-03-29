@@ -1,0 +1,78 @@
+﻿@model List<FreschOne.Models.foReportTable>
+
+@{
+    ViewData["Title"] = "Report Tables";
+    var userid = ViewBag.userid;
+    var reportID = ViewBag.ReportID;
+}
+
+<partial name="_Sidebar" />
+
+<h2>Report Tables</h2>
+
+<form method="get" asp-action="Index">
+    <input type="hidden" name="userid" value="@userid" />
+    <div class="mb-3">
+        <label class="form-label">Select Report</label>
+        @Html.DropDownList(
+                 "reportid",
+                 new SelectList(ViewBag.ReportsDropdown, "Value", "Text", reportID),
+                 "-- Select Report --",
+                 new { @class = "form-select", onchange = "this.form.submit()" }
+                 )
+    </div>
+</form>
+
+@if (reportID != null)
+{
+        <a href="@Url.Action("Create", new { reportid = reportID, userid = userid })" class="btn btn-primary mb-3">Add Table</a>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Table Name</th>
+                    <th>Form Type</th>
+                    <th>Column Count</th>
+                    <th>Parent</th>
+                    <th>FK Column</th>
+                    <th>Description</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model)
+            {
+                        <tr>
+                            <td>@item.TableName</td>
+                            <td>@item.FormType</td>
+                            <td>@item.ColumnCount</td>
+                            <td>@(item.Parent == true ? "Yes" : "No")</td>
+                            <td>@item.FKColumn</td>
+                            <td>@item.TableDescription</td>
+                            <td>
+                                <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
+                                <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-reportid="@reportID" asp-route-userid="@userid" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+            }
+            </tbody>
+        </table>
+}
+
+@if (ViewBag.ReportID != null)
+{
+    <form asp-action="CheckParent" asp-route-reportid="@ViewBag.ReportID" asp-route-userid="@ViewBag.userid" method="post" class="d-inline">
+        <button type="submit" class="btn btn-warning mb-3">Validation</button>
+    </form>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}

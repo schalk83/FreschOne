@@ -53,7 +53,5 @@ namespace FreschOne.Controllers
             var prefixes = _dbHelper.ExecuteQuery<foTablePrefix>(query);
             return prefixes;
         }
-
     }
-
 }

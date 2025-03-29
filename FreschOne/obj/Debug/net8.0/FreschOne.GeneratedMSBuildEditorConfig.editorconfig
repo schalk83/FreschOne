@@ -36,6 +36,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxSZXNldFBhc3N3b3JkLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/Admin/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/DataManagement/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGF0YU1hbmFnZW1lbnRcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -46,6 +50,54 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/DynamicReport/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRHluYW1pY1JlcG9ydFxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foReports/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9SZXBvcnRzXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foReports/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9SZXBvcnRzXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foReports/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9SZXBvcnRzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foReportTable/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9SZXBvcnRUYWJsZVxDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foReportTable/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9SZXBvcnRUYWJsZVxFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foReportTable/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9SZXBvcnRUYWJsZVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserReports/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyUmVwb3J0c1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserReports/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyUmVwb3J0c1xFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserReports/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyUmVwb3J0c1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUsers/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2Vyc1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUsers/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2Vyc1xFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUsers/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2Vyc1xJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/Home/Index.cshtml]

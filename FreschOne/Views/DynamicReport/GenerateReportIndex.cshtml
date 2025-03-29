@@ -14,7 +14,7 @@
 
 @if (ViewBag.SearchResult != null)
 {
-    var tables = ViewBag.ReportTables as List<FreschOne.Controllers.foReportTable>;
+    var tables = ViewBag.ReportTables as List<foReportTable>;
     var reportData = ViewBag.ReportData as Dictionary<string, Queue<System.Data.DataTable>>;
 
     <div class="accordion" id="reportAccordion">

@@ -1,10 +1,17 @@
-﻿namespace FreschOne.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace FreschOne.Models
 {
     public class foUserReports
     {
-        public long ID { get; set; }
+        public int ID { get; set; }
+
+        [Required(ErrorMessage = "Please select a user")]
         public long UserID { get; set; }
-        public long ReportID { get; set; }  // Fixed type from string to long
+
+        [Required(ErrorMessage = "Please select a report")]
+        public long ReportID { get; set; }
+
         public bool Active { get; set; }
     }
 }
