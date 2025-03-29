@@ -1,0 +1,41 @@
+﻿@model List<FreschOne.Models.AdminTableInfo>
+
+@{
+    ViewData["Title"] = "Admin and Configuration";
+    var firstGroup = true;
+    var userid = ViewBag.userId;
+
+}
+
+<h1>Admin and Configuration</h1>
+
+<partial name="_Sidebar" />
+
+<div class="accordion" id="accordionExample">
+    @foreach (var group in Model.GroupBy(m => m.TableGroup))
+    {
+        var groupId = $"group_{group.Key.Replace(" ", "_")}";
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading_@groupId">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@groupId" aria-expanded="true" aria-controls="collapse_@groupId">
+                    @group.Key
+                </button>
+            </h2>
+            <div id="collapse_@groupId" class="accordion-collapse show" aria-labelledby="heading_@groupId" data-bs-parent="#accordionExample">
+                <div class="accordion-body bg-info-subtle">
+                    <ul class="list-unstyled">
+                        @foreach (var table in group)
+                        {
+                            <li> 
+                                <a href="@Url.Action("Index",table.TableName, new  {userid = userid})">
+                                    @table.TableName
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+</div>

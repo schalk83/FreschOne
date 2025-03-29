@@ -1,0 +1,62 @@
+﻿@model FreschOne.Models.foUser
+
+@{
+    ViewData["Title"] = "Create User";
+    var userid = ViewBag.userid;
+
+}
+
+<partial name="_Sidebar" />
+
+<h2>@(Model?.ID > 0 ? "Edit User" : "Create User")</h2>
+
+    <form asp-action="@(Model?.ID > 0 ? "Edit" : "Create")" asp-route-userid="@userid" method="post">
+
+    @if (Model?.ID > 0)
+    {
+        <input type="hidden" asp-for="ID" />
+    }
+
+    <div class="mb-3">
+        <label asp-for="UserName" class="form-label"></label>
+        <input asp-for="UserName" class="form-control" />
+        <span asp-validation-for="UserName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label"></label>
+        <input asp-for="Password" class="form-control" type="password" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="FirstName" class="form-label"></label>
+        <input asp-for="FirstName" class="form-control" />
+        <span asp-validation-for="FirstName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="LastName" class="form-label"></label>
+        <input asp-for="LastName" class="form-control" />
+        <span asp-validation-for="LastName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" type="email" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3 form-check">
+        <input asp-for="Admin" class="form-check-input" />
+        <label asp-for="Admin" class="form-check-label"></label>
+        <span asp-validation-for="Admin" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a href="@Url.Action("Index",new { userid })" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,5 +1,9 @@
 ﻿@model Tuple<Dictionary<string, List<foUserTable>>, List<foTablePrefix>>
 
+@{
+    ViewData["Title"] = "Data Management";
+}
+
 <h1>Data Management</h1>
 
 <partial name="_Sidebar" />
@@ -18,7 +22,6 @@
                     <ul>
                         @foreach (var access in group.Value)
                         {
-                            // Dynamically remove the prefix from the TableName
                             var prefix = Model.Item2.FirstOrDefault(p => access.TableName.StartsWith(p.Prefix));
                             var displayName = access.TableName;
                             if (prefix != null)
@@ -26,7 +29,6 @@
                                 displayName = access.TableName.Replace(prefix.Prefix, string.Empty);
                             }
 
-                            // Pass the original TableName (with prefix) to the URL, but display the modified TableName (without prefix)
                             <li>
                                 <a href="@Url.Action("Index", "TableX", new { userid = access.UserID, tablename = access.TableName })">
                                     @displayName
@@ -39,4 +41,3 @@
         </div>
     }
 </div>
-

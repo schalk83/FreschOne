@@ -1,0 +1,50 @@
+﻿@model List<FreschOne.Models.foUser>
+
+@{
+    var userid = ViewBag.userid;
+}
+<partial name="_Sidebar" />
+
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+<h2>Users</h2>
+<a href="@Url.Action("Create", new { userid = userid })" class="btn btn-primary mb-3">Add New User</a>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>UserName</th>
+            <th>First</th>
+            <th>Last</th>
+            <th>Email</th>
+            <th>Admin</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.UserName</td>
+                <td>@user.FirstName</td>
+                <td>@user.LastName</td>
+                <td>@user.Email</td>
+                <td>@(user.Admin ? "Yes" : "No")</td>
+                <td>
+                    <a href="@Url.Action("Edit", new { id = user.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
+                    <form method="post" asp-action="Delete" asp-route-id="@user.ID" asp-route-userid="@userid" style="display:inline">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

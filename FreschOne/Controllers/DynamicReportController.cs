@@ -85,7 +85,7 @@ namespace FreschOne.Controllers
                                 ColumnQuery = reader["ColumnQuery"].ToString(),
                                 FormType = reader["FormType"].ToString(),
                                 ColumnCount = reader["ColumnCount"] != DBNull.Value ? Convert.ToInt32(reader["ColumnCount"]) : (int?)null,
-                                Parent = reader["Parent"] != DBNull.Value ? Convert.ToInt32(reader["Parent"]) : (int?)null,
+                                Parent = reader["Parent"] != DBNull.Value && Convert.ToBoolean(reader["Parent"]),
                                 FKColumn = reader["FKColumn"]?.ToString(),
                                 TableDescription = reader["TableDescription"]?.ToString()
                             });
@@ -148,7 +148,7 @@ namespace FreschOne.Controllers
 
                     // ✅ Step 3: Build base WHERE clause
                     string foreignKeyColumn = table.FKColumn;
-                    string baseWhereClause = (table.Parent == 1)
+                    string baseWhereClause = (table.Parent == true)
                         ? $"ID = @PKID AND Active = 1"
                         : $"{foreignKeyColumn} = @PKID AND Active = 1";
 
@@ -466,17 +466,17 @@ namespace FreschOne.Controllers
 
     }
 
-    public class foReportTable
-    {
-        public string TableName { get; set; }
-        public string TableDescription { get; set; }
-        public string ColumnQuery { get; set; }
-        public string FormType { get; set; } // "T" for Table, "F" for Freeform
-        public int? ColumnCount { get; set; }
-        public int? Parent { get; set; }
-        public string FKColumn { get; set; }
-        public List<ForeignKeyInfo> ForeignKeys { get; set; }  // List of foreign key columns (for dropdowns)
-        public Dictionary<string, List<SelectListItem>> ForeignKeyOptions { get; set; }  // Options for foreign key dropdowns
+    //public class foReportTable
+    //{
+    //    public string TableName { get; set; }
+    //    public string TableDescription { get; set; }
+    //    public string ColumnQuery { get; set; }
+    //    public string FormType { get; set; } // "T" for Table, "F" for Freeform
+    //    public int? ColumnCount { get; set; }
+    //    public int? Parent { get; set; }
+    //    public string FKColumn { get; set; }
+    //    public List<ForeignKeyInfo> ForeignKeys { get; set; }  // List of foreign key columns (for dropdowns)
+    //    public Dictionary<string, List<SelectListItem>> ForeignKeyOptions { get; set; }  // Options for foreign key dropdowns
 
-    }
+    //}
 }

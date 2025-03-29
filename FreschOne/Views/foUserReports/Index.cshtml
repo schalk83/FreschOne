@@ -1,0 +1,45 @@
+﻿@model List<dynamic>
+
+@{
+    var userid = ViewBag.userid;
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+
+<partial name="_Sidebar" />
+
+<h2>User Reports</h2>
+<a href="@Url.Action("Create", new { userid = userid })" class="btn btn-primary mb-3">Assign Report</a>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Report</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.UserName</td>
+                <td>@item.ReportName</td>
+                <td>
+                    <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
+                    <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" style="display:inline">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
