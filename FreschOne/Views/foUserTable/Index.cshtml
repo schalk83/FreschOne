@@ -1,0 +1,89 @@
+﻿@model List<FreschOne.Models.foUserTable>
+@{
+    var userid = ViewBag.userid;
+    var l_user = ViewBag.l_user;
+}
+
+<partial name="_Sidebar" />
+
+<h2>User Table Access</h2>
+
+<form method="get" asp-action="Index" class="mb-3">
+    <input type="hidden" name="userid" value="@userid" />
+    <label class="form-label">Select User:</label>
+    @Html.DropDownList("l_user", (List<SelectListItem>)ViewBag.Users, "-- Select User --", new { @class = "form-select", onchange = "this.form.submit()" })
+</form>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+@if (l_user != null)
+{
+    <a class="btn btn-primary mb-3" asp-action="Create" asp-route-userid="@userid" asp-route-l_user="@l_user">Assign Table</a>
+
+    <table class="table table-bordered sortable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(this)" style="cursor:pointer;">Table Name</th>
+                <th onclick="sortTable(this)" style="cursor:pointer;">Access</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.TableName</td>
+                    <td>@item.ReadWriteAccess</td>
+                    <td>
+                        <a class="btn btn-sm btn-secondary" asp-action="Edit" asp-route-id="@item.ID" asp-route-userid="@userid">Edit</a>
+                        <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" asp-route-l_user="@l_user" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-info">Please select a user to view assigned tables.</div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function sortTable(th) {
+            const table = th.closest("table");
+            const tbody = table.querySelector("tbody");
+            const index = Array.from(th.parentNode.children).indexOf(th);
+            const ascending = !th.classList.contains("sorted-asc");
+
+            Array.from(table.querySelectorAll("th")).forEach(th => th.classList.remove("sorted-asc", "sorted-desc"));
+            th.classList.add(ascending ? "sorted-asc" : "sorted-desc");
+
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.children[index].textContent.trim().toLowerCase();
+                const cellB = rowB.children[index].textContent.trim().toLowerCase();
+                return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+    <style>
+        th.sorted-asc::after {
+            content: " ▲";
+            font-size: 0.75em;
+        }
+
+        th.sorted-desc::after {
+            content: " ▼";
+            font-size: 0.75em;
+        }
+    </style>
+}

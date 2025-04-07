@@ -1,0 +1,42 @@
+﻿/// Edit.cshtml
+@model FreschOne.Models.foTablePrefixes
+@{
+    var userid = ViewBag.userid;
+    ViewData["Title"] = "Edit Table Prefix";
+}
+
+<partial name="_Sidebar" />
+
+<h2>Edit Table Prefix</h2>
+
+<form asp-action="Edit" asp-route-userid="@userid" method="post">
+    <input type="hidden" asp-for="ID" />
+
+    <div class="mb-3">
+        <label asp-for="Prefix" class="form-label">Prefix</label>
+        <input asp-for="Prefix" class="form-control" />
+        <span asp-validation-for="Prefix" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">Description</label>
+        <input asp-for="Description" class="form-control" />
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Active" class="form-label">Active</label>
+        <select asp-for="Active" class="form-select">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </select>
+        <span asp-validation-for="Active" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a href="@Url.Action("Index", new { userid })" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

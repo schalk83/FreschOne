@@ -5,7 +5,6 @@
 }
 <partial name="_Sidebar" />
 
-
 @if (TempData["ErrorMessage"] != null)
 {
     <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
@@ -18,14 +17,14 @@
 <h2>Users</h2>
 <a href="@Url.Action("Create", new { userid = userid })" class="btn btn-primary mb-3">Add New User</a>
 
-<table class="table table-bordered">
+<table class="table table-bordered sortable">
     <thead>
         <tr>
-            <th>UserName</th>
-            <th>First</th>
-            <th>Last</th>
-            <th>Email</th>
-            <th>Admin</th>
+            <th onclick="sortTable(this)" style="cursor:pointer;">UserName</th>
+            <th onclick="sortTable(this)" style="cursor:pointer;">First</th>
+            <th onclick="sortTable(this)" style="cursor:pointer;">Last</th>
+            <th onclick="sortTable(this)" style="cursor:pointer;">Email</th>
+            <th onclick="sortTable(this)" style="cursor:pointer;">Admin</th>
             <th></th>
         </tr>
     </thead>
@@ -48,3 +47,37 @@
         }
     </tbody>
 </table>
+
+@section Scripts {
+    <script>
+        function sortTable(th) {
+            const table = th.closest("table");
+            const tbody = table.querySelector("tbody");
+            const index = Array.from(th.parentNode.children).indexOf(th);
+            const ascending = !th.classList.contains("sorted-asc");
+
+            Array.from(table.querySelectorAll("th")).forEach(th => th.classList.remove("sorted-asc", "sorted-desc"));
+            th.classList.add(ascending ? "sorted-asc" : "sorted-desc");
+
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.children[index].textContent.trim().toLowerCase();
+                const cellB = rowB.children[index].textContent.trim().toLowerCase();
+                return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+    <style>
+        th.sorted-asc::after {
+            content: " ▲";
+            font-size: 0.75em;
+        }
+
+        th.sorted-desc::after {
+            content: " ▼";
+            font-size: 0.75em;
+        }
+    </style>
+}

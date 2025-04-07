@@ -2,12 +2,10 @@
 
 <partial name="_Sidebar" />
 
-
 @if (TempData["ErrorMessage"] != null)
 {
     <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
 }
-
 @if (TempData["Message"] != null)
 {
     <div class="alert alert-success">@TempData["Message"]</div>
@@ -16,11 +14,11 @@
 <h1>Reports</h1>
 <a class="btn btn-primary mb-2" href="@Url.Action("Create")">Create New</a>
 
-<table class="table table-bordered">
+<table class="table table-bordered sortable">
     <thead>
         <tr>
-            <th>Name</th>
-            <th>Description</th>
+            <th onclick="sortTable(this)" style="cursor:pointer;">Name</th>
+            <th onclick="sortTable(this)" style="cursor:pointer;">Description</th>
             <th></th>
         </tr>
     </thead>
@@ -40,3 +38,37 @@
         }
     </tbody>
 </table>
+
+@section Scripts {
+    <script>
+        function sortTable(th) {
+            const table = th.closest("table");
+            const tbody = table.querySelector("tbody");
+            const index = Array.from(th.parentNode.children).indexOf(th);
+            const ascending = !th.classList.contains("sorted-asc");
+
+            Array.from(table.querySelectorAll("th")).forEach(th => th.classList.remove("sorted-asc", "sorted-desc"));
+            th.classList.add(ascending ? "sorted-asc" : "sorted-desc");
+
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.children[index].textContent.trim().toLowerCase();
+                const cellB = rowB.children[index].textContent.trim().toLowerCase();
+                return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+    <style>
+        th.sorted-asc::after {
+            content: " ▲";
+            font-size: 0.75em;
+        }
+
+        th.sorted-desc::after {
+            content: " ▼";
+            font-size: 0.75em;
+        }
+    </style>
+}

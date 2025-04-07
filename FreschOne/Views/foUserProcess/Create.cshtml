@@ -1,0 +1,20 @@
+﻿@model FreschOne.Models.foUserProcess
+@{
+    var userid = ViewBag.userid;
+    var l_user = ViewBag.l_user;
+}
+<partial name="_Sidebar" />
+
+<h2>Assign Process to User</h2>
+
+<form asp-action="Create" asp-route-userid="@userid" asp-route-l_user="@l_user" method="post">
+    <input type="hidden" asp-for="UserID" value="@l_user" />
+
+    <div class="mb-3">
+        <label for="ProcessID" class="form-label">Select Process</label>
+        <select asp-for="ProcessID" asp-items="ViewBag.ProcessList" class="form-select"></select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Assign</button>
+    <a href="@Url.Action("Index", new { userid = userid, l_user = l_user })" class="btn btn-secondary">Cancel</a>
+</form>

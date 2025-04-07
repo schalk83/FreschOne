@@ -1,0 +1,144 @@
+﻿@model List<FreschOne.Models.foProcessSteps>
+@{
+    var userid = ViewBag.userid;
+    var processId = ViewBag.ProcessID as long?;
+    var processList = ViewBag.ProcessDropdown as List<SelectListItem>;
+    var detailMap = ViewBag.StepDetailsMap as Dictionary<long, List<FreschOne.Models.foProcessDetail>> ?? new();
+}
+
+<partial name="_Sidebar" />
+
+<h2>Process Steps with Details</h2>
+
+<form method="get" asp-action="Index" class="mb-3">
+    <input type="hidden" name="userid" value="@userid" />
+    <label class="form-label">Select Process:</label>
+    @Html.DropDownList("processid", processList, "-- Select Process --", new { @class = "form-select", onchange = "this.form.submit()" })
+</form>
+
+@if (processId.HasValue)
+{
+    <a href="@Url.Action("Create", new { userid = userid, processid = processId })" class="btn btn-primary mb-3">Add New Step</a>
+
+    <div class="accordion" id="stepAccordion">
+        @foreach (var step in Model)
+        {
+            var details = detailMap.ContainsKey(step.ID) ? detailMap[step.ID] : new List<FreschOne.Models.foProcessDetail>();
+            var collapseId = $"collapseStep{step.ID}";
+            var headingId = $"headingStep{step.ID}";
+
+            <div class="accordion-item mb-2">
+                <h2 class="accordion-header" id="@headingId">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                        Step @step.StepNo: @step.StepDescription
+                    </button>
+                </h2>
+                <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#stepAccordion">
+                    <div class="accordion-body">
+                        <p><strong>Assigned Group:</strong> @step.GroupName | <strong>User:</strong> @step.UserName</p>
+
+                        <a href="@Url.Action("Edit", new { id = step.ID, userid = userid })" class="btn btn-sm btn-secondary mb-2">Edit Step</a>
+
+                        <form method="post" asp-action="Delete" asp-route-id="@step.ID" asp-route-userid="@userid" asp-route-processid="@processId" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-danger mb-2" onclick="return confirm('Delete this step?')">Delete Step</button>
+                        </form>
+
+                        <a href="@Url.Action("Index", "foProcessDetail", new { userid = userid, processId = processId, stepId = step.ID })"
+                           class="btn btn-sm btn-info mb-2 float-end ms-2">
+                            Manage Details
+                        </a>
+
+                        @if (details.Any())
+                        {
+                            <table class="table table-bordered table-sm mt-3">
+                                <thead>
+                                    <tr>
+                                        <th onclick="sortTable(this)">Table Name</th>
+                                        <th onclick="sortTable(this)">Form Type</th>
+                                        <th onclick="sortTable(this)">Column Query</th>
+                                        <th onclick="sortTable(this)">Parent</th>
+                                        <th onclick="sortTable(this)">FK Column</th>
+                                        <th onclick="sortTable(this)">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var d in details)
+                                    {
+                                        <tr>
+                                            <td>@d.TableName</td>
+                                            <td>@d.FormType</td>
+                                            <td>@d.ColumnQuery</td>
+                                            <td>@(d.Parent ? "Yes" : "No")</td>
+                                            <td>@d.FKColumn</td>
+                                            <td>@d.TableDescription</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <div class="text-muted">No detail records linked to this step.</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+<a href="@Url.Action("Validate", new { processid = processId, userid = userid })" class="btn btn-warning mb-3">Validate Setup</a>
+
+@if (TempData["ErrorList"] is IEnumerable<string> errors && errors.Any())
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var err in errors)
+            {
+                <li>@err</li>
+            }
+        </ul>
+    </div>
+}
+
+else if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+
+
+@section Scripts {
+    <script>
+        function sortTable(th) {
+            const table = th.closest("table");
+            const tbody = table.querySelector("tbody");
+            const index = Array.from(th.parentNode.children).indexOf(th);
+            const ascending = !th.classList.contains("sorted-asc");
+
+            // Remove old sort classes
+            table.querySelectorAll("th").forEach(th => th.classList.remove("sorted-asc", "sorted-desc"));
+            th.classList.add(ascending ? "sorted-asc" : "sorted-desc");
+
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            rows.sort((a, b) => {
+                const aText = a.children[index].textContent.trim().toLowerCase();
+                const bText = b.children[index].textContent.trim().toLowerCase();
+                return ascending ? aText.localeCompare(bText) : bText.localeCompare(aText);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+
+    <style>
+        th.sorted-asc::after {
+            content: " ▲";
+            font-size: 0.75em;
+        }
+
+        th.sorted-desc::after {
+            content: " ▼";
+            font-size: 0.75em;
+        }
+    </style>
+}

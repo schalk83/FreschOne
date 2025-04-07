@@ -1,0 +1,209 @@
+﻿@model FreschOne.Models.foProcessDetail
+
+@{
+    ViewData["Title"] = "Edit Step Detail";
+    var userid = ViewBag.userid;
+    var processId = ViewBag.ProcessId;
+    var stepId = ViewBag.StepId;
+    var formTypes = ViewBag.FormTypes as List<SelectListItem>;
+    bool isFirstDetail = ViewBag.IsFirstDetail == true;
+
+}
+
+<partial name="_Sidebar" />
+
+<h2>Edit Step Detail</h2>
+
+@if (ViewBag.StepDetailList is List<FreschOne.Models.foProcessDetail> stepDetails && stepDetails.Any())
+{
+    <div class="accordion mb-4" id="detailsAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingDetails">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDetails" aria-expanded="false" aria-controls="collapseDetails">
+                    View Existing Step Details
+                </button>
+            </h2>
+            <div id="collapseDetails" class="accordion-collapse collapse" aria-labelledby="headingDetails" data-bs-parent="#detailsAccordion">
+                <div class="accordion-body">
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Table</th>
+                                <th>Form Type</th>
+                                <th>Column Query</th>
+                                <th>Parent</th>
+                                <th>FK Column</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in stepDetails)
+                            {
+                                <tr>
+                                    <td>@row.TableName</td>
+                                    <td>@row.FormType</td>
+                                    <td>@row.ColumnQuery</td>
+                                    <td>@(row.Parent ? "Yes" : "No")</td>
+                                    <td>@row.FKColumn</td>
+                                    <td>@row.TableDescription</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<form asp-action="Edit" asp-route-userid="@userid" asp-route-processId="@processId" method="post">
+    <input type="hidden" asp-for="ID" />
+    <input type="hidden" asp-for="StepID" />
+
+    <div class="mb-3">
+        <label asp-for="TableName" class="form-label">Table Name</label>
+        <input asp-for="TableName" class="form-control" id="TableNameInput" />
+        <span asp-validation-for="TableName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ColumnQuery" class="form-label">Column Query</label>
+        <input asp-for="ColumnQuery" class="form-control" />
+        <span asp-validation-for="ColumnQuery" class="text-danger"></span>
+    </div>
+
+    <!-- ✅ Test Query Button -->
+    <div id="testQuerySection" style="display: none;">
+        <button type="button" class="btn btn-outline-info mb-2" onclick="testQuery()">Test Query</button>
+        <div id="queryResult" class="mt-2"></div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="FormType" class="form-label">Form Type</label>
+        <select asp-for="FormType" asp-items="formTypes" class="form-select"></select>
+        <span asp-validation-for="FormType" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ColumnCount" class="form-label">Column Count</label>
+        <input asp-for="ColumnCount" type="number" class="form-control" />
+        <span asp-validation-for="ColumnCount" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Parent" class="form-label">Is Parent Table?</label>
+        <select asp-for="Parent" class="form-select" disabled>
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+        </select>
+        <input type="hidden" name="Parent" value="@(isFirstDetail ? "true" : "false")" />
+        <span asp-validation-for="Parent" class="text-danger"></span>
+    </div>
+    
+
+    <div class="mb-3" id="fkColumnGroup">
+        <label asp-for="FKColumn" class="form-label">Foreign Key Column</label>
+        <select asp-for="FKColumn" class="form-select" id="FKColumnSelect">
+            <option value="">-- Select FK Column --</option>
+        </select>
+        <span asp-validation-for="FKColumn" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="TableDescription" class="form-label">Description</label>
+        <input asp-for="TableDescription" class="form-control" />
+        <span asp-validation-for="TableDescription" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <button type="submit" class="btn btn-outline-primary" name="action" value="addanother">Save & Add Another</button>
+
+    <a href="@Url.Action("Index", new { processId = processId, stepId = stepId, userid = userid })" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        function toggleFKDropdown() {
+            const parent = document.querySelector('[name="Parent"]').value;
+            const fkGroup = document.getElementById('fkColumnGroup');
+            const fkSelect = document.getElementById('FKColumnSelect');
+            fkGroup.style.display = (parent === "true") ? "none" : "block";
+            if (parent === "true") {
+                fkSelect.value = "";
+            }
+        }
+
+        function loadFKColumns(tableName, selectedColumn = null) {
+            const fkSelect = document.getElementById("FKColumnSelect");
+            if (!tableName) return;
+            fetch(`/foReportTable/GetFKColumns?tableName=${encodeURIComponent(tableName)}`)
+                .then(res => res.json())
+                .then(data => {
+                    fkSelect.innerHTML = '<option value="">-- Select FK Column --</option>';
+                    data.forEach(col => {
+                        const opt = document.createElement("option");
+                        opt.value = col;
+                        opt.text = col;
+                        if (selectedColumn && col === selectedColumn) {
+                            opt.selected = true;
+                        }
+                        fkSelect.appendChild(opt);
+                    });
+                });
+        }
+
+        function testQuery() {
+            const tableName = document.getElementById("TableNameInput").value;
+            const columnQuery = document.querySelector('[name="ColumnQuery"]').value;
+
+            fetch('/foProcessDetail/TestQuery', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tableName, columnQuery })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const resultDiv = document.getElementById("queryResult");
+                    if (data.success) {
+                        resultDiv.innerHTML = "<span class='text-success'>✅ Query is valid!</span>";
+                    } else {
+                        resultDiv.innerHTML = `<span class='text-danger'>❌ ${data.message}</span>`;
+                    }
+                })
+                .catch(err => {
+                    document.getElementById("queryResult").innerHTML =
+                        `<span class='text-danger'>❌ Error: ${err.message}</span>`;
+                });
+        }
+
+        function checkTestQueryVisibility() {
+            const tableName = document.getElementById("TableNameInput").value.trim();
+            const columnQuery = document.querySelector('[name="ColumnQuery"]').value.trim();
+            const section = document.getElementById("testQuerySection");
+            section.style.display = (tableName && columnQuery) ? "block" : "none";
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            toggleFKDropdown();
+
+            const tableInput = document.getElementById("TableNameInput");
+            const columnInput = document.querySelector('[name="ColumnQuery"]');
+            const currentValue = "@Model.FKColumn";
+
+            tableInput.addEventListener("blur", () => {
+                loadFKColumns(tableInput.value);
+            });
+
+            tableInput.addEventListener("input", checkTestQueryVisibility);
+            columnInput.addEventListener("input", checkTestQueryVisibility);
+
+            if (tableInput.value) {
+                loadFKColumns(tableInput.value, currentValue);
+            }
+
+            checkTestQueryVisibility();
+        });
+    </script>
+}

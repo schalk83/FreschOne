@@ -1,8 +1,12 @@
 ﻿@model List<dynamic>
-
 @{
     var userid = ViewBag.userid;
+    var l_user = ViewBag.l_user;
 }
+
+<partial name="_Sidebar" />
+
+<h2>User Reports</h2>
 
 @if (TempData["ErrorMessage"] != null)
 {
@@ -13,33 +17,79 @@
     <div class="alert alert-success">@TempData["Message"]</div>
 }
 
+<form method="get" asp-action="Index">
+    <input type="hidden" name="userid" value="@userid" />
+    <div class="mb-3">
+        <label class="form-label">Select User</label>
+        @Html.DropDownList("l_user", (List<SelectListItem>)ViewBag.Users, "-- Select User --", new { @class = "form-select", onchange = "this.form.submit()" })
+    </div>
+</form>
 
-<partial name="_Sidebar" />
+@if (l_user != null)
+{
+    <a href="@Url.Action("Create", new { userid = userid, l_user = l_user })" class="btn btn-primary mb-3">Assign Report</a>
 
-<h2>User Reports</h2>
-<a href="@Url.Action("Create", new { userid = userid })" class="btn btn-primary mb-3">Assign Report</a>
-
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>User</th>
-            <th>Report</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
+    <table class="table table-bordered sortable">
+        <thead>
             <tr>
-                <td>@item.UserName</td>
-                <td>@item.ReportName</td>
-                <td>
-                    <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
-                    <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" style="display:inline">
-                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                    </form>
-                </td>
+                <th onclick="sortTable(this)" style="cursor:pointer;">User</th>
+                <th onclick="sortTable(this)" style="cursor:pointer;">Report</th>
+                <th></th>
             </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.UserName</td>
+                    <td>@item.ReportName</td>
+                    <td>
+                        <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
+                        <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" asp-route-l_user="@l_user" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-info">Please select a user to view assigned reports.</div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function sortTable(th) {
+            const table = th.closest("table");
+            const tbody = table.querySelector("tbody");
+            const index = Array.from(th.parentNode.children).indexOf(th);
+            const ascending = !th.classList.contains("sorted-asc");
+
+            Array.from(table.querySelectorAll("th")).forEach(th => th.classList.remove("sorted-asc", "sorted-desc"));
+            th.classList.add(ascending ? "sorted-asc" : "sorted-desc");
+
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.children[index].textContent.trim().toLowerCase();
+                const cellB = rowB.children[index].textContent.trim().toLowerCase();
+                return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
         }
-    </tbody>
-</table>
+    </script>
+    <style>
+        th.sorted-asc::after {
+            content: " ▲";
+            font-size: 0.75em;
+        }
+
+        th.sorted-desc::after {
+            content: " ▼";
+            font-size: 0.75em;
+        }
+    </style>
+}

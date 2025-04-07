@@ -1,31 +1,28 @@
 ﻿@model FreschOne.Models.foUserReports
-
 @{
     ViewData["Title"] = "Edit Assignment";
     var userid = ViewBag.userid;
+    var l_user = ViewBag.l_user;
 }
 
 <partial name="_Sidebar" />
 
 <h2>Edit Assignment</h2>
 
-<form asp-action="Edit" asp-route-userid="@userid" method="post">
+<form asp-action="Edit" asp-route-userid="@userid" asp-route-l_user="@l_user" method="post">
     <input type="hidden" asp-for="ID" />
+    <input type="hidden" asp-for="UserID" />
 
     <div class="mb-3">
-        <label class="form-label">User</label>
-        <select asp-for="UserID" asp-items="ViewBag.Users" class="form-select"></select>
-        <span asp-validation-for="UserID" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label">Report</label>
-        <select asp-for="ReportID" asp-items="ViewBag.Reports" class="form-select"></select>
+        <label asp-for="ReportID" class="form-label">Report</label>
+        <select asp-for="ReportID" asp-items="ViewBag.Reports" class="form-select">
+            <option value="">-- Select Report --</option>
+        </select>
         <span asp-validation-for="ReportID" class="text-danger"></span>
     </div>
 
     <button type="submit" class="btn btn-success">Save</button>
-    <a href="@Url.Action("Index", new { userid = userid })" class="btn btn-secondary">Cancel</a>
+    <a href="@Url.Action("Index", new { userid = userid, l_user = l_user })" class="btn btn-secondary">Cancel</a>
 </form>
 
 @section Scripts {

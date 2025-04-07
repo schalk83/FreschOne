@@ -1,0 +1,25 @@
+﻿@model FreschOne.Models.foUserGroups
+@{
+    var userid = ViewBag.userid;
+    var l_user = ViewBag.l_user;
+}
+<partial name="_Sidebar" />
+
+<h2>Assign Group to User</h2>
+
+<form asp-action="Create" asp-route-userid="@userid" asp-route-l_user="@l_user" method="post">
+    <input type="hidden" asp-for="UserID" value="@l_user" />
+
+    <div class="mb-3">
+        <label for="GroupID" class="form-label">Select Group</label>
+        @Html.DropDownListFor(model => model.GroupID,
+                 (List<SelectListItem>)ViewBag.GroupList,
+                 "-- Select Group --", // This is your default label
+                 new { @class = "form-select" })
+        <span asp-validation-for="GroupID" class="text-danger"></span>
+    </div>
+
+
+    <button type="submit" class="btn btn-success">Assign</button>
+    <a href="@Url.Action("Index", new { userid = userid, l_user = l_user })" class="btn btn-secondary">Cancel</a>
+</form>

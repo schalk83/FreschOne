@@ -1,0 +1,27 @@
+﻿/// Edit.cshtml
+@model FreschOne.Models.foTableColumnsToIgnore
+@{
+    var userid = ViewBag.userid;
+    ViewData["Title"] = "Edit Column";
+}
+
+<partial name="_Sidebar" />
+
+<h2>Edit Column</h2>
+
+<form asp-action="Edit" asp-route-userid="@userid" method="post">
+    <input type="hidden" asp-for="ID" />
+
+    <div class="mb-3">
+        <label asp-for="ColumnName" class="form-label">Column Name</label>
+        <input asp-for="ColumnName" class="form-control" />
+        <span asp-validation-for="ColumnName" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a href="@Url.Action("Index", new { userid })" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

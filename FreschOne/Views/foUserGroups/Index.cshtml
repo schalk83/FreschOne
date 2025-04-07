@@ -1,0 +1,84 @@
+﻿@model List<FreschOne.Models.foUserGroups>
+@{
+    var userid = ViewBag.userid;
+    var l_user = ViewBag.l_user;
+}
+<partial name="_Sidebar" />
+
+<h2>User Group Access</h2>
+
+<form method="get" asp-action="Index" class="mb-3">
+    <input type="hidden" name="userid" value="@userid" />
+    <label class="form-label">Select User:</label>
+    @Html.DropDownList("l_user", (List<SelectListItem>)ViewBag.Users, "-- Select User --", new { @class = "form-select", onchange = "this.form.submit()" })
+</form>
+
+@if (l_user != 0)
+{
+    <a href="@Url.Action("Create", new { userid = userid, l_user = l_user })" class="btn btn-primary mb-3">Add Group</a>
+
+    <table class="table table-bordered sortable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(this)">Group</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.GroupName</td>
+                    <td>
+                        <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" asp-route-l_user="@l_user" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+@section Scripts {
+    <script>
+        function sortTable(th) {
+            const table = th.closest("table");
+            const tbody = table.querySelector("tbody");
+            const index = Array.from(th.parentNode.children).indexOf(th);
+            const ascending = !th.classList.contains("sorted-asc");
+
+            Array.from(table.querySelectorAll("th")).forEach(th => th.classList.remove("sorted-asc", "sorted-desc"));
+            th.classList.add(ascending ? "sorted-asc" : "sorted-desc");
+
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.children[index].textContent.trim().toLowerCase();
+                const cellB = rowB.children[index].textContent.trim().toLowerCase();
+                return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+    <style>
+        th.sorted-asc::after {
+            content: " \25B2";
+            font-size: 0.75em;
+        }
+
+        th.sorted-desc::after {
+            content: " \25BC";
+            font-size: 0.75em;
+        }
+    </style>
+}
