@@ -52,6 +52,54 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRHluYW1pY1JlcG9ydFxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foGroups/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Hcm91cHNcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foGroups/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Hcm91cHNcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foGroups/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Hcm91cHNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foProcessDetail/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Qcm9jZXNzRGV0YWlsXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foProcessDetail/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Qcm9jZXNzRGV0YWlsXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foProcessDetail/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Qcm9jZXNzRGV0YWlsXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foProcessSteps/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Qcm9jZXNzU3RlcHNcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foProcessSteps/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Qcm9jZXNzU3RlcHNcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foProcessSteps/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Qcm9jZXNzU3RlcHNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foProcess/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Qcm9jZXNzXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foProcess/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Qcm9jZXNzXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foProcess/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Qcm9jZXNzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foReports/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9SZXBvcnRzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -76,6 +124,46 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9SZXBvcnRUYWJsZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foTableColumnsToIgnore/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZUNvbHVtbnNUb0lnbm9yZVxDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foTableColumnsToIgnore/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZUNvbHVtbnNUb0lnbm9yZVxFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foTableColumnsToIgnore/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZUNvbHVtbnNUb0lnbm9yZVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foTablePrefixes/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZVByZWZpeGVzXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foTablePrefixes/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZVByZWZpeGVzXEVkaXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foTablePrefixes/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZVByZWZpeGVzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserGroups/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyR3JvdXBzXENyZWF0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserGroups/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyR3JvdXBzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserProcess/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyUHJvY2Vzc1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserProcess/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyUHJvY2Vzc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserReports/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyUmVwb3J0c1xDcmVhdGUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -98,6 +186,18 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUsers/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2Vyc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserTable/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyVGFibGVcQ3JlYXRlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserTable/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyVGFibGVcRWRpdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/foUserTable/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9Vc2VyVGFibGVcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/Home/Index.cshtml]

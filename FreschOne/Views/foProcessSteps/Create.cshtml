@@ -1,0 +1,107 @@
+﻿@model FreschOne.Models.foProcessSteps
+
+@{
+    ViewData["Title"] = "Create Process Step";
+    var userid = ViewBag.userid;
+    var processid = ViewBag.ProcessID;
+}
+
+<partial name="_Sidebar" />
+
+<h2>Create Process Step</h2>
+
+<div class="accordion mt-4" id="stepsAccordion">
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingSteps">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSteps" aria-expanded="false" aria-controls="collapseSteps">
+                <b>Show Existing Steps for This Process</b>
+            </button>
+        </h2>
+        <div id="collapseSteps" class="accordion-collapse" aria-labelledby="headingSteps" data-bs-parent="#stepsAccordion">
+            <div class="accordion-body">
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>Step No</th>
+                            <th>Description</th>
+                            <th>Group</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var step in (List<FreschOne.Models.foProcessSteps>)ViewBag.ProcessStepList)
+                        {
+                            var highlight = (ViewBag.HighlightStepNo != null && step.StepNo == (decimal)ViewBag.HighlightStepNo)
+                            ? "table-warning"
+                            : "";
+
+                            <tr class="@highlight">
+                                <td>
+                                    @step.StepNo
+                                    @if (ViewBag.HighlightStepNo != null && step.StepNo == (decimal)ViewBag.HighlightStepNo)
+                                    {
+                                        <span class="badge bg-danger ms-2">Duplicate</span>
+                                    }
+                                </td>
+                                <td>@step.StepDescription</td>
+                                <td>@step.GroupName</td>
+                                <td>@step.UserName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<form asp-action="Create" asp-route-userid="@userid" method="post">
+    <input type="hidden" asp-for="ProcessID" />
+
+    <div class="mb-3">
+        <label asp-for="StepNo" class="form-label">Step Number</label>
+        <input asp-for="StepNo" class="form-control" />
+        <span asp-validation-for="StepNo" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="StepDescription" class="form-label">Step Description</label>
+        <input asp-for="StepDescription" class="form-control" />
+        <span asp-validation-for="StepDescription" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="AssignGroupID" class="form-label">Assigned Group (optional)</label>
+        @Html.DropDownListFor(m => m.AssignGroupID,
+                 new SelectList(ViewBag.GroupDropdown, "Value", "Text"),
+                 "",
+                 new { @class = "form-select" })
+        <span asp-validation-for="AssignGroupID" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="AssignUserID" class="form-label">Assigned User (optional)</label>
+        @Html.DropDownListFor(m => m.AssignUserID,
+                 new SelectList(ViewBag.UserDropdown, "Value", "Text"),
+                 "",
+                 new { @class = "form-select" })
+        <span asp-validation-for="AssignUserID" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3 form-check">
+        <input asp-for="Active" class="form-check-input" type="checkbox" />
+        <label asp-for="Active" class="form-check-label">Active</label>
+        <span asp-validation-for="Active" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <button type="submit" name="action" value="addanother" class="btn btn-primary">Save & Add Another</button>
+
+    <a href="@Url.Action("Index", new { processid = processid, userid = userid })" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

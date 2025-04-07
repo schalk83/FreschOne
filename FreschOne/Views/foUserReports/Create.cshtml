@@ -1,24 +1,16 @@
 ﻿@model FreschOne.Models.foUserReports
-
 @{
     ViewData["Title"] = "Assign Report";
     var userid = ViewBag.userid;
-
+    var l_user = ViewBag.l_user;
 }
 
 <partial name="_Sidebar" />
 
 <h2>Assign Report</h2>
 
-
-<form asp-action="Create" asp-route-userid="@userid" method="post">
-    <div class="mb-3">
-        <label asp-for="UserID" class="form-label">User</label>
-        <select asp-for="UserID" asp-items="ViewBag.Users" class="form-select">
-            <option value="">-- Select User --</option>
-        </select>
-        <span asp-validation-for="UserID" class="text-danger"></span>
-    </div>
+<form asp-action="Create" asp-route-userid="@userid" asp-route-l_user="@l_user" method="post">
+    <input type="hidden" asp-for="UserID" />
 
     <div class="mb-3">
         <label asp-for="ReportID" class="form-label">Report</label>
@@ -29,7 +21,7 @@
     </div>
 
     <button type="submit" class="btn btn-success">Save</button>
-    <a href="@Url.Action("Index",new { userid })" class="btn btn-secondary">Cancel</a>
+    <a href="@Url.Action("Index", new { userid = userid, l_user = l_user })" class="btn btn-secondary">Cancel</a>
 </form>
 
 @section Scripts {

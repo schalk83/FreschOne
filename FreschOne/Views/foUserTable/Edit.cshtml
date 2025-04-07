@@ -1,0 +1,35 @@
+﻿@model FreschOne.Models.foUserTable
+@{
+    var userid = ViewBag.userid;
+}
+
+<partial name="_Sidebar" />
+<h2>Edit Table Access</h2>
+
+<form asp-action="Edit" asp-route-userid="@userid" method="post">
+    <input type="hidden" asp-for="ID" />
+    <input type="hidden" asp-for="UserID" />
+
+    <div class="mb-3">
+        <label asp-for="TableName" class="form-label">Table</label>
+        <select asp-for="TableName" asp-items="ViewBag.TableOptions" class="form-select">
+            <option value="">-- Select Table --</option>
+        </select>
+        <span asp-validation-for="TableName" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ReadWriteAccess" class="form-label">Access</label>
+        <select asp-for="ReadWriteAccess" asp-items="ViewBag.AccessOptions" class="form-select">
+            <option value="">-- Select Access --</option>
+        </select>
+        <span asp-validation-for="ReadWriteAccess" class="text-danger" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a class="btn btn-secondary" asp-action="Index" asp-route-userid="@userid" asp-route-l_user="@Model.UserID">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

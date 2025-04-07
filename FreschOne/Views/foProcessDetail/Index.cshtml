@@ -1,0 +1,109 @@
+﻿@model List<FreschOne.Models.foProcessDetail>
+@{
+    var userid = ViewBag.userid;
+    var processId = ViewBag.SelectedProcessId as long?;
+    var stepId = ViewBag.SelectedStepId as long?;
+}
+
+<partial name="_Sidebar" />
+
+<h2>Process Step Details</h2>
+
+<form method="get" asp-action="Index" class="row g-3 mb-3">
+    <input type="hidden" name="userid" value="@userid" />
+    <div class="col-md-6">
+        <label class="form-label">Select Process:</label>
+        @Html.DropDownList("processId", (List<SelectListItem>)ViewBag.ProcessDropdown, "-- Select Process --", new { @class = "form-select", onchange = "this.form.submit()" })
+    </div>
+
+    @if (processId.HasValue)
+    {
+        <div class="col-md-6">
+            <label class="form-label">Select Step:</label>
+            @Html.DropDownList("stepId", (List<SelectListItem>)ViewBag.StepDropdown, "-- Select Step --", new { @class = "form-select", onchange = "this.form.submit()" })
+        </div>
+    }
+</form>
+
+@if (stepId.HasValue)
+{
+    <a href="@Url.Action("Create", new { userid = userid, processId = processId, stepId = stepId })" class="btn btn-primary mb-3">Add Detail</a>
+
+    <table class="table table-bordered sortable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(this)">Table Name</th>
+                <th onclick="sortTable(this)">Form Type</th>
+                <th onclick="sortTable(this)">Column Query</th>
+                <th onclick="sortTable(this)">Is Parent?</th>
+                <th onclick="sortTable(this)">FK Column</th>
+                <th onclick="sortTable(this)">Description</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.TableName</td>
+                    <td>@item.FormType</td>
+                    <td>@item.ColumnQuery</td>
+                    <td>@(item.Parent ? "Yes" : "No")</td>
+                    <td>@item.FKColumn</td>
+                    <td>@item.TableDescription</td>
+                    <td>
+                        <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
+                        <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this detail?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+@section Scripts {
+    <script>
+        function sortTable(th) {
+            const table = th.closest("table");
+            const tbody = table.querySelector("tbody");
+            const index = Array.from(th.parentNode.children).indexOf(th);
+            const ascending = !th.classList.contains("sorted-asc");
+
+            Array.from(table.querySelectorAll("th")).forEach(th => th.classList.remove("sorted-asc", "sorted-desc"));
+            th.classList.add(ascending ? "sorted-asc" : "sorted-desc");
+
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.children[index].textContent.trim().toLowerCase();
+                const cellB = rowB.children[index].textContent.trim().toLowerCase();
+                return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+    <style>
+        th.sorted-asc::after {
+            content: " ▲";
+            font-size: 0.75em;
+        }
+
+        th.sorted-desc::after {
+            content: " ▼";
+            font-size: 0.75em;
+        }
+    </style>
+}

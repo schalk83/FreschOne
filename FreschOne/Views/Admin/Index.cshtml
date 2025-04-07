@@ -27,10 +27,19 @@
                     <ul class="list-unstyled">
                         @foreach (var table in group)
                         {
-                            <li> 
-                                <a href="@Url.Action("Index",table.TableName, new  {userid = userid})">
-                                    @table.TableName
-                                </a>
+                            <li>
+                                @if (table.TableName == "foUserReports")
+                                {
+                                    <a href="@Url.Action("Index", table.TableName, new { userid = userid, group = table.TableGroup })">
+                                        @table.TableName
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a href="@Url.Action("Index", table.TableName, new { userid = userid })">
+                                        @table.TableName
+                                    </a>
+                                }
                             </li>
                         }
                     </ul>

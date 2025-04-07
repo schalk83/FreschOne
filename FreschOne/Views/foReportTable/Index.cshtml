@@ -1,71 +1,60 @@
-﻿@model List<FreschOne.Models.foReportTable>
+﻿@model List<FreschOne.Models.foProcessSteps>
 
 @{
-    ViewData["Title"] = "Report Tables";
+    ViewData["Title"] = "Process Steps";
     var userid = ViewBag.userid;
-    var reportID = ViewBag.ReportID;
+    var processID = ViewBag.ProcessID;
 }
 
 <partial name="_Sidebar" />
 
-<h2>Report Tables</h2>
+<h2>Process Steps</h2>
 
 <form method="get" asp-action="Index">
     <input type="hidden" name="userid" value="@userid" />
     <div class="mb-3">
-        <label class="form-label">Select Report</label>
+        <label class="form-label">Select Process</label>
         @Html.DropDownList(
-                 "reportid",
-                 new SelectList(ViewBag.ReportsDropdown, "Value", "Text", reportID),
-                 "-- Select Report --",
+                 "processid",
+                 new SelectList(ViewBag.ProcessDropdown, "Value", "Text", processID),
+                 "-- Select Process --",
                  new { @class = "form-select", onchange = "this.form.submit()" }
                  )
     </div>
 </form>
 
-@if (reportID != null)
+@if (processID != null)
 {
-        <a href="@Url.Action("Create", new { reportid = reportID, userid = userid })" class="btn btn-primary mb-3">Add Table</a>
+    <a href="@Url.Action("Create", new { processid = processID, userid = userid })" class="btn btn-primary mb-3">Add Step</a>
 
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Table Name</th>
-                    <th>Form Type</th>
-                    <th>Column Count</th>
-                    <th>Parent</th>
-                    <th>FK Column</th>
-                    <th>Description</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
+    <table class="table table-bordered sortable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(this)" style="cursor:pointer;">Step No</th>
+                <th onclick="sortTable(this)" style="cursor:pointer;">Description</th>
+                <th onclick="sortTable(this)" style="cursor:pointer;">Group</th>
+                <th onclick="sortTable(this)" style="cursor:pointer;">User</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
             @foreach (var item in Model)
             {
-                        <tr>
-                            <td>@item.TableName</td>
-                            <td>@item.FormType</td>
-                            <td>@item.ColumnCount</td>
-                            <td>@(item.Parent == true ? "Yes" : "No")</td>
-                            <td>@item.FKColumn</td>
-                            <td>@item.TableDescription</td>
-                            <td>
-                                <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
-                                <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-reportid="@reportID" asp-route-userid="@userid" style="display:inline;">
-                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                </form>
-                            </td>
-                        </tr>
+                <tr>
+                    <td>@item.StepNo</td>
+                    <td>@item.StepDescription</td>
+                    <td>@item.GroupName</td>
+                    <td>@item.UserName</td>
+                    <td>
+                        <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
+                        <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-processid="@processID" asp-route-userid="@userid" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
             }
-            </tbody>
-        </table>
-}
-
-@if (ViewBag.ReportID != null)
-{
-    <form asp-action="CheckParent" asp-route-reportid="@ViewBag.ReportID" asp-route-userid="@ViewBag.userid" method="post" class="d-inline">
-        <button type="submit" class="btn btn-warning mb-3">Validation</button>
-    </form>
+        </tbody>
+    </table>
 }
 
 @if (TempData["ErrorMessage"] != null)
@@ -75,4 +64,38 @@
 @if (TempData["Message"] != null)
 {
     <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+@section Scripts {
+    <script>
+        function sortTable(th) {
+            const table = th.closest("table");
+            const tbody = table.querySelector("tbody");
+            const index = Array.from(th.parentNode.children).indexOf(th);
+            const ascending = !th.classList.contains("sorted-asc");
+
+            Array.from(table.querySelectorAll("th")).forEach(th => th.classList.remove("sorted-asc", "sorted-desc"));
+            th.classList.add(ascending ? "sorted-asc" : "sorted-desc");
+
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.children[index].textContent.trim().toLowerCase();
+                const cellB = rowB.children[index].textContent.trim().toLowerCase();
+                return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+    <style>
+        th.sorted-asc::after {
+            content: " ▲";
+            font-size: 0.75em;
+        }
+
+        th.sorted-desc::after {
+            content: " ▼";
+            font-size: 0.75em;
+        }
+    </style>
 }
