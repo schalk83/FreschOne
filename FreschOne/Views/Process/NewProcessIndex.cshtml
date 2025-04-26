@@ -1,0 +1,33 @@
+﻿@model List<FreschOne.Models.foProcess>
+
+@{
+    ViewData["Title"] = "Start a New Process";
+    var userid = ViewBag.userid;
+}
+
+<partial name="_Sidebar" />
+
+<h1 class="mb-4">Start a New Process</h1>
+
+<div class="row">
+    @foreach (var process in Model)
+    {
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title">@process.ProcessName</h5>
+                        @if (!string.IsNullOrWhiteSpace(process.ProcessDescription))
+                        {
+                            <p class="card-text text-muted">@process.ProcessDescription</p>
+                        }
+                    </div>
+                    <a class="btn btn-outline-primary mt-2"
+                       href="@Url.Action("CreateStep","ProcessEvents", new { processId = process.ID, userId = userid })">
+                        Start Process
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

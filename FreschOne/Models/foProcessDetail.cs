@@ -18,7 +18,7 @@ namespace FreschOne.Models
         public string FormType { get; set; }
 
         [Required]
-        public int ColumnCount { get; set; }
+        public int? ColumnCount { get; set; }
 
         [Required]
         public bool Parent { get; set; }

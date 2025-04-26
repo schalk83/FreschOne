@@ -1,0 +1,77 @@
+﻿@model FreschOne.Models.DynamicTableViewModel
+
+@{
+    var allPrefilled = ViewBag.PrefilledValues as Dictionary<string, List<Dictionary<string, object>>> ?? new();
+    var tableName = Model.TableName;
+    var tablePrefilledRows = allPrefilled.ContainsKey(tableName)
+        ? allPrefilled[tableName]
+        : Enumerable.Range(0, Model.RowCount).Select(_ => Model.Columns.ToDictionary(col => col, col => (object)null)).ToList();
+}
+
+@for (int i = 0; i < tablePrefilledRows.Count; i++)
+{
+
+    var values = tablePrefilledRows[i];
+    <tr data-row-index="@i">
+
+        <!-- 🔐 Hidden RecordID per row -->
+        @{
+            var recordIdKey = "RecordID";
+            var recordId = values.ContainsKey(recordIdKey) ? values[recordIdKey]?.ToString() : "";
+            var recordIdFieldName = $"{Model.TableName}_RecordID_{i}";
+        }
+        <input type="text" name="@recordIdFieldName" value="@recordId" />
+
+        <td class="fw-bold align-middle text-center row-no">@(@i + 1)</td>
+        @foreach (var column in Model.Columns)
+        {
+            var fieldName = $"{Model.TableName}_{column}_{i}";
+            var columnType = Model.ColumnTypes.ContainsKey(column) ? Model.ColumnTypes[column] : "varchar";
+            var columnLength = Model.ColumnLengths.ContainsKey(column) ? Model.ColumnLengths[column] : 255;
+            var value = values.ContainsKey(column) ? values[column]?.ToString() : "";
+            <td>
+
+
+                @if (column.StartsWith("attachment_"))
+                {
+                    string[] parts = value?.Split(';') ?? new string[2];
+                    string desc = parts.Length > 0 ? parts[0] : "";
+                    string path = parts.Length > 1 ? parts[1] : "";
+                    <input type="text" name="desc_@fieldName" class="form-control mb-1" placeholder="Description" value="@desc" />
+                    <input type="file" name="file_@fieldName" class="form-control mb-1" onchange="updateAttachmentField('@fieldName')" />
+                    <input type="hidden" name="@fieldName" id="hidden_@fieldName" value="@($"{desc};{path}")" />
+                }
+                else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+                {
+                    var fk = Model.ForeignKeys.First(fk => fk.ColumnName == column);
+                    var options = Model.ForeignKeyOptions[fk.TableName];
+                    @Html.DropDownList(fieldName, new SelectList(options, "Value", "Text", value), "", new { @class = "form-select" })
+                }
+                else if (columnType == "varchar" && columnLength > 255)
+                {
+                    <textarea name="@fieldName" class="form-control">@value</textarea>
+                }
+                else if (columnType is "int" or "bigint" or "decimal")
+                {
+                    <input type="number" name="@fieldName" value="@value" class="form-control input-short" />
+                }
+                else if (columnType == "bit")
+                {
+                    <input type="checkbox" name="@fieldName" class="form-check-input" value="true" @(value == "True" ? "checked" : "") />
+                }
+                else if (columnType == "datetime")
+                {
+                    string formattedDate = DateTime.TryParse(value, out var dtVal) ? dtVal.ToString("yyyy-MM-dd") : "";
+                    <input type="date" name="@fieldName" value="@formattedDate" class="form-control input-short" />
+                }
+                else
+                {
+                    <input type="text" name="@fieldName" value="@value" class="form-control" />
+                }
+            </td>
+        }
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">🗑</button>
+        </td>
+    </tr>
+}

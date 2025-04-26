@@ -6,7 +6,6 @@
     var processId = ViewBag.ProcessId;
     var stepId = ViewBag.StepId;
     bool isFirstDetail = ViewBag.IsFirstDetail == true;
-
 }
 
 <partial name="_Sidebar" />
@@ -55,9 +54,8 @@
     </div>
 }
 
-
-<form asp-action="Create" asp-route-userid="@userid" method="post">
-    <input type="hidden" asp-for="StepID" value="@stepId" />
+<form asp-action="Create" asp-route-userid="@userid" asp-route-processId="@processId" asp-route-stepId="@stepId" method="post">
+    <input type="hidden" asp-for="StepID" />
 
     <div class="mb-3">
         <label asp-for="TableName" class="form-label">Table Name</label>
@@ -90,13 +88,17 @@
 
     <div class="mb-3">
         <label asp-for="Parent" class="form-label">Is Parent Table?</label>
-        <select asp-for="Parent" class="form-select" disabled>
+        <select asp-for="Parent" class="form-select" id="Parent">
             <option value="false">No</option>
             <option value="true">Yes</option>
         </select>
-        <input type="hidden" name="Parent" value="@(isFirstDetail ? "true" : "false")" />
+        @if (isFirstDetail)
+        {
+            <div class="form-text text-info">First record must be parent.</div>
+        }
         <span asp-validation-for="Parent" class="text-danger"></span>
     </div>
+
 
     <div class="mb-3" id="fkColumnGroup">
         <label asp-for="FKColumn" class="form-label">Foreign Key Column</label>
@@ -112,18 +114,21 @@
         <span asp-validation-for="TableDescription" class="text-danger"></span>
     </div>
 
-    <button type="submit" class="btn btn-success" name="action" value="save">Save</button>
+    <div class="mb-3 form-check">
+        @Html.CheckBoxFor(m => m.Active, new { @class = "form-check-input" })
+        <label asp-for="Active" class="form-check-label">Active</label>
+        <span asp-validation-for="Active" class="text-danger"></span>
+    </div>
+
+
+    <button type="submit" class="btn btn-success">Save</button>
     <button type="submit" class="btn btn-outline-primary" name="action" value="addanother">Save & Add Another</button>
     <a href="@Url.Action("Index", new { processId = processId, stepId = stepId, userid = userid })" class="btn btn-secondary">Cancel</a>
 </form>
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger mt-3">@TempData["ErrorMessage"]</div>
-}
-
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
     <script>
         function toggleFKDropdown() {
             const parent = document.querySelector('[name="Parent"]').value;
@@ -186,7 +191,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            toggleFKDropdown();
+            
 
             const tableInput = document.getElementById("TableNameInput");
             const columnInput = document.querySelector('[name="ColumnQuery"]');

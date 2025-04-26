@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Data.SqlClient;
 
 namespace FreschOne.Controllers
 {
@@ -11,7 +12,7 @@ namespace FreschOne.Controllers
         public BaseController(DatabaseHelper dbHelper, IConfiguration configuration)
         {
             _dbHelper = dbHelper;
-            _configuration = configuration;  // Injected IConfiguration
+            _configuration = configuration;
         }
 
         protected void SetUserAccess(long userId)
@@ -30,6 +31,6 @@ namespace FreschOne.Controllers
         {
             _dbHelper.EnsureAuditFieldsExist(tablename);
         }
-
+             
     }
 }

@@ -1,18 +1,19 @@
 ﻿@{
     bool isAdmin = ViewBag.IsAdmin;
+    int pendingCount = ViewBag.PendingTaskCount ?? 0;
+    int approvalCount = ViewBag.PendingApprovalCount ?? 0;
 }
+
 <nav class="navbar navbar-expand-lg navbar-light bg-light d-flex flex-column p-3"
      style="position: fixed; top: 0; left: 0; width: 250px; min-height: 100vh; overflow-y: auto;">
 
-    <!-- Navbar brand section -->
     <div class="mb-4">
         <a class="navbar-brand" asp-controller="Home" asp-action="Index">FreschOne</a>
     </div>
 
-    <!-- Navigation links container -->
     <div class="flex-grow-1 d-flex flex-column">
         <ul class="nav flex-column">
-             @if (isAdmin)
+            @if (isAdmin)
             {
                 <li class="nav-item">
                     <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index"
@@ -20,40 +21,57 @@
                         Admin
                     </a>
                 </li>
-              }
-                        
+            }
+
+            <li class="nav-item d-flex justify-content-between align-items-center">
+                <a class="nav-link text-dark d-flex justify-content-between w-100"
+                   asp-controller="ProcessEvents"
+                   asp-action="PendingItems"
+                   asp-route-userId="@Context.Request.Query["userId"]">
+                    <span>Pending Tasks</span>
+                    @if (pendingCount > 0)
+                    {
+                        <span class="badge bg-danger rounded-pill ms-2">@pendingCount</span>
+                    }
+                </a>
+            </li>
+
+            <li class="nav-item d-flex justify-content-between align-items-center">
+                <a class="nav-link text-dark d-flex justify-content-between w-100"
+                   asp-controller="ApprovalEvents"
+                   asp-action="PendingApprovalItems"
+                   asp-route-userId="@Context.Request.Query["userId"]">
+                    <span>Approval Pending</span>
+                    @if (approvalCount > 0)
+                    {
+                        <span class="badge bg-warning text-dark rounded-pill ms-2">@approvalCount</span>
+                    }
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link text-dark" asp-controller="Process" asp-action="NewProcessIndex"
+                   asp-route-userId="@Context.Request.Query["userId"]">
+                    Start a Process
+                </a>
+            </li>
+
             <li class="nav-item">
                 <a class="nav-link text-dark" asp-controller="DataManagement" asp-action="Index"
                    asp-route-userId="@Context.Request.Query["userId"]">
                     Data Management New
                 </a>
             </li>
+
             <li class="nav-item">
                 <a class="nav-link text-dark" asp-controller="DynamicReport" asp-action="Index"
                    asp-route-userId="@Context.Request.Query["userId"]">
                     Reports
-               </a>
+                </a>
             </li>
 
-           @*  <li class="nav-item">
-                <div class="nav-link d-flex justify-content-between align-items-center">
-                    <a class="text-dark" asp-controller="TableX" asp-action="Index" asp-route-tablename="tbl_tran_Student">Student</a>
-                    <span class="toggle-arrow">▼</span>
-                </div>
+            <li><hr /></li>
 
-                <!-- Sub-menu (hidden by default) -->
-                <ul class="sub-menu">
-                    <li>
-                        <a class="nav-link" asp-controller="TableXX" asp-action="Index" asp-route-tablename="tbl_tran_Student">Student Option 1</a>
-                    </li>
-                    <li>
-                        <a class="nav-link" asp-controller="TableXxx" asp-action="Index" asp-route-tablename="tbl_tran_Student">Student Option 500 ABDBDEBEBDEBDE 2</a>
-                    </li>
-                </ul>
-            </li> *@
-            <li>
-                <hr />
-            </li>
             <li class="nav-item">
                 <a class="nav-link text-danger" asp-controller="Account" asp-action="Login">Logout</a>
             </li>
@@ -65,14 +83,10 @@
     document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll(".toggle-arrow").forEach(function (arrow) {
             arrow.addEventListener("click", function (event) {
-                event.stopPropagation(); // Prevent link click interference
-
-                // Find the sub-menu and toggle visibility
+                event.stopPropagation();
                 let subMenu = this.closest(".nav-item").querySelector(".sub-menu");
                 let isOpen = subMenu.style.display === "block";
                 subMenu.style.display = isOpen ? "none" : "block";
-
-                // Rotate arrow
                 this.classList.toggle("open", !isOpen);
             });
         });
