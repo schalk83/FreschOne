@@ -1,0 +1,105 @@
+﻿@model FreschOne.Models.foApprovalSteps
+@{
+    ViewData["Title"] = "Edit Approval Step";
+    var userid = ViewBag.userid;
+    var processId = ViewBag.ProcessID;
+    var groupList = ViewBag.GroupDropdown as List<SelectListItem>;
+    var userList = ViewBag.UserDropdown as List<SelectListItem>;
+}
+
+<partial name="_Sidebar" />
+
+<h2>Edit Approval Step</h2>
+
+<div class="accordion mt-4" id="approvalStepsAccordion">
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingApprovalSteps">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseApprovalSteps" aria-expanded="false" aria-controls="collapseApprovalSteps">
+                <b>Show Existing Approval Steps for This Process</b>
+            </button>
+        </h2>
+        <div id="collapseApprovalSteps" class="accordion-collapse" aria-labelledby="headingApprovalSteps" data-bs-parent="#approvalStepsAccordion">
+            <div class="accordion-body">
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>Step No</th>
+                            <th>Description</th>
+                            <th>Group</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var step in (List<FreschOne.Models.foApprovalSteps>)ViewBag.ProcessApprovalStepList)
+                        {
+                            var highlight = (ViewBag.HighlightStepNo != null && step.StepNo == (decimal)ViewBag.HighlightStepNo)
+                            ? "table-warning"
+                            : "";
+
+                            <tr class="@highlight">
+                                <td>
+                                    @step.StepNo
+                                    @if (ViewBag.HighlightStepNo != null && step.StepNo == (decimal)ViewBag.HighlightStepNo)
+                                    {
+                                        <span class="badge bg-danger ms-2">Duplicate</span>
+                                    }
+                                </td>
+                                <td>@step.StepDescription</td>
+                                <td>@step.GroupName</td>
+                                <td>@step.UserName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form asp-action="EditApprovalStep" asp-route-userid="@userid" method="post">
+    <input type="hidden" asp-for="ID" />
+    <input type="hidden" asp-for="ProcessID" value="@processId" />
+
+    <div class="mb-3">
+        <label asp-for="StepNo" class="form-label">Step Number</label>
+        <input asp-for="StepNo" class="form-control" />
+        <span asp-validation-for="StepNo" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="StepDescription" class="form-label">Step Description</label>
+        <input asp-for="StepDescription" class="form-control" />
+        <span asp-validation-for="StepDescription" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="AssignGroupID" class="form-label">Assign to Group</label>
+        <select asp-for="AssignGroupID" class="form-select" asp-items="groupList">
+            <option value="">-- Select Group --</option>
+        </select>
+        <span asp-validation-for="AssignGroupID" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="AssignUserID" class="form-label">Assign to User</label>
+        <select asp-for="AssignUserID" class="form-select" asp-items="userList">
+            <option value="">-- Select User --</option>
+        </select>
+        <span asp-validation-for="AssignUserID" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Active" class="form-label">Active</label>
+        <select asp-for="Active" class="form-select">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </select>
+    </div>
+
+    <button type="submit" name="action" value="save" class="btn btn-primary">Save Changes</button>
+    <a asp-action="Index" asp-route-userid="@userid" asp-route-processid="@processId" class="btn btn-link">Back</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

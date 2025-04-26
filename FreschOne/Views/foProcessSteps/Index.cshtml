@@ -35,12 +35,23 @@
                 </h2>
                 <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#stepAccordion">
                     <div class="accordion-body">
-                        <p><strong>Assigned Group:</strong> @step.GroupName | <strong>User:</strong> @step.UserName</p>
+                        @if (!string.IsNullOrEmpty(step.GroupName))
+                        {
+                            <p><strong>Assigned Group:</strong> @step.GroupName</p>
+                        }
+                        else if (!string.IsNullOrEmpty(step.UserName))
+                        {
+                            <p><strong>Assigned User:</strong> @step.UserName</p>
+                        }
+                        else
+                        {
+                            <p class="text-danger"><strong>Unassigned</strong></p>
+                        }
 
-                        <a href="@Url.Action("Edit", new { id = step.ID, userid = userid })" class="btn btn-sm btn-secondary mb-2">Edit Step</a>
+                        <a href="@Url.Action("Edit", new { id = step.ID, userid = userid })" class="btn btn-sm btn-outline-primary">Edit Step</a>
 
                         <form method="post" asp-action="Delete" asp-route-id="@step.ID" asp-route-userid="@userid" asp-route-processid="@processId" style="display:inline">
-                            <button type="submit" class="btn btn-sm btn-danger mb-2" onclick="return confirm('Delete this step?')">Delete Step</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this step?')">Delete Step</button>
                         </form>
 
                         <a href="@Url.Action("Index", "foProcessDetail", new { userid = userid, processId = processId, stepId = step.ID })"
@@ -85,26 +96,90 @@
             </div>
         }
     </div>
-}
-<a href="@Url.Action("Validate", new { processid = processId, userid = userid })" class="btn btn-warning mb-3">Validate Setup</a>
 
-@if (TempData["ErrorList"] is IEnumerable<string> errors && errors.Any())
+<a href="@Url.Action("Validate", new { processid = processId, userid = userid })" class="btn btn-warning mb-3">Validate Setup</a>
+<hr />
+<h4>Approval Steps</h4>
+    <br />
+
+<a class="btn btn-primary mb-3" asp-action="CreateApprovalStep" asp-route-processid="@ViewBag.ProcessID" asp-route-userid="@ViewBag.userid">Add Approval Step</a>
+
+<div class="accordion" id="approvalAccordion">
+    @if (ViewBag.ApprovalSteps is List<FreschOne.Models.foApprovalSteps> approvalSteps && approvalSteps.Any())
+    {
+        int i = 0;
+        foreach (var step in approvalSteps)
+        {
+            var headingId = $"headingApproval_{i}";
+            var collapseId = $"collapseApproval_{i}";
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="@headingId">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
+                        Approval Step @step.StepNo: @step.StepDescription
+                    </button>
+                </h2>
+                <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#approvalAccordion">
+                    <div class="accordion-body">
+                            @if (!string.IsNullOrEmpty(step.GroupName))
+                            {
+                                <p><strong>Assigned Group:</strong> @step.GroupName</p>
+                            }
+                            else if (!string.IsNullOrEmpty(step.UserName))
+                            {
+                                <p><strong>Assigned User:</strong> @step.UserName</p>
+                            }
+                            else
+                            {
+                                <p class="text-danger"><strong>Unassigned</strong></p>
+                            }
+
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-sm btn-outline-primary"
+                               asp-action="EditApprovalStep"
+                               asp-route-id="@step.ID"
+                               asp-route-userid="@ViewBag.userid">Edit Step</a>
+
+                            <form asp-action="DeleteApprovalStep" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@step.ID" />
+                                <input type="hidden" name="processid" value="@ViewBag.ProcessID" />
+                                <input type="hidden" name="userid" value="@ViewBag.userid" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Are you sure you want to delete this approval step?');">
+                                    Delete Step
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            i++;
+        }
+    }
+    else
+    {
+        <p class="text-muted">No approval steps defined yet.</p>
+    }
+</div>
+
+<br />
+<a href="@Url.Action("ValidateApprovalSteps", new { processid = processId, userid = userid })" class="btn btn-warning mb-3">Validate Setup</a>
+}
+@if (TempData["ErrorList"] is List<string> errors)
 {
     <div class="alert alert-danger">
+        <strong>Validation Errors:</strong>
         <ul>
-            @foreach (var err in errors)
+            @foreach (var error in errors)
             {
-                <li>@err</li>
+                <li>@error</li>
             }
         </ul>
     </div>
 }
-
 else if (TempData["Message"] != null)
 {
     <div class="alert alert-success">@TempData["Message"]</div>
 }
-
 
 
 @section Scripts {

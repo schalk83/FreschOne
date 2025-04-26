@@ -1,4 +1,4 @@
-﻿@model Tuple<Dictionary<string, List<foUserTable>>, List<foTablePrefix>>
+﻿@* @model Tuple<Dictionary<string, List<foUserTable>>, List<foTablePrefix>>
 
 @{
     ViewData["Title"] = "Data Management";
@@ -36,6 +36,65 @@
                             </li>
                         }
                     </ul>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+ *@
+
+
+@model Tuple<Dictionary<string, List<foUserTable>>, List<foTablePrefix>>
+
+@{
+    ViewData["Title"] = "Data Management";
+    var groupedTables = Model.Item1;
+    var tablePrefixes = Model.Item2;
+}
+
+<partial name="_Sidebar" />
+
+<h1 class="mb-4">Data Management</h1>
+
+<div class="accordion" id="accordionExample">
+    @foreach (var group in groupedTables)
+    {
+        var groupId = $"group_{group.Key.Replace(" ", "_")}";
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="heading_@groupId">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapse_@groupId" aria-expanded="false" aria-controls="collapse_@groupId">
+                @group.Key
+            </button>
+        </h2>
+            <div id="collapse_@groupId" class="accordion-collapse collapse" aria-labelledby="heading_@groupId">
+                <div class="accordion-body">
+                <div class="row">
+                    @foreach (var access in group.Value)
+                        {
+                            var prefix = tablePrefixes.FirstOrDefault(p => access.TableName.StartsWith(p.Prefix));
+                            var displayName = access.TableName;
+                            if (prefix != null)
+                            {
+                                displayName = access.TableName.Replace(prefix.Prefix, "").Replace("_", " ");
+                            }
+
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card shadow-sm h-100">
+                                    <div class="card-body d-flex flex-column justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">@displayName</h6>
+                                            <p class="card-text text-muted small">@access.TableName</p>
+                                        </div>
+                                        <a class="btn btn-outline-primary mt-2"
+                                           href="@Url.Action("Index", "TableX", new { userid = access.UserID, tablename = access.TableName })">
+                                            Manage Data
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>

@@ -66,7 +66,7 @@ namespace FreschOne.Controllers
             ViewBag.StepDetailList = stepDetails;
             bool isFirstDetail = !stepDetails.Any();
             ViewBag.IsFirstDetail = isFirstDetail;
-            detail.Parent = isFirstDetail;
+            if (isFirstDetail) detail.Parent = true;
 
             if (!IsQueryValid(detail.TableName, detail.ColumnQuery))
             {
@@ -83,9 +83,9 @@ namespace FreschOne.Controllers
             using (var conn = GetConnection())
             {
                 var cmd = new SqlCommand(@"INSERT INTO foProcessDetail
-                (StepID, TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription, Active)
-                VALUES
-                (@StepID, @TableName, @ColumnQuery, @FormType, @ColumnCount, @Parent, @FKColumn, @TableDescription, @Active)", conn);
+            (StepID, TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription, Active)
+            VALUES
+            (@StepID, @TableName, @ColumnQuery, @FormType, @ColumnCount, @Parent, @FKColumn, @TableDescription, @Active)", conn);
 
                 cmd.Parameters.AddWithValue("@StepID", detail.StepID);
                 cmd.Parameters.AddWithValue("@TableName", detail.TableName ?? (object)DBNull.Value);
@@ -100,6 +100,17 @@ namespace FreschOne.Controllers
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
+
+            try
+            {
+                if (detail.TableName != "")
+                    EnsureAuditFieldsExist(detail.TableName);
+            }
+            catch
+            {
+
+            }
+
             if (action == "addanother")
             {
                 return RedirectToAction("Create", new { userid, processId, stepId = detail.StepID });
@@ -171,15 +182,15 @@ namespace FreschOne.Controllers
             using (var conn = GetConnection())
             {
                 var cmd = new SqlCommand(@"UPDATE foProcessDetail SET
-                    TableName = @TableName,
-                    ColumnQuery = @ColumnQuery,
-                    FormType = @FormType,
-                    ColumnCount = @ColumnCount,
-                    Parent = @Parent,
-                    FKColumn = @FKColumn,
-                    TableDescription = @TableDescription,
-                    Active = @Active
-                    WHERE ID = @ID", conn);
+            TableName = @TableName,
+            ColumnQuery = @ColumnQuery,
+            FormType = @FormType,
+            ColumnCount = @ColumnCount,
+            Parent = @Parent,
+            FKColumn = @FKColumn,
+            TableDescription = @TableDescription,
+            Active = @Active
+            WHERE ID = @ID", conn);
 
                 cmd.Parameters.AddWithValue("@TableName", detail.TableName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ColumnQuery", detail.ColumnQuery ?? (object)DBNull.Value);
@@ -195,6 +206,16 @@ namespace FreschOne.Controllers
                 cmd.ExecuteNonQuery();
             }
 
+            try
+            {
+                if (detail.TableName != "")
+                    EnsureAuditFieldsExist(detail.TableName);
+            }
+            catch
+            {
+
+            }
+
             if (action == "addanother")
             {
                 return RedirectToAction("Create", new { userid, processId, stepId = detail.StepID });
@@ -202,6 +223,7 @@ namespace FreschOne.Controllers
 
             return RedirectToAction("Index", new { userid, processId, stepId = detail.StepID });
         }
+
 
         [HttpPost]
         public IActionResult Delete(long id, int userid)
@@ -215,10 +237,12 @@ namespace FreschOne.Controllers
                 var getCmd = new SqlCommand("SELECT d.StepID, s.ProcessID FROM foProcessDetail d JOIN foProcessSteps s ON d.StepID = s.ID WHERE d.ID = @ID", conn);
                 getCmd.Parameters.AddWithValue("@ID", id);
                 conn.Open();
-                using var reader = getCmd.ExecuteReader();
+
+                var reader = getCmd.ExecuteReader();
                 reader.Read();
                 stepId = (long)reader["StepID"];
                 processId = (long)reader["ProcessID"];
+                reader.Close(); // 👈 this is critical
 
                 var delCmd = new SqlCommand("DELETE FROM foProcessDetail WHERE ID = @ID", conn);
                 delCmd.Parameters.AddWithValue("@ID", id);

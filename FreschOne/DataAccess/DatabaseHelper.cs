@@ -198,8 +198,8 @@ public FoUser AuthenticateUser(string username, string password)
         var requiredColumns = new Dictionary<string, string>
     {
         { "Active", "BIT DEFAULT(1)" },
-        { "CreateUserID", "BIGINT" },
-        { "CreateDate", "DATETIME" },
+        { "CreatedUserID", "BIGINT" },
+        { "CreatedDate", "DATETIME" },
         { "ModifiedUserID", "BIGINT" },
         { "ModifiedDate", "DATETIME" },
         { "DeletedUserID", "BIGINT" },

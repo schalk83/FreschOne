@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using FreschOne.Models;
 using System;
+using System.Diagnostics;
 
 namespace FreschOne.Controllers
 {
@@ -23,6 +24,10 @@ namespace FreschOne.Controllers
                 return View(new List<foProcessSteps>());
 
             var steps = GetStepsForProcess(processid.Value);
+            var approvalstep = GetApprovalStepsForProcess(processid.Value);
+
+            ViewBag.ApprovalSteps = approvalstep;
+
             var stepDetailsMap = GetStepDetailsForProcess(processid.Value);
             ViewBag.StepDetailsMap = stepDetailsMap;
 
@@ -40,6 +45,8 @@ namespace FreschOne.Controllers
             ViewBag.GroupDropdown = GetGroupSelectList();
             ViewBag.UserDropdown = GetUserSelectList();
             ViewBag.ProcessStepList = GetStepsForProcess(processid);
+
+
 
             decimal nextStepNo = 1;
 
@@ -264,6 +271,25 @@ namespace FreschOne.Controllers
             return RedirectToAction("Index", new { processid, userid });
         }
 
+        [HttpPost]
+        public IActionResult DeleteApprovalStep(long id, long processid, int userid)
+        {
+            SetUserAccess(userid);
+            ViewBag.userid = userid;
+
+            using (var conn = GetConnection())
+            {
+                var cmd = new SqlCommand("DELETE FROM foApprovalSteps WHERE ID = @ID", conn);
+                cmd.Parameters.AddWithValue("@ID", id);
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            TempData["Message"] = "✅ Approval step deleted.";
+            return RedirectToAction("Index", new { processid, userid });
+        }
+
+
         private List<SelectListItem> GetProcessSelectList()
         {
             var list = new List<SelectListItem>();
@@ -408,6 +434,250 @@ namespace FreschOne.Controllers
             return list;
         }
 
+        private List<foApprovalSteps> GetApprovalStepsForProcess(long processid)
+        {
+            var list = new List<foApprovalSteps>();
+
+            using (var conn = GetConnection())
+            {
+                var cmd = new SqlCommand(@"
+            SELECT a.*, 
+                   g.Description AS GroupName,
+                   u.FirstName + ' ' + u.LastName AS UserName
+            FROM foApprovalSteps a
+            LEFT JOIN foGroups g ON a.GroupID = g.ID
+            LEFT JOIN foUsers u ON a.UserID = u.ID
+            WHERE a.ProcessID = @ProcessID
+            ORDER BY a.StepNo", conn);
+
+                cmd.Parameters.AddWithValue("@ProcessID", processid);
+                conn.Open();
+
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    list.Add(new foApprovalSteps
+                    {
+                        ID = (long)reader["ID"],
+                        ProcessID = (long)reader["ProcessID"],
+                        StepNo = (decimal)reader["StepNo"],
+                        StepDescription = reader["StepDescription"]?.ToString(),
+                        AssignGroupID = reader["GroupID"] as long?,
+                        AssignUserID = reader["UserID"] as long?,
+                        GroupName = reader["GroupName"]?.ToString(),
+                        UserName = reader["UserName"]?.ToString(),
+                        Active = reader["Active"] != DBNull.Value && (bool)reader["Active"]
+                    });
+                }
+            }
+
+            return list;
+        }
+
+        public IActionResult CreateApprovalStep(long processid, int userid)
+        {
+            SetUserAccess(userid);
+            ViewBag.userid = userid;
+            ViewBag.ProcessID = processid;
+            ViewBag.GroupDropdown = GetGroupSelectList();
+            ViewBag.UserDropdown = GetUserSelectList();
+
+            ViewBag.ProcessApprovalStepList = GetApprovalStepsForProcess(processid);
+
+
+            decimal nextStepNo = 1;
+
+            using (var conn = GetConnection())
+            {
+                var cmd = new SqlCommand("SELECT ISNULL(MAX(StepNo), 0) + 1 FROM foApprovalSteps WHERE ProcessID = @ProcessID", conn);
+                cmd.Parameters.AddWithValue("@ProcessID", processid);
+                conn.Open();
+                var result = cmd.ExecuteScalar();
+                nextStepNo = Convert.ToDecimal(result);
+            }
+
+            var model = new foApprovalSteps
+            {
+                ProcessID = processid,
+                StepNo = nextStepNo,
+                Active = true
+            };
+
+            return View("~/Views/foApprovalSteps/Create.cshtml", model);
+        }
+
+        [HttpPost]
+        public IActionResult CreateApprovalStep(foApprovalSteps model, int userid, string action)
+        {
+            SetUserAccess(userid);
+            ViewBag.userid = userid;
+            ViewBag.ProcessID = model.ProcessID;
+
+            bool isDuplicate = false;
+            using (var conn = GetConnection())
+            {
+                var cmd = new SqlCommand(@"
+            SELECT COUNT(*) 
+            FROM foApprovalSteps 
+            WHERE ProcessID = @ProcessID AND StepNo = @StepNo", conn);
+
+                cmd.Parameters.AddWithValue("@ProcessID", model.ProcessID);
+                cmd.Parameters.AddWithValue("@StepNo", model.StepNo);
+                conn.Open();
+                isDuplicate = (int)cmd.ExecuteScalar() > 0;
+            }
+
+            if (isDuplicate)
+            {
+                ModelState.AddModelError("StepNo", $"Approval Step No {model.StepNo} already exists in this process.");
+                ViewBag.HighlightStepNo = model.StepNo;
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.GroupDropdown = GetGroupSelectList();
+                ViewBag.UserDropdown = GetUserSelectList();
+                return View("~/Views/foApprovalSteps/Create.cshtml", model);
+            }
+
+            using (var conn = GetConnection())
+            {
+                var cmd = new SqlCommand(@"
+            INSERT INTO foApprovalSteps (ProcessID, StepNo, StepDescription, GroupID, UserID, Active)
+            VALUES (@ProcessID, @StepNo, @StepDescription, @GroupID, @UserID, @Active)", conn);
+
+                cmd.Parameters.AddWithValue("@ProcessID", model.ProcessID);
+                cmd.Parameters.AddWithValue("@StepNo", model.StepNo);
+                cmd.Parameters.AddWithValue("@StepDescription", (object?)model.StepDescription ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@GroupID", (object?)model.AssignGroupID ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@UserID", (object?)model.AssignUserID ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Active", model.Active);
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            if (action == "addanother")
+            {
+                return RedirectToAction("CreateApprovalStep", new { processid = model.ProcessID, userid });
+            }
+
+            return RedirectToAction("Index", new { processid = model.ProcessID, userid });
+        }
+
+
+        public IActionResult EditApprovalStep(long id, int userid)
+        {
+            SetUserAccess(userid);
+            ViewBag.userid = userid;
+
+            foApprovalSteps model = null;
+
+            using (var conn = GetConnection())
+            {
+                var cmd = new SqlCommand(@"
+            SELECT a.*, 
+                   g.Description AS GroupName,
+                   u.FirstName + ' ' + u.LastName AS UserName
+            FROM foApprovalSteps a
+            LEFT JOIN foGroups g ON a.GroupID = g.ID
+            LEFT JOIN foUsers u ON a.UserID = u.ID
+            WHERE a.ID = @ID", conn);
+
+                cmd.Parameters.AddWithValue("@ID", id);
+                conn.Open();
+
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    model = new foApprovalSteps
+                    {
+                        ID = (long)reader["ID"],
+                        ProcessID = (long)reader["ProcessID"],
+                        StepNo = (decimal)reader["StepNo"],
+                        StepDescription = reader["StepDescription"]?.ToString(),
+                        AssignGroupID = reader["GroupID"] as long?,
+                        AssignUserID = reader["UserID"] as long?,
+                        GroupName = reader["GroupName"]?.ToString(),
+                        UserName = reader["UserName"]?.ToString(),
+                        Active = reader["Active"] != DBNull.Value && (bool)reader["Active"]
+                    };
+                }
+            }
+
+            if (model == null)
+                return NotFound();
+
+            ViewBag.ProcessID = model.ProcessID;
+            ViewBag.GroupDropdown = GetGroupSelectList();
+            ViewBag.UserDropdown = GetUserSelectList();
+            ViewBag.ProcessApprovalStepList = GetApprovalStepsForProcess(model.ProcessID);
+
+            return View("~/Views/foApprovalSteps/Edit.cshtml", model);
+        }
+
+        [HttpPost]
+        public IActionResult EditApprovalStep(foApprovalSteps model, int userid, string action)
+        {
+            SetUserAccess(userid);
+            ViewBag.userid = userid;
+            ViewBag.ProcessID = model.ProcessID;
+
+            bool isDuplicate = false;
+            using (var conn = GetConnection())
+            {
+                var cmd = new SqlCommand(@"
+            SELECT COUNT(*) 
+            FROM foApprovalSteps 
+            WHERE ProcessID = @ProcessID AND StepNo = @StepNo AND ID <> @ID", conn);
+
+                cmd.Parameters.AddWithValue("@ProcessID", model.ProcessID);
+                cmd.Parameters.AddWithValue("@StepNo", model.StepNo);
+                cmd.Parameters.AddWithValue("@ID", model.ID);
+                conn.Open();
+                isDuplicate = (int)cmd.ExecuteScalar() > 0;
+            }
+
+            if (isDuplicate)
+            {
+                ModelState.AddModelError("StepNo", $"Approval Step No {model.StepNo} already exists in this process.");
+                ViewBag.HighlightStepNo = model.StepNo;
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.GroupDropdown = GetGroupSelectList();
+                ViewBag.UserDropdown = GetUserSelectList();
+                return View("~/Views/foApprovalSteps/Edit.cshtml", model);
+            }
+
+            using (var conn = GetConnection())
+            {
+                var cmd = new SqlCommand(@"
+            UPDATE foApprovalSteps SET 
+                StepNo = @StepNo,
+                StepDescription = @StepDescription,
+                GroupID = @GroupID,
+                UserID = @UserID,
+                Active = @Active
+            WHERE ID = @ID", conn);
+
+                cmd.Parameters.AddWithValue("@ID", model.ID);
+                cmd.Parameters.AddWithValue("@StepNo", model.StepNo);
+                cmd.Parameters.AddWithValue("@StepDescription", (object?)model.StepDescription ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@GroupID", (object?)model.AssignGroupID ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@UserID", (object?)model.AssignUserID ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Active", model.Active);
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            return RedirectToAction("Index", new { processid = model.ProcessID, userid });
+        }
+
+
+
         public IActionResult Validate(long processid, int userid)
         {
             SetUserAccess(userid);
@@ -447,9 +717,34 @@ namespace FreschOne.Controllers
             return RedirectToAction("Index", new { processid, userid });
         }
 
+        public IActionResult ValidateApprovalSteps(long processid, int userid)
+        {
+            SetUserAccess(userid);
 
+            var steps = GetApprovalStepsForProcess(processid);
+            var errors = new List<string>();
 
+            foreach (var step in steps)
+            {
+                if (string.IsNullOrWhiteSpace(step.StepDescription))
+                    errors.Add($"❌ Step {step.StepNo} has no description.");
 
+                if ((step.AssignGroupID == null && step.AssignUserID == null) ||
+                    (step.AssignGroupID != null && step.AssignUserID != null))
+                    errors.Add($"❌ Step {step.StepNo} must be assigned to either a group or a user, not both or neither.");
+            }
+
+            if (errors.Any())
+            {
+                TempData["ErrorList"] = errors;
+            }
+            else
+            {
+                TempData["Message"] = "✅ All approval steps validated successfully.";
+            }
+
+            return RedirectToAction("Index", new { processid, userid });
+        }
 
     }
 }

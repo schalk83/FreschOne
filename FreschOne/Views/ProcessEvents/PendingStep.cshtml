@@ -1,0 +1,492 @@
+﻿@model dynamic
+@using FreschOne.Models
+
+@{
+    ViewData["Title"] = "Execute Step";
+    var tables = ViewBag.ReportTables as List<foProcessDetail>;
+    var reportData = ViewBag.ReportData as Dictionary<string, List<Dictionary<string, object>>>;
+    var tableDescriptions = ViewBag.TableDescriptions as Dictionary<string, string>;
+    int userId = ViewBag.userid;
+    int? processInstanceId = ViewBag.processInstanceId;
+    int stepId = ViewBag.stepId;
+    var foreignKeys = ViewBag.ForeignKeys as Dictionary<string, List<ForeignKeyInfo>>;
+    var foreignKeyOptions = ViewBag.ForeignKeyOptions as Dictionary<string, List<SelectListItem>>;
+    var columnTypes = ViewBag.ColumnTypes as Dictionary<string, Dictionary<string, string>>;
+    var columnLengths = ViewBag.ColumnLengths as Dictionary<string, Dictionary<string, int>>;
+    var rowCounts = ViewBag.RowCounts as Dictionary<string, int> ?? new Dictionary<string, int>();
+
+}
+
+@if (TempData["RowErrors"] is List<string> errors && errors.Any())
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in errors)
+            {
+                <li>@error</li>
+            }
+        </ul>
+    </div>
+}
+
+<partial name="_Sidebar" />
+
+<h2 class="mb-3">Step @ViewBag.StepNo - @ViewBag.StepDescription</h2>
+
+<!-- ✅ Collapse Toggle Button -->
+<button class="btn btn-outline-secondary mb-3"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#historySection"
+        aria-expanded="false"
+        aria-controls="historySection">
+    📜 View Process History
+</button>
+
+<!-- ✅ Collapsible History Section                             <span class="ms-2 text-muted" style="font-size: 0.8rem;">(abel)</span>-->
+<div class="collapse" id="historySection">
+    <div class="accordion" id="historyAccordion">
+        @{
+            var history = ViewBag.ProcessHistory as List<ProcessEventAuditViewModel> ?? new();
+            var grouped = history.GroupBy(h => new
+            {
+                h.StepNo,
+                StepDescription = h.Data.GetValueOrDefault("StepDescription")?.ToString(),
+                IsApproval = h.Data.TryGetValue("StepType", out var t) && t?.ToString() == "Approval"
+            })
+            .OrderBy(g => g.Key.StepNo);
+            int i = 0;
+        }
+
+        @foreach (var stepGroup in grouped)
+        {
+            var headingId = $"historyHeading_{i}";
+            var collapseId = $"historyCollapse_{i}";
+            var icon = stepGroup.Key.IsApproval ? "🟡" : "🟢";
+            var label = stepGroup.Key.IsApproval ? "Approval Step" : "Process Step";
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="@headingId">
+                    <button class="accordion-button collapsed d-flex justify-content-between align-items-center" type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#@collapseId"
+                            aria-expanded="false"
+                            aria-controls="@collapseId">
+                        <div>
+                            @icon Step @stepGroup.Key.StepNo – @stepGroup.Key.StepDescription
+
+                        </div>
+                    </button>
+                </h2>
+                <div id="@collapseId"
+                     class="accordion-collapse collapse"
+                     aria-labelledby="@headingId"
+                     data-bs-parent="#historyAccordion">
+                    <div class="accordion-body">
+                        @foreach (var entry in stepGroup)
+                        {
+                            var bgClass = stepGroup.Key.IsApproval ? "bg-warning-subtle border-warning" : "bg-info-subtle border-info";
+
+                            <div class="border rounded p-2 mb-3 @bgClass">
+                                <strong>Table:</strong> @entry.TableName<br />
+                                <strong>Captured:</strong> @entry.CreatedDate.ToString("yyyy-MM-dd HH:mm") by User @entry.CreatedUserID
+
+                                <ul class="mt-2">
+                                    @foreach (var field in entry.Data
+                                   .Where(kvp => kvp.Key != "StepDescription"
+                                   && kvp.Key != "TableDescription"
+                                   && kvp.Key != "interactionType"
+                                   && kvp.Key != "CreatedUserID"
+                                   && kvp.Key != "CreatedDate"
+                                   && kvp.Key != "StepType"))
+                                    {
+                                        <li><strong>@field.Key:</strong> @Html.Raw(field.Value?.ToString())</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            i++;
+        }
+    </div>
+</div>
+
+
+<!-- ✅ Optional style tweaks -->
+<style>
+    .accordion-body .badge {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        display: inline-block;
+    }
+</style>
+
+
+<form method="post" asp-action="SavePendingStepData" asp-controller="ProcessEvents" enctype="multipart/form-data">
+    <input type="hidden" name="userId" value="@userId" />
+    <input type="hidden" name="stepId" value="@stepId" />
+    @if (processInstanceId != null)
+    {
+        <input type="hidden" name="processInstanceId" value="@processInstanceId" />
+    }
+
+    <div class="accordion" id="stepAccordion">
+        @for (int i = 0; i < tables.Count; i++)
+        {
+            var table = tables[i];
+            var tableName = table.TableName;
+            var sectionId = $"section_{i}";
+            var collapseId = $"collapse_{i}";
+            var row = reportData[tableName][0];
+
+            var columns = row.Keys
+            .Where(k => !k.Equals("ID", StringComparison.OrdinalIgnoreCase)
+            && !k.Equals("Active", StringComparison.OrdinalIgnoreCase)
+            && !k.Equals("RecordID", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+            int rowCount = rowCounts.ContainsKey(tableName) ? rowCounts[tableName] : 1;
+
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="@sectionId">
+                    <button class="accordion-button collapsed fw-bold fs-5" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId">
+                        @table.TableDescription
+                    </button>
+                </h2>
+                <div id="@collapseId" class="accordion-collapse collapse show">
+                    <div class="accordion-body">
+                        @if (table.FormType == "T")
+                        {
+                            var model = new DynamicTableViewModel
+                    {
+                        TableName = tableName,
+                        Columns = columns,
+                        RowCount = rowCount,
+                        ColumnTypes = columnTypes.ContainsKey(tableName) ? columnTypes[tableName] : new Dictionary<string, string>(),
+                        ColumnLengths = columnLengths.ContainsKey(tableName) ? columnLengths[tableName] : new Dictionary<string, int>(),
+                        ForeignKeys = foreignKeys.ContainsKey(tableName) ? foreignKeys[tableName] : new List<ForeignKeyInfo>(),
+                        ForeignKeyOptions = foreignKeyOptions
+                    };
+
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th class="fw-bold">Row No</th>
+
+                                        @foreach (var column in columns)
+                                        {
+                                            string label = column.StartsWith("attachment_")
+                                            ? column.Replace("attachment_", "").Replace("_", " ")
+                                            : column.EndsWith("ID") ? column[..^2] : column;
+
+                                            label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
+                                            <th class="fw-bold">@label</th>
+                                        }
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="@($"{tableName}_rows")">
+                                    @await Html.PartialAsync("_TableRows", model)
+                                </tbody>
+                            </table>
+
+                            <input type="hidden" name="RowCount_@tableName" value="@rowCount" />
+
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary mt-2"
+                                    onclick="addRowAjax('@tableName')">
+                                ➕ Add Row
+                            </button>
+                        }
+
+                        else if (table.FormType == "F")
+                        {
+                            int columnCount = table.ColumnCount ?? 2;
+                            int colWidth = columnCount >= 1 && columnCount <= 12 ? 12 / columnCount : 6;
+                            int columnRendered = 0;
+
+                            var prefillData = ViewBag.PrefilledValues as Dictionary<string, object>;
+
+                            <input type="text" name="@($"{tableName}_RecordID_0")" value="@row["RecordID"]" />
+
+
+                            while (columnRendered < columns.Count)
+                            {
+                                <div class="row">
+                                    @for (int j = 0; j < columnCount && columnRendered < columns.Count; j++, columnRendered++)
+                                    {
+                                        var column = columns[columnRendered];
+                                        string fieldName = $"{tableName}_{column}";
+
+                                        string columnValue = null;
+                                        if (prefillData != null && prefillData.TryGetValue(column, out var val))
+                                        {
+                                            columnValue = val?.ToString();
+                                        }
+                                        else
+                                        {
+                                            columnValue = row[column]?.ToString();
+                                        }
+
+                                        string label = column;
+                                        if (label.EndsWith("ID")) label = label[..^2];
+                                        label = System.Text.RegularExpressions.Regex.Replace(label, "(?<=.)([A-Z])", " $1");
+
+                                        string columnType = columnTypes?[tableName].ContainsKey(column) == true ? columnTypes[tableName][column] : "varchar";
+                                        int columnLength = columnLengths?[tableName].ContainsKey(column) == true ? columnLengths[tableName][column] : 255;
+
+                                        <div class="col-md-@colWidth mb-3">
+                                            @if (column.StartsWith("attachment_"))
+                                            {
+                                                string[] parts = columnValue?.Split(';') ?? new string[2];
+                                                string desc = parts.Length > 0 ? parts[0] : "";
+                                                string path = parts.Length > 1 ? parts[1] : "";
+                                                string url = !string.IsNullOrEmpty(path) ? Url.Content("~/Attachments/" + path) : "";
+
+                                                string fullColumnKey = $"{tableName}_{column}";
+
+                                                <label for="@fullColumnKey" class="fw-bold">
+                                                    @label.Replace("attachment_", "").Replace("_", " ")
+                                                </label>
+                                                <div class="attachment-group">
+                                                    <input type="text" name="desc_@fullColumnKey" id="desc_@fullColumnKey" placeholder="Attachment Description" value="@desc" class="form-control" />
+                                                    <input type="file" name="file_@fullColumnKey" id="file_@fullColumnKey" class="form-control" onchange="updateAttachmentField('@fullColumnKey')" />
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(path))
+                                                {
+                                                    <a href="@url" target="_blank" class="btn btn-sm btn-outline-secondary">@System.IO.Path.GetFileName(path)</a>
+                                                }
+                                                <input type="hidden" name="@fullColumnKey" id="hidden_@fullColumnKey" value="@desc;@path" />
+                                            }
+                                            else if (foreignKeys != null && foreignKeys.ContainsKey(tableName) && foreignKeys[tableName].Any(fk => fk.ColumnName == column))
+                                            {
+                                                <label for="@fieldName" class="fw-bold">@label</label>
+                                                var foreignKey = foreignKeys[tableName].First(fk => fk.ColumnName == column);
+                                                var options = foreignKeyOptions.ContainsKey(foreignKey.TableName) ? foreignKeyOptions[foreignKey.TableName] : new List<SelectListItem>();
+                                                @Html.DropDownList(fieldName, new SelectList(options, "Value", "Text", columnValue), "", new { @class = "form-select" })
+                                            }
+                                            else if (columnType == "varchar" && columnLength > 255)
+                                            {
+                                                <label for="@fieldName" class="fw-bold">@label</label>
+                                                <textarea name="@fieldName" class="form-control">@columnValue</textarea>
+                                            }
+                                            else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
+                                            {
+                                                <label for="@fieldName" class="fw-bold">@label</label>
+                                                <input type="number" name="@fieldName" value="@columnValue" class="form-control input-short" />
+                                            }
+                                            else if (columnType == "bit")
+                                            {
+                                                <div class="form-check">
+                                                    <input type="checkbox" name="@fieldName" class="form-check-input" value="true" @(columnValue == "True" ? "checked" : "") />
+                                                    <label class="form-check-label fw-bold" for="@fieldName">@label</label>
+                                                </div>
+                                            }
+                                            else if (columnType == "datetime")
+                                            {
+                                                string formattedDate = DateTime.TryParse(columnValue, out var dtVal) ? dtVal.ToString("yyyy-MM-dd") : "";
+                                                <label for="@fieldName" class="fw-bold">@label</label>
+                                                <input type="date" name="@fieldName" value="@formattedDate" class="form-control input-short" />
+                                            }
+                                            else
+                                            {
+                                                <label for="@fieldName" class="fw-bold">@label</label>
+                                                <input type="text" name="@fieldName" value="@columnValue" class="form-control" />
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" name="action" value="Save" class="btn btn-success">Save & Continue</button>
+    </div>
+</form>
+
+<style>
+    .accordion-button {
+        background-color: #e9ecef;
+        color: #212529;
+        font-weight: bold;
+        border: none;
+        box-shadow: none;
+    }
+
+    .form-label {
+        font-weight: 500;
+    }
+
+    .input-short {
+        max-width: 180px;
+    }
+</style>
+
+
+
+<style>
+    .accordion-button {
+        background-color: #e9ecef;
+        color: #212529;
+        font-weight: bold;
+        border: none;
+        box-shadow: none;
+    }
+
+    .form-label {
+        font-weight: 500;
+    }
+
+    .attachment-group {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .input-short {
+        max-width: 180px;
+    }
+</style>
+
+<script>
+        function updateAttachmentField(fullKey) {
+        const descInput = document.getElementById('desc_' + fullKey);
+        const fileInput = document.getElementById('file_' + fullKey);
+        const hiddenInput = document.getElementById('hidden_' + fullKey);
+
+        const description = descInput?.value?.trim() || "No Description";
+        const fileName = fileInput?.files?.[0]?.name || "";
+
+        const parts = fullKey.split('_');
+        let tableName = parts[0];
+        if (parts.length >= 4) {
+            const attachmentIndex = parts.findIndex(p => p === 'attachment');
+            if (attachmentIndex > 0) {
+                tableName = parts.slice(0, attachmentIndex).join('_');
+            }
+        }
+
+        const virtualPath = fileName ? `Attachments/${tableName}/${fileName}` : "";
+        const combined = `${description};${virtualPath}`;
+        if (hiddenInput) hiddenInput.value = combined;
+    }
+
+    // 🆕 Run update when file is selected
+    document.addEventListener("change", function (e) {
+        if (e.target && e.target.matches("input[type='file'][name^='file_']")) {
+            const fullKey = e.target.name.replace("file_", "");
+            updateAttachmentField(fullKey);
+        }
+    });
+
+
+        function addRowAjax(tableName) {
+        const stepId = document.querySelector('input[name="stepId"]').value;
+        const userId = document.querySelector('input[name="userId"]').value;
+        const processIdInput = document.querySelector('input[name="processInstanceId"]');
+        const processId = processIdInput ? processIdInput.value : null;
+
+        // 🔥 Calculate current row count in DOM
+        const rowContainer = document.querySelector(`#${tableName}_rows`);
+        const currentRowCount = rowContainer ? rowContainer.querySelectorAll("tr").length : 0;
+
+        const data = {
+            tableName,
+            stepId,
+            userId,
+            processInstanceId: processId,
+            currentRowCount: currentRowCount  // pass this to the controller
+        };
+
+        fetch(`/ProcessEvents/AddTableRowPartial`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.text())
+        .then(html => {
+            const container = document.querySelector(`#${tableName}_rows`);
+            if (container) {
+                container.insertAdjacentHTML("beforeend", html); // ✅ append only
+            }
+        })
+        .catch(err => console.error("Add Row Error:", err));
+    }
+
+    function removeRow(button) {
+        const row = button.closest('tr');
+        const tbody = row.parentElement;
+        const rowCount = tbody.querySelectorAll('tr').length;
+        if (rowCount > 1) {
+            row.remove();
+            updateRowIndices(tbody);
+        }
+    }
+
+    function updateRowIndices(tbody) {
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach((row, index) => {
+            row.setAttribute('data-row-index', index);
+            const rowNo = row.querySelector('.row-no');
+            if (rowNo) rowNo.innerText = index + 1;
+
+            row.querySelectorAll('[name], [id], [for]').forEach(el => {
+                ['name', 'id', 'for'].forEach(attr => {
+                    const val = el.getAttribute(attr);
+                    if (val) {
+                        el.setAttribute(attr, val.replace(/_(\d+)$/, `_${index}`));
+                    }
+                });
+            });
+        });
+    }
+
+
+        
+    // ✅ Dynamically resize foreign key dropdowns for clean UI
+    function resizeDropdowns() {
+        document.querySelectorAll("select.form-select").forEach(select => {
+            const tempSpan = document.createElement("span");
+            tempSpan.style.visibility = "hidden";
+            tempSpan.style.position = "absolute";
+            tempSpan.style.whiteSpace = "nowrap";
+            tempSpan.style.font = getComputedStyle(select).font;
+
+            let maxText = "";
+            Array.from(select.options).forEach(opt => {
+                if (opt.text.length > maxText.length) {
+                    maxText = opt.text;
+                }
+            });
+
+            tempSpan.textContent = maxText;
+            document.body.appendChild(tempSpan);
+
+            const width = tempSpan.offsetWidth + 50;
+            select.style.width = width + "px";
+
+            document.body.removeChild(tempSpan);
+        });
+    }
+
+    // ✅ Ensure dropdowns resize after load
+    window.addEventListener('load', () => {
+        setTimeout(resizeDropdowns, 100);
+    });
+</script>
+
+
+
