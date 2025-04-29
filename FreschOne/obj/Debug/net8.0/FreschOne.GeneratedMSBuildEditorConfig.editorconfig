@@ -40,10 +40,6 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWRtaW5cSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/ApprovalEvents/PendingApprovalItems.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQXBwcm92YWxFdmVudHNcUGVuZGluZ0FwcHJvdmFsSXRlbXMuY3NodG1s
-build_metadata.AdditionalFiles.CssScope = 
-
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/ApprovalEvents/PendingStep.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQXBwcm92YWxFdmVudHNcUGVuZGluZ1N0ZXAuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -220,12 +216,12 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/ProcessEvents/CreateStep.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvY2Vzc0V2ZW50c1xDcmVhdGVTdGVwLmNzaHRtbA==
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/PendingItems/MergedPendingItems.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUGVuZGluZ0l0ZW1zXE1lcmdlZFBlbmRpbmdJdGVtcy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/ProcessEvents/PendingItems.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvY2Vzc0V2ZW50c1xQZW5kaW5nSXRlbXMuY3NodG1s
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/ProcessEvents/CreateStep.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUHJvY2Vzc0V2ZW50c1xDcmVhdGVTdGVwLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_Deployment2025/FreschOne/FreschOne/Views/ProcessEvents/PendingStep.cshtml]

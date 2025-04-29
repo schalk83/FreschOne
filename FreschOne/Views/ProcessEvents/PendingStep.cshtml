@@ -9,6 +9,8 @@
     int userId = ViewBag.userid;
     int? processInstanceId = ViewBag.processInstanceId;
     int stepId = ViewBag.stepId;
+    int Eventid = ViewBag.Eventid;
+
     var foreignKeys = ViewBag.ForeignKeys as Dictionary<string, List<ForeignKeyInfo>>;
     var foreignKeyOptions = ViewBag.ForeignKeyOptions as Dictionary<string, List<SelectListItem>>;
     var columnTypes = ViewBag.ColumnTypes as Dictionary<string, Dictionary<string, string>>;
@@ -28,6 +30,14 @@
         </ul>
     </div>
 }
+
+@if (TempData["ReworkComment"] != null)
+{
+    <div class="alert alert-warning" style="position:relative;">
+        <strong>🔄 Rework Requested:</strong> @TempData["ReworkComment"]
+    </div>
+}
+
 
 <partial name="_Sidebar" />
 
@@ -82,7 +92,7 @@
                      class="accordion-collapse collapse"
                      aria-labelledby="@headingId"
                      data-bs-parent="#historyAccordion">
-                    <div class="accordion-body">
+                    <div class="accordion-bodbody">
                         @foreach (var entry in stepGroup)
                         {
                             var bgClass = stepGroup.Key.IsApproval ? "bg-warning-subtle border-warning" : "bg-info-subtle border-info";
@@ -126,7 +136,9 @@
 
 <form method="post" asp-action="SavePendingStepData" asp-controller="ProcessEvents" enctype="multipart/form-data">
     <input type="hidden" name="userId" value="@userId" />
+    <input type="hidden" name="Eventid" value="@Eventid" />
     <input type="hidden" name="stepId" value="@stepId" />
+
     @if (processInstanceId != null)
     {
         <input type="hidden" name="processInstanceId" value="@processInstanceId" />
@@ -147,7 +159,21 @@
             && !k.Equals("RecordID", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-            int rowCount = rowCounts.ContainsKey(tableName) ? rowCounts[tableName] : 1;
+            // int rowCount = rowCounts.ContainsKey(tableName) ? rowCounts[tableName] : 1;
+
+            int rowCount;
+            if (reportData.ContainsKey(tableName) && reportData[tableName] != null && reportData[tableName].Any())
+            {
+                // Real row count based on Prefilled Data
+                rowCount = reportData[tableName].Count;
+            }
+            else
+            {
+                // New blank table
+                rowCount = rowCounts.ContainsKey(tableName) ? rowCounts[tableName] : 1;
+            }
+            <input type="hidden" name="RowCount_@tableName" value="@rowCount" />
+
 
             <div class="accordion-item">
                 <h2 class="accordion-header" id="@sectionId">
@@ -210,7 +236,7 @@
 
                             var prefillData = ViewBag.PrefilledValues as Dictionary<string, object>;
 
-                            <input type="text" name="@($"{tableName}_RecordID_0")" value="@row["RecordID"]" />
+                            <input type="hidden" name="@($"{tableName}_RecordID_0")" value="@row["RecordID"]" />
 
 
                             while (columnRendered < columns.Count)
@@ -308,9 +334,55 @@
         }
     </div>
 
-    <div class="mt-4">
-        <button type="submit" name="action" value="Save" class="btn btn-success">Save & Continue</button>
+    <div id="saveButtonsSection" class="d-flex justify-content-between align-items-center mt-4">
+        <div class="d-flex gap-3">
+            <button type="submit" name="action" value="SaveLater" class="btn custom-button btn-gold" onclick="prepareNormalSave(); showLoading();">
+                Save & Continue Later
+            </button>
+
+            <button type="submit" name="action" value="SaveContinue" class="btn custom-button btn-green" onclick="prepareNormalSave(); showLoading();">
+                Save & Proceed
+            </button>
+        </div>
+
+        <button type="button" class="btn custom-button btn-red" onclick="showCancelComment()">
+            Cancel Process
+        </button>
     </div>
+
+
+
+
+
+    <div id="cancelCommentSection" class="mt-4" style="display:none; position:relative;">
+        <div class="alert alert-warning" style="position:relative;">
+            <button type="button" onclick="closeCancelComment()" style="border:none; background:none; font-size:24px; position:absolute; top:5px; right:10px;">&times;</button>
+            <strong>Process Cancellation:</strong> Please provide a reason below to cancel the process.
+        </div>
+
+        <div class="mb-3">
+            <textarea id="cancelReason" name="cancelReason" class="form-control" rows="4" placeholder="Enter your reason here..." required></textarea>
+        </div>
+
+        <div class="d-flex justify-content-end">
+            <button type="submit" name="action" value="CancelProcess" class="btn btn-danger" onclick="return validateCancelAndShowLoading();">
+                Confirm Cancellation
+            </button>
+
+
+        </div>
+    </div>
+
+
+    <div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:9999; justify-content:center; align-items:center; opacity:0; transition: opacity 0.3s;">
+        <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+
+
+
 </form>
 
 <style>
@@ -329,11 +401,24 @@
     .input-short {
         max-width: 180px;
     }
+
+    .custom-hover-red:hover {
+        background-color: #dc3545; /* Bootstrap "danger" red */
+        color: white;
+        border-color: #dc3545;
+    }
+
+    .custom-hover-red {
+        transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+
 </style>
 
 
 
 <style>
+
+
     .accordion-button {
         background-color: #e9ecef;
         color: #212529;
@@ -356,9 +441,97 @@
     .input-short {
         max-width: 180px;
     }
+
+    /* Common button style */
+    .custom-button {
+        border: 2px solid;
+        font-weight: bold;
+        transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+
+    /* Specific styles */
+    .btn-green {
+        color: #198754; /* Bootstrap green */
+        border-color: #198754;
+        background-color: transparent;
+    }
+
+        .btn-green:hover {
+            color: white;
+            background-color: #198754;
+            border-color: #198754;
+        }
+
+    .btn-gold {
+        color: #ffc107; /* Bootstrap warning/yellow */
+        border-color: #ffc107;
+        background-color: transparent;
+    }
+
+        .btn-gold:hover {
+            color: black;
+            background-color: #ffc107;
+            border-color: #ffc107;
+        }
+
+    .btn-red {
+        color: #dc3545; /* Bootstrap red */
+        border-color: #dc3545;
+        background-color: transparent;
+    }
+
+        .btn-red:hover {
+            color: white;
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
 </style>
 
 <script>
+
+    function closeCancelComment() {
+        document.getElementById('cancelCommentSection').style.display = 'none';
+        document.getElementById('saveButtonsSection').style.display = 'flex';
+
+        // ✅ Make sure we also clear the cancelReason required flag
+        const cancelReasonField = document.getElementById('cancelReason');
+        if (cancelReasonField) {
+            cancelReasonField.removeAttribute('required');
+            cancelReasonField.value = ""; // Clear any typed reason if you want
+        }
+    }
+
+    function showCancelComment() {
+        document.getElementById('cancelCommentSection').style.display = 'block';
+        document.getElementById('saveButtonsSection').style.display = 'none';
+
+        // ✅ Set cancelReason as required
+        document.getElementById('cancelReason').setAttribute('required', 'required');
+
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function prepareNormalSave() {
+        // ✅ Remove required attribute from cancelReason when normal save
+        const cancelReasonField = document.getElementById('cancelReason');
+        if (cancelReasonField) {
+            cancelReasonField.removeAttribute('required');
+        }
+    }
+
+        function validateCancelAndShowLoading() {
+        const cancelReason = document.getElementById('cancelReason')?.value.trim();
+
+        if (!cancelReason) {
+            alert("Please provide a reason before cancelling the process.");
+            return false; // ❌ prevent form submit
+        }
+
+        showLoading(); // ✅ only now show loading
+        return true; // ✅ allow form to submit
+    }
+
+
         function updateAttachmentField(fullKey) {
         const descInput = document.getElementById('desc_' + fullKey);
         const fileInput = document.getElementById('file_' + fullKey);
@@ -481,6 +654,16 @@
             document.body.removeChild(tempSpan);
         });
     }
+
+        function showLoading() {
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.style.display = 'flex';
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+        }, 10); // 🔥 little timeout to trigger the CSS animation
+    }
+
+
 
     // ✅ Ensure dropdowns resize after load
     window.addEventListener('load', () => {

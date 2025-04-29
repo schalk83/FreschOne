@@ -3,35 +3,45 @@
 @{
     var allPrefilled = ViewBag.PrefilledValues as Dictionary<string, List<Dictionary<string, object>>> ?? new();
     var tableName = Model.TableName;
-    var tablePrefilledRows = allPrefilled.ContainsKey(tableName)
-        ? allPrefilled[tableName]
-        : Enumerable.Range(0, Model.RowCount).Select(_ => Model.Columns.ToDictionary(col => col, col => (object)null)).ToList();
+    List<Dictionary<string, object>> tablePrefilledRows;
+
+    if (allPrefilled.ContainsKey(tableName) && allPrefilled[tableName].Any())
+    {
+        tablePrefilledRows = allPrefilled[tableName];
+    }
+    else
+    {
+        tablePrefilledRows = Enumerable.Range(0, Model.RowCount)
+            .Select(_ => Model.Columns.ToDictionary(col => col, col => (object)null))
+            .ToList();
+    }
 }
 
-@for (int i = 0; i < tablePrefilledRows.Count; i++)
+@for (int i = Model.StartIndex; i < Model.StartIndex + tablePrefilledRows.Count; i++)
 {
+    var values = tablePrefilledRows[i - Model.StartIndex];
 
-    var values = tablePrefilledRows[i];
     <tr data-row-index="@i">
-
-        <!-- 🔐 Hidden RecordID per row -->
+        <!-- 🔐 Hidden RecordID inside first <td> -->
         @{
             var recordIdKey = "RecordID";
             var recordId = values.ContainsKey(recordIdKey) ? values[recordIdKey]?.ToString() : "";
             var recordIdFieldName = $"{Model.TableName}_RecordID_{i}";
         }
-        <input type="text" name="@recordIdFieldName" value="@recordId" />
+        <td class="d-none">
+            <input type="hidden" name="@recordIdFieldName" value="@recordId" class="form-control" />
+        </td>
 
         <td class="fw-bold align-middle text-center row-no">@(@i + 1)</td>
+
         @foreach (var column in Model.Columns)
         {
             var fieldName = $"{Model.TableName}_{column}_{i}";
             var columnType = Model.ColumnTypes.ContainsKey(column) ? Model.ColumnTypes[column] : "varchar";
             var columnLength = Model.ColumnLengths.ContainsKey(column) ? Model.ColumnLengths[column] : 255;
             var value = values.ContainsKey(column) ? values[column]?.ToString() : "";
+
             <td>
-
-
                 @if (column.StartsWith("attachment_"))
                 {
                     string[] parts = value?.Split(';') ?? new string[2];
@@ -47,7 +57,7 @@
                     var options = Model.ForeignKeyOptions[fk.TableName];
                     @Html.DropDownList(fieldName, new SelectList(options, "Value", "Text", value), "", new { @class = "form-select" })
                 }
-                else if (columnType == "varchar" && columnLength > 255)
+                else if (columnType is "varchar" && columnLength > 255)
                 {
                     <textarea name="@fieldName" class="form-control">@value</textarea>
                 }
@@ -70,6 +80,7 @@
                 }
             </td>
         }
+
         <td>
             <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">🗑</button>
         </td>

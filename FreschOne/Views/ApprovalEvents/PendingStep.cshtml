@@ -7,6 +7,7 @@
     var stepDescription = ViewBag.StepDescription;
     var stepNo = ViewBag.StepNo;
     var processid = ViewBag.processid;
+    var EventID = ViewBag.EventID;
 }
 
 @if (TempData["RowErrors"] is List<string> errors && errors.Any())
@@ -107,6 +108,8 @@
 <form asp-action="SaveApproval" method="post" enctype="multipart/form-data">
     <input type="hidden" name="userId" value="@userid" />
     <input type="hidden" name="stepId" value="@stepId" />
+    <input type="hidden" name="EventID" value="@EventID" />
+
     <input type="hidden" name="stepDescription" value="@stepDescription" />
     <input type="hidden" name="processInstanceId" value="@processInstanceId" />
 

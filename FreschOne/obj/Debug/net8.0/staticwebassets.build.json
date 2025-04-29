@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "ZBpsIPNc5xRIeIDmvjApPv4pnivXHQxo1rdhKc4mJVk=",
+  "Hash": "0Q6O+ifT2jfozjMghNgPO+zFB4j93hNApwAH0kJcwlw=",
   "Source": "FreschOne",
   "BasePath": "_content/FreschOne",
   "Mode": "Default",
@@ -120,6 +120,27 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\favicon.ico"
+    },
+    {
+      "Identity": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\wwwroot\\images\\FreschOneLogo.png",
+      "SourceId": "FreschOne",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\wwwroot\\",
+      "BasePath": "_content/FreschOne",
+      "RelativePath": "images/FreschOneLogo#[.{fingerprint}]?.png",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "nbb39gske6",
+      "Integrity": "EwUc1Q7qItYh5tphEnUupHIVKMhSMQ1JZ0vBCHAyVqU=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\images\\FreschOneLogo.png"
     },
     {
       "Identity": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\wwwroot\\js\\site.js",
@@ -1364,7 +1385,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Wed, 29 Jan 2025 12:19:45 GMT"
+          "Value": "Sun, 27 Apr 2025 20:01:43 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -1401,7 +1422,7 @@
         },
         {
           "Name": "Last-Modified",
-          "Value": "Wed, 29 Jan 2025 12:19:45 GMT"
+          "Value": "Sun, 27 Apr 2025 20:01:43 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -1748,6 +1769,88 @@
         {
           "Name": "integrity",
           "Value": "sha256-ihmJDrrTsd9cIdKZw1FrcL+RC+hlr5zdYEALwC0xX/U="
+        }
+      ]
+    },
+    {
+      "Route": "images/FreschOneLogo.nbb39gske6.png",
+      "AssetFile": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\wwwroot\\images\\FreschOneLogo.png",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "407895"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/png"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"EwUc1Q7qItYh5tphEnUupHIVKMhSMQ1JZ0vBCHAyVqU=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sun, 27 Apr 2025 19:37:34 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "nbb39gske6"
+        },
+        {
+          "Name": "label",
+          "Value": "images/FreschOneLogo.png"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-EwUc1Q7qItYh5tphEnUupHIVKMhSMQ1JZ0vBCHAyVqU="
+        }
+      ]
+    },
+    {
+      "Route": "images/FreschOneLogo.png",
+      "AssetFile": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\wwwroot\\images\\FreschOneLogo.png",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "407895"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/png"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"EwUc1Q7qItYh5tphEnUupHIVKMhSMQ1JZ0vBCHAyVqU=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Sun, 27 Apr 2025 19:37:34 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-EwUc1Q7qItYh5tphEnUupHIVKMhSMQ1JZ0vBCHAyVqU="
         }
       ]
     },
