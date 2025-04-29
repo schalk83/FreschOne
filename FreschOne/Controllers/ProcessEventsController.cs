@@ -58,13 +58,10 @@ namespace FreschOne.Controllers
                         stepNo = Convert.ToDouble(reader["StepNo"]);
                     }
                 }
-
-                // ... existing logic ...
             }
 
             ViewBag.StepDescription = stepDescription;
             ViewBag.StepNo = stepNo;
-
             ViewBag.stepId = stepId;
 
             var tables = new List<foProcessDetail>();
@@ -75,7 +72,7 @@ namespace FreschOne.Controllers
             var columnTypes = new Dictionary<string, Dictionary<string, string>>();
             var columnLengths = new Dictionary<string, Dictionary<string, int>>();
 
-            using (SqlConnection conn = GetConnection())
+            using (var conn = GetConnection())
             {
                 conn.Open();
 
@@ -86,7 +83,7 @@ namespace FreschOne.Controllers
                       WHERE StepID = @StepID AND Active = 1
                       ORDER BY Parent DESC, ID";
 
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (var cmd = new SqlCommand(query, conn))
                 {
                     cmd.Parameters.AddWithValue("@StepID", stepId);
                     using (var reader = cmd.ExecuteReader())
@@ -106,10 +103,9 @@ namespace FreschOne.Controllers
                         }
                     }
                 }
+
                 foreach (var table in tables)
                 {
-
-
                     if (!string.IsNullOrEmpty(table.FKColumn))
                         ignoredColumns.Add(table.FKColumn);
 
@@ -140,7 +136,6 @@ namespace FreschOne.Controllers
                             .ToList();
                     }
 
-                    // 🧠 Get metadata for the table columns
                     columnTypes[table.TableName] = new Dictionary<string, string>();
                     columnLengths[table.TableName] = new Dictionary<string, int>();
 
@@ -175,6 +170,21 @@ namespace FreschOne.Controllers
 
                     tableData[table.TableName] = new List<Dictionary<string, object>> { row };
 
+                    // 🔥 Force StartIndex = 0 when initially loading CreateStep
+                    var model = new DynamicTableViewModel
+                    {
+                        TableName = table.TableName,
+                        Columns = columns,
+                        RowCount = 1, // Only 1 blank row initially
+                        StartIndex = 0, // 🟢 Here: Start at 0
+                        ColumnTypes = columnTypes.ContainsKey(table.TableName) ? columnTypes[table.TableName] : new Dictionary<string, string>(),
+                        ColumnLengths = columnLengths.ContainsKey(table.TableName) ? columnLengths[table.TableName] : new Dictionary<string, int>(),
+                        ForeignKeys = foreignKeys.ContainsKey(table.TableName) ? foreignKeys[table.TableName] : new List<ForeignKeyInfo>(),
+                        ForeignKeyOptions = foreignKeyOptions
+                    };
+
+                    ViewBag.InitialModels ??= new List<DynamicTableViewModel>();
+                    (ViewBag.InitialModels as List<DynamicTableViewModel>).Add(model);
                 }
             }
 
@@ -186,14 +196,17 @@ namespace FreschOne.Controllers
             ViewBag.ColumnTypes = columnTypes;
             ViewBag.ColumnLengths = columnLengths;
             ViewBag.SearchResult = true;
+            ViewBag.UserList = GetApproverSelectList();
+
 
             return View();
         }
 
-        public IActionResult PendingStep(int processId, int? stepId, int? processInstanceId, int userId)
+        public IActionResult PendingStep(int Eventid, int processId, int? stepId, int? processInstanceId, int userId)
         {
             SetUserAccess(userId);
             ViewBag.userid = userId;
+            ViewBag.Eventid = Eventid;
             ViewBag.processInstanceId = processInstanceId;
 
             if (stepId is null)
@@ -201,9 +214,11 @@ namespace FreschOne.Controllers
                 using (var conn = GetConnection())
                 {
                     conn.Open();
-                    var cmd = new SqlCommand(@"SELECT TOP 1 ID FROM foProcessSteps 
-                                       WHERE ProcessID = @ProcessID AND Active = 1 
-                                       ORDER BY StepNo", conn);
+                    var cmd = new SqlCommand(@"
+                SELECT TOP 1 ID 
+                FROM foProcessSteps 
+                WHERE ProcessID = @ProcessID AND Active = 1 
+                ORDER BY StepNo", conn);
                     cmd.Parameters.AddWithValue("@ProcessID", processId);
                     var result = cmd.ExecuteScalar();
                     if (result == null)
@@ -248,11 +263,11 @@ namespace FreschOne.Controllers
                 conn.Open();
                 var ignoredColumns = GetIgnoredColumns(conn);
 
-                // 🔍 Fetch process step tables
-                var query = @"SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription
-                      FROM foProcessDetail 
-                      WHERE StepID = @StepID AND Active = 1
-                      ORDER BY Parent DESC, ID";
+                var query = @"
+            SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription
+            FROM foProcessDetail 
+            WHERE StepID = @StepID AND Active = 1
+            ORDER BY Parent DESC, ID";
 
                 using (var cmd = new SqlCommand(query, conn))
                 {
@@ -268,7 +283,7 @@ namespace FreschOne.Controllers
                                 FormType = reader["FormType"].ToString(),
                                 ColumnCount = reader["ColumnCount"] != DBNull.Value ? Convert.ToInt32(reader["ColumnCount"]) : (int?)null,
                                 Parent = reader["Parent"] != DBNull.Value && Convert.ToBoolean(reader["Parent"]),
-                                FKColumn = reader["FKColumn"].ToString(),
+                                FKColumn = reader["FKColumn"]?.ToString(),
                                 TableDescription = reader["TableDescription"].ToString()
                             });
                         }
@@ -314,33 +329,84 @@ namespace FreschOne.Controllers
                             foreignKeyOptions[fk.TableName] = GetForeignKeyOptions(fk.TableName);
                     }
 
-                    ///here! AND StepID = @StepID
-                    var latestCmd = new SqlCommand(@"
-                SELECT RecordID, DataSetUpdate 
-                FROM foProcessEventsDetail 
-                WHERE ProcessInstanceID = @InstanceID  AND TableName = @TableName AND Active = 1 
-                ORDER BY ID", conn);
-                    latestCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
-                    latestCmd.Parameters.AddWithValue("@TableName", table.TableName);
-
                     var rows = new List<Dictionary<string, object>>();
-                    using (var reader = latestCmd.ExecuteReader())
+
+                    if (table.FormType == "F")
                     {
-                        while (reader.Read())
+                        // 🟢 Freeform: Only latest record
+                        var latestCmd = new SqlCommand(@"
+                    SELECT RecordID, DataSetUpdate 
+                    FROM foProcessEventsDetail 
+                    WHERE ProcessInstanceID = @InstanceID 
+                      AND TableName = @TableName 
+                      AND Active = 1
+                      AND ID = (
+                          SELECT MAX(ID) 
+                          FROM foProcessEventsDetail 
+                          WHERE ProcessInstanceID = @InstanceID 
+                            AND TableName = @TableName 
+                            AND Active = 1
+                      )", conn);
+
+                        latestCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
+                        latestCmd.Parameters.AddWithValue("@TableName", table.TableName);
+
+                        using (var reader = latestCmd.ExecuteReader())
                         {
-                            var json = reader["DataSetUpdate"].ToString();
-                            var raw = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-                            var filtered = columns.ToDictionary(c => c, c => raw.ContainsKey(c) ? raw[c] : null);
+                            if (reader.Read())
+                            {
+                                var json = reader["DataSetUpdate"].ToString();
+                                var raw = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                                var filtered = columns.ToDictionary(c => c, c => raw.ContainsKey(c) ? raw[c] : null);
 
-                           var recordId = reader["RecordID"]?.ToString();
-                           filtered["RecordID"] = recordId;
-                           
-                           rows.Add(filtered);
+                                var recordId = reader["RecordID"]?.ToString();
+                                filtered["RecordID"] = recordId;
 
+                                rows.Add(filtered);
+                            }
+                        }
+                    }
+                    else if (table.FormType == "T")
+                    {
+                        var allRowsCmd = new SqlCommand(@"
+                        SELECT RecordID, DataSetUpdate 
+                        FROM foProcessEventsDetail 
+                        WHERE ProcessInstanceID = @InstanceID  
+                          AND StepID = @StepID
+                          AND TableName = @TableName
+                          AND Active = 1 
+                          AND ProcessEventID IN (
+                              SELECT MAX(ProcessEventID) 
+                              FROM foProcessEventsDetail 
+                              WHERE ProcessInstanceID = @InstanceID 
+                                AND StepID = @StepID
+                                AND TableName = @TableName
+                                AND Active = 1
+                          )
+                        ORDER BY ID", conn);
+
+                        allRowsCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
+                        allRowsCmd.Parameters.AddWithValue("@StepID", stepId);
+                        allRowsCmd.Parameters.AddWithValue("@TableName", table.TableName);
+
+                        using (var reader = allRowsCmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var json = reader["DataSetUpdate"].ToString();
+                                var raw = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                                var filtered = columns.ToDictionary(c => c, c => raw.ContainsKey(c) ? raw[c] : null);
+
+                                var recordId = reader["RecordID"]?.ToString();
+                                filtered["RecordID"] = recordId;
+
+                                rows.Add(filtered);
+                            }
                         }
                     }
 
-                    // If no rows, at least show one empty row
+
+                    // Only if no data exists, add a blank row
                     if (!rows.Any())
                     {
                         var emptyRow = columns.ToDictionary(c => c, c => (object)null);
@@ -351,8 +417,6 @@ namespace FreschOne.Controllers
                     tableData[table.TableName] = rows;
                     prefilledValues[table.TableName] = rows;
                 }
-
-
 
                 ViewBag.PrefilledValues = prefilledValues;
                 PopulateProcessHistory(conn, null, processInstanceId);
@@ -368,6 +432,653 @@ namespace FreschOne.Controllers
             ViewBag.SearchResult = true;
 
             return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult SaveNewStepData(IFormCollection form, int userId, int stepId, int? processInstanceId, string action,  bool SendForApproval = false, List<int> SelectedApproverIds = null)
+        {
+            var insertedIds = new Dictionary<string, int>();
+            var rowErrors = new List<string>();
+            var baseAttachmentFolder = Path.Combine(Directory.GetCurrentDirectory(), "Attachments");
+            Directory.CreateDirectory(baseAttachmentFolder);
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                using (var transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        // Load step's table definitions
+                        var tables = new List<foProcessDetail>();
+                        var cmd = new SqlCommand(@"SELECT TableName, FormType, FKColumn, TableDescription 
+                                           FROM foProcessDetail 
+                                           WHERE StepID = @StepID AND Active = 1", conn, transaction);
+                        cmd.Parameters.AddWithValue("@StepID", stepId);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                tables.Add(new foProcessDetail
+                                {
+                                    TableName = reader["TableName"].ToString(),
+                                    FormType = reader["FormType"].ToString(),
+                                    FKColumn = reader["FKColumn"].ToString(),
+                                    TableDescription = reader["TableDescription"].ToString()
+                                });
+                            }
+                        }
+
+                        // Step description
+                        string stepDescription = "";
+                        using (var descCmd = new SqlCommand("SELECT StepDescription FROM foProcessSteps WHERE ID = @StepID", conn, transaction))
+                        {
+                            descCmd.Parameters.AddWithValue("@StepID", stepId);
+                            stepDescription = descCmd.ExecuteScalar()?.ToString();
+                        }
+
+                        // Get or generate ProcessInstanceID
+                        if (!processInstanceId.HasValue || processInstanceId == 0)
+                        {
+                            int? maxProcessInstanceId = null;
+
+                            var tablesProcessInstanceID = new[]
+                            {
+                                "foProcessEvents",
+                                "foProcessEventsArchive",
+                            };
+
+                            foreach (var table in tablesProcessInstanceID)
+                            {
+                                using (var cmdProcessInstanceID = new SqlCommand($"SELECT MAX(ProcessInstanceID) FROM {table}", conn, transaction))
+                                {
+                                    var result = cmdProcessInstanceID.ExecuteScalar();
+                                    if (result != DBNull.Value && result != null)
+                                    {
+                                        var id = Convert.ToInt32(result);
+                                        if (!maxProcessInstanceId.HasValue || id > maxProcessInstanceId.Value)
+                                        {
+                                            maxProcessInstanceId = id;
+                                        }
+                                    }
+                                }
+                            }
+
+                            processInstanceId = (maxProcessInstanceId ?? 0) + 1;
+
+                        }
+
+                        // Insert initial event for this step
+                        int firstEventId;
+                        using (var insertEventCmd = new SqlCommand(@"
+                    INSERT INTO foProcessEvents (ProcessInstanceID, StepID, PreviousEventID, UserID, DateAssigned, DateCompleted, Active)
+                    OUTPUT INSERTED.ID 
+                    VALUES (@ProcessInstanceID, @StepID, 0, @UserID, GETDATE(), GETDATE(), 1)", conn, transaction))
+                        {
+                            insertEventCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                            insertEventCmd.Parameters.AddWithValue("@StepID", stepId);
+                            insertEventCmd.Parameters.AddWithValue("@UserID", userId);
+                            firstEventId = Convert.ToInt32(insertEventCmd.ExecuteScalar());
+                        }
+
+                        // Insert into all tables in order
+                        foreach (var table in tables)
+                        {
+                            string tableName = table.TableName;
+                            string fkColumn = table.FKColumn;
+                            var columnDefs = GetColumnDefinitions(tableName, conn, transaction).Select(cd => cd.ColumnName).ToList();
+
+                            var rows = form.Keys
+                                .Where(k => k.StartsWith(tableName + "_"))
+                                .GroupBy(k => Regex.Match(k, @"_(\d+)$").Success ? Regex.Match(k, @"_(\d+)$").Groups[1].Value : "0")
+                                .ToList();
+
+                            foreach (var rowGroup in rows)
+                            {
+                                var rowIndex = rowGroup.Key;
+
+                                try
+                                {
+                                    var fields = rowGroup.ToDictionary(k => k, k => form[k]);
+                                    var columnsSqlList = new List<string>();
+                                    var parametersSqlList = new List<string>();
+                                    var parameterValues = new Dictionary<string, object>();
+
+                                    foreach (var field in fields)
+                                    {
+                                        var rawColName = field.Key.Substring(tableName.Length + 1);
+                                        var colName = Regex.Replace(rawColName, "_\\d+$", "");
+                                        var value = field.Value.ToString();
+
+                                        if (!columnDefs.Contains(colName, StringComparer.OrdinalIgnoreCase)) continue;
+
+                                        if (colName.StartsWith("attachment_"))
+                                        {
+                                            string descKey = $"desc_{tableName}_{colName}_{rowIndex}";
+                                            string fileKey = $"file_{tableName}_{colName}_{rowIndex}";
+                                            string desc = form.TryGetValue(descKey, out var d) ? d.ToString() : "";
+                                            string file = form.Files.FirstOrDefault(f => f.Name == fileKey)?.FileName ?? "";
+                                            value = !string.IsNullOrWhiteSpace(file) ? $"{desc};Attachments/{tableName}/{file}" : null;
+                                        }
+
+                                        parameterValues[colName] = string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
+                                        columnsSqlList.Add(colName);
+                                        parametersSqlList.Add("@" + colName);
+                                    }
+
+                                    // FK resolution
+                                    if (!string.IsNullOrEmpty(fkColumn))
+                                    {
+                                        var fkBase = fkColumn.Replace("ID", "", StringComparison.OrdinalIgnoreCase).ToLower();
+                                        var parentKey = insertedIds.Keys.FirstOrDefault(k =>
+                                            k.StartsWith("tbl_tran_", StringComparison.OrdinalIgnoreCase) &&
+                                            k.ToLower().Contains(fkBase));
+
+                                        if (!string.IsNullOrEmpty(parentKey) && insertedIds.TryGetValue(parentKey, out int fkValue))
+                                        {
+                                            parameterValues[fkColumn] = fkValue;
+                                            columnsSqlList.Add(fkColumn);
+                                            parametersSqlList.Add("@" + fkColumn);
+                                        }
+                                        else
+                                        {
+                                            rowErrors.Add($"Unable to resolve FK '{fkColumn}' for '{tableName}'");
+                                        }
+                                    }
+
+                                    // System fields
+                                    parameterValues["Active"] = 1;
+                                    parameterValues["CreatedUserID"] = userId;
+                                    parameterValues["CreatedDate"] = DateTime.Now;
+                                    columnsSqlList.AddRange(new[] { "Active", "CreatedUserID", "CreatedDate" });
+                                    parametersSqlList.AddRange(new[] { "@Active", "@CreatedUserID", "@CreatedDate" });
+
+                                    // Insert business record
+                                    string insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnsSqlList)}) OUTPUT INSERTED.ID VALUES ({string.Join(", ", parametersSqlList)})";
+                                    int newId;
+                                    using (var insertCmd = new SqlCommand(insertSql, conn, transaction))
+                                    {
+                                        foreach (var col in columnsSqlList)
+                                        {
+                                            insertCmd.Parameters.AddWithValue("@" + col, parameterValues[col] ?? DBNull.Value);
+                                        }
+                                        newId = Convert.ToInt32(insertCmd.ExecuteScalar());
+                                        insertedIds[$"{tableName}_{rowIndex}"] = newId;
+                                    }
+
+                                    // Insert into foProcessEventsDetail
+                                    var rowSnapshot = parameterValues.ToDictionary(k => k.Key, k => k.Value);
+                                    rowSnapshot["StepDescription"] = stepDescription;
+                                    rowSnapshot["TableDescription"] = table.TableDescription;
+                                    rowSnapshot["interactionType"] = "Insert";
+                                    rowSnapshot["CreatedUserID"] = userId;
+                                    rowSnapshot["CreatedDate"] = DateTime.Now;
+
+                                    string json = JsonConvert.SerializeObject(rowSnapshot);
+
+                                    using var auditCmd = new SqlCommand(@"
+                                INSERT INTO foProcessEventsDetail 
+                                (ProcessEventID, ProcessInstanceID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active)
+                                VALUES (@ProcessEventID, @ProcessInstanceID, @StepID, @TableName, @RecordID, @DataSetUpdate, GETDATE(), @CreatedUserID, 1)", conn, transaction);
+
+                                    auditCmd.Parameters.AddWithValue("@ProcessEventID", firstEventId);
+                                    auditCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                                    auditCmd.Parameters.AddWithValue("@StepID", stepId);
+                                    auditCmd.Parameters.AddWithValue("@TableName", tableName);
+                                    auditCmd.Parameters.AddWithValue("@RecordID", newId);
+                                    auditCmd.Parameters.AddWithValue("@DataSetUpdate", json);
+                                    auditCmd.Parameters.AddWithValue("@CreatedUserID", userId);
+                                    auditCmd.ExecuteNonQuery();
+                                }
+                                catch (Exception ex)
+                                {
+                                    rowErrors.Add($"Error saving to table '{tableName}', row {rowIndex}: {ex.Message}");
+                                }
+                            }
+                        }
+
+                        if (rowErrors.Any())
+                        {
+                            transaction.Rollback();
+                            TempData["RowErrors"] = rowErrors;
+                            return RedirectToAction("MergedPendingItems", "PendingItems", new { userId });
+                        }
+
+                        // Handle next step or approval transition
+                        var transitionResult = HandleNextStep(conn, transaction, stepId, firstEventId, processInstanceId, userId, action, SendForApproval, SelectedApproverIds);
+                                             
+
+                        transaction.Commit();
+
+                        return RedirectToAction("MergedPendingItems", "PendingItems", new { userId });
+
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        rowErrors.Add(ex.Message);
+                        TempData["RowErrors"] = rowErrors;
+                        TempData["Error"] = "An error occurred while saving step data.";
+                        return RedirectToAction("MergedPendingItems", "PendingItems", new { userId });
+                    }
+                }
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult SavePendingStepData(IFormCollection form, int userId, int id, int stepId, int processInstanceId, string action, bool SendForApproval = false, List<int> SelectedApproverIds = null)
+        {
+            var insertedIds = new Dictionary<string, int>();
+            var rowErrors = new List<string>();
+            var baseAttachmentFolder = Path.Combine(Directory.GetCurrentDirectory(), "Attachments");
+            Directory.CreateDirectory(baseAttachmentFolder);
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                using (var transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        var tables = new List<foProcessDetail>();
+                        var cmd = new SqlCommand(@"SELECT TableName, FormType, Parent, FKColumn FROM foProcessDetail WHERE StepID = @StepID AND Active = 1", conn, transaction);
+                        cmd.Parameters.AddWithValue("@StepID", stepId);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                tables.Add(new foProcessDetail
+                                {
+                                    TableName = reader["TableName"].ToString(),
+                                    FormType = reader["FormType"].ToString(),
+                                    Parent = Convert.ToBoolean(reader["Parent"]),
+                                    FKColumn = reader["FKColumn"]?.ToString()
+                                });
+                            }
+                        }
+
+                        string stepDescription = "";
+                        using (var descCmd = new SqlCommand("SELECT StepDescription FROM foProcessSteps WHERE ID = @StepID", conn, transaction))
+                        {
+                            descCmd.Parameters.AddWithValue("@StepID", stepId);
+                            var result = descCmd.ExecuteScalar();
+                            if (result != null) stepDescription = result.ToString();
+                        }
+
+                        //int processEventId = id;
+                        int processEventId;
+                        using (var getEventCmd = new SqlCommand(@"
+                  SELECT TOP 1 ID FROM foProcessEvents 
+                  WHERE ProcessInstanceID = @ProcessInstanceID AND StepID = @StepID AND DateCompleted IS NULL 
+                  ORDER BY ID DESC", conn, transaction))
+                        {
+                            getEventCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                            getEventCmd.Parameters.AddWithValue("@StepID", stepId);
+                            processEventId = Convert.ToInt32(getEventCmd.ExecuteScalar());
+                        }
+
+                        int? rootParentId = null;
+                        string rootParentQuery = @"
+                    SELECT TOP 1 RecordID FROM foProcessEventsDetail 
+                    WHERE ProcessInstanceID = @ProcessInstanceID 
+                    AND StepID = (SELECT MIN(StepID) FROM foProcessEvents WHERE ProcessInstanceID = @ProcessInstanceID)
+                    AND TableName IN (SELECT TableName FROM foProcessDetail WHERE Parent = 1 AND FKColumn IS NULL) ";
+                        using (var rootCmd = new SqlCommand(rootParentQuery, conn, transaction))
+                        {
+                            rootCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                            var result = rootCmd.ExecuteScalar();
+                            if (result != null) rootParentId = Convert.ToInt32(result);
+                        }
+
+                        var stepParent = tables.FirstOrDefault(t => t.Parent && !string.IsNullOrEmpty(t.FKColumn));
+                        var stepParentTable = stepParent?.TableName;
+
+                        foreach (var table in tables.OrderBy(t => t.Parent ? 0 : 1))
+                        {
+                            string tableName = table.TableName;
+                            string formType = table.FormType;
+                            string fkColumn = table.FKColumn;
+                            var columnDefs = GetColumnDefinitions(tableName, conn, transaction).Select(cd => cd.ColumnName).ToList();
+
+                            var rows = form.Keys
+                                .Where(k => k.StartsWith(tableName + "_"))
+                                .GroupBy(k => Regex.Match(k, @"_(\d+)$").Success ? Regex.Match(k, @"_(\d+)$").Groups[1].Value : "0")
+                                .ToList();
+
+                            foreach (var rowGroup in rows)
+                            {
+                                var rowIndex = rowGroup.Key;
+                                try
+                                {
+                                    var recordIdKey = $"{tableName}_RecordID_{rowIndex}";
+                                    int recordId = form.TryGetValue(recordIdKey, out var rid) && int.TryParse(rid, out var parsedRid) ? parsedRid : 0;
+
+                                    var fields = rowGroup.ToDictionary(k => k, k => form[k]);
+                                    var columnsSqlList = new List<string>();
+                                    var parametersSqlList = new List<string>();
+                                    var parameterValues = new Dictionary<string, object>();
+
+                                    foreach (var field in fields)
+                                    {
+                                        var rawColName = field.Key.Substring(tableName.Length + 1);
+                                        var colName = Regex.Replace(rawColName, "_\\d+$", "");
+                                        if (!columnDefs.Contains(colName, StringComparer.OrdinalIgnoreCase)) continue;
+
+                                        var value = field.Value.ToString();
+                                        parameterValues[colName] = string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
+                                        columnsSqlList.Add(colName);
+                                        parametersSqlList.Add("@" + colName);
+                                    }
+
+                                    // FK logic
+                                    if (!string.IsNullOrEmpty(fkColumn))
+                                    {
+                                        int? fkValue = null;
+                                        if (table.Parent && string.IsNullOrEmpty(fkColumn))
+                                        {
+                                            fkValue = null;
+                                        }
+                                        else if (!table.Parent && stepParentTable != null && insertedIds.TryGetValue($"{stepParentTable}_{rowIndex}", out int stepParentId))
+                                        {
+                                            fkValue = stepParentId;
+                                        }
+                                        else if (rootParentId.HasValue)
+                                        {
+                                            fkValue = rootParentId.Value;
+                                        }
+
+                                        if (fkValue.HasValue)
+                                        {
+                                            parameterValues[fkColumn] = fkValue.Value;
+                                            columnsSqlList.Add(fkColumn);
+                                            parametersSqlList.Add("@" + fkColumn);
+                                        }
+                                    }
+
+                                    parameterValues["Active"] = 1;
+
+                                    if (recordId > 0)
+                                    {
+                                        parameterValues["ModifiedUserID"] = userId;
+                                        parameterValues["ModifiedDate"] = DateTime.Now;
+
+                                        var setClause = columnsSqlList.Select(col => $"{col} = @{col}").ToList();
+                                        setClause.Add("ModifiedUserID = @ModifiedUserID");
+                                        setClause.Add("ModifiedDate = @ModifiedDate");
+
+                                        var updateSql = $"UPDATE {tableName} SET {string.Join(", ", setClause)} WHERE ID = @RecordID";
+                                        using var updateCmd = new SqlCommand(updateSql, conn, transaction);
+
+                                        foreach (var kvp in parameterValues)
+                                            updateCmd.Parameters.AddWithValue("@" + kvp.Key, kvp.Value);
+
+                                        updateCmd.Parameters.AddWithValue("@RecordID", recordId);
+
+                                        updateCmd.ExecuteNonQuery();
+                                    }
+
+                                    else
+                                    {
+                                        // 🔥 INSERT new record if no RecordID
+                                        parameterValues["CreatedUserID"] = userId;
+                                        parameterValues["CreatedDate"] = DateTime.Now;
+
+                                        columnsSqlList.AddRange(new[] { "CreatedUserID", "CreatedDate" });
+                                        parametersSqlList.AddRange(new[] { "@CreatedUserID", "@CreatedDate" });
+
+                                        string insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnsSqlList)}) OUTPUT INSERTED.ID VALUES ({string.Join(", ", parametersSqlList)})";
+                                        using var insertCmd = new SqlCommand(insertSql, conn, transaction);
+
+                                        foreach (var kvp in parameterValues)
+                                            insertCmd.Parameters.AddWithValue("@" + kvp.Key, kvp.Value);
+
+                                        recordId = Convert.ToInt32(insertCmd.ExecuteScalar());
+                                    }
+
+
+                                    insertedIds[$"{tableName}_{rowIndex}"] = recordId;
+
+                                    var rowSnapshot = new Dictionary<string, object>(parameterValues)
+                                    {
+                                        ["RecordID"] = recordId,
+                                        ["StepDescription"] = stepDescription,
+                                        ["interactionType"] = recordId > 0 ? "Update" : "Insert",
+                                        ["CreatedUserID"] = userId,
+                                        ["CreatedDate"] = DateTime.Now
+                                    };
+
+                                    string json = JsonConvert.SerializeObject(rowSnapshot);
+
+                                    using var auditCmd = new SqlCommand(@"
+                                INSERT INTO foProcessEventsDetail 
+                                (ProcessEventID, ProcessInstanceID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active) 
+                                VALUES (@ProcessEventID, @ProcessInstanceID, @StepID, @TableName, @RecordID, @DataSetUpdate, GETDATE(), @CreatedUserID, 1)", conn, transaction);
+                                    auditCmd.Parameters.AddWithValue("@ProcessEventID", processEventId);
+                                    auditCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                                    auditCmd.Parameters.AddWithValue("@StepID", stepId);
+                                    auditCmd.Parameters.AddWithValue("@TableName", tableName);
+                                    auditCmd.Parameters.AddWithValue("@RecordID", recordId);
+                                    auditCmd.Parameters.AddWithValue("@DataSetUpdate", json);
+                                    auditCmd.Parameters.AddWithValue("@CreatedUserID", userId);
+                                    auditCmd.ExecuteNonQuery();
+                                }
+                                catch (Exception ex)
+                                {
+                                    rowErrors.Add($"Error saving '{tableName}' row {rowIndex}: {ex.Message}");
+                                }
+                            }
+                        }
+
+                        if (rowErrors.Any())
+                        {
+                            transaction.Rollback();
+                            TempData["RowErrors"] = rowErrors;
+                            return RedirectToAction("ExecuteStep", new { stepId, processInstanceId, userId });
+                        }
+
+                        // ✅ Always save data first above
+                        // ✅ Now handle what happens after save
+
+                        //var transitionResult = HandleNextStep(conn, transaction, stepId, processEventId, processInstanceId, userId, action, form["cancelReason"]);
+                        var transitionResult = HandleNextStep(conn, transaction, stepId, processEventId, processInstanceId, userId, action, SendForApproval, SelectedApproverIds, form["cancelReason"]);
+
+
+                        transaction.Commit();
+
+                        return RedirectToAction("MergedPendingItems", "PendingItems", new { userId });
+
+
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        TempData["RowErrors"] = new List<string> { ex.Message };
+                        return RedirectToAction("Error", new { stepId, processInstanceId, userId });
+                    }
+                }
+            }
+        }
+
+        private StepTransitionResult HandleNextStep(SqlConnection conn, SqlTransaction transaction, int currentStepId, int currentEventId, int? processInstanceId, int userId, string action, bool SendForApproval = false, List<int> SelectedApproverIds = null, string cancelComment = null)
+        {
+            var result = new StepTransitionResult();
+
+            // 🔥 Handle cancellation first
+            if (action == "CancelProcess")
+            {
+                using (var cancelCmd = new SqlCommand(@"
+            UPDATE foProcessEvents
+            SET Active = 0, Cancelled = 1, DateCompleted = GETDATE()
+            WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction))
+                {
+                    cancelCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                    cancelCmd.ExecuteNonQuery();
+                }
+
+                using (var insertCancelCmd = new SqlCommand(@"
+            INSERT INTO foProcessCancellations (ProcessInstanceID, CancelledUserID, CancellationReason)
+            VALUES (@ProcessInstanceID, @CancelledUserID, @CancellationReason)", conn, transaction))
+                {
+                    insertCancelCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                    insertCancelCmd.Parameters.AddWithValue("@CancelledUserID", userId);
+                    insertCancelCmd.Parameters.AddWithValue("@CancellationReason", cancelComment ?? "Cancelled by user");
+                    insertCancelCmd.ExecuteNonQuery();
+                }
+
+                ArchiveProcess(conn, transaction, processInstanceId);
+
+                result.Cancelled = true;
+                return result;
+            }
+
+            // 🔥 Always mark current event completed first
+            using (var markDoneCmd = new SqlCommand(@"
+        UPDATE foProcessEvents
+        SET DateCompleted = GETDATE()
+        WHERE ID = @EventID", conn, transaction))
+            {
+                markDoneCmd.Parameters.AddWithValue("@EventID", currentEventId);
+                markDoneCmd.ExecuteNonQuery();
+            }
+
+            // 🔥 Try to find the next step
+            long? nextStepId = null;
+            object nextGroupId = DBNull.Value, nextUserId = DBNull.Value;
+
+            using (var getNextCmd = new SqlCommand(@"
+        SELECT TOP 1 ID, GroupID, UserID
+        FROM foProcessSteps
+        WHERE ProcessID = (SELECT ProcessID FROM foProcessSteps WHERE ID = @CurrentStepID)
+          AND StepNo > (SELECT StepNo FROM foProcessSteps WHERE ID = @CurrentStepID)
+        ORDER BY StepNo", conn, transaction))
+            {
+                getNextCmd.Parameters.AddWithValue("@CurrentStepID", currentStepId);
+                using (var reader = getNextCmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        nextStepId = reader.GetInt64(0);
+                        nextGroupId = reader["GroupID"] ?? DBNull.Value;
+                        nextUserId = reader["UserID"] ?? DBNull.Value;
+                    }
+                }
+            }
+
+            if (nextStepId.HasValue)
+            {
+                // 🔥 Move to next step
+                object assignedGroupId = nextGroupId;
+                object assignedUserId = nextUserId;
+                int stepToAssign = (int)nextStepId.Value;
+
+                if (action == "SaveLater")
+                {
+                    assignedGroupId = DBNull.Value;
+                    assignedUserId = userId;
+                    stepToAssign = currentStepId; // Stay on current step
+                }
+
+                using (var insertNextCmd = new SqlCommand(@"
+            INSERT INTO foProcessEvents
+            (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, Active)
+            VALUES (@ProcessInstanceID, @StepID, @PreviousEventID, @GroupID, @UserID, GETDATE(), 1)", conn, transaction))
+                {
+                    insertNextCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                    insertNextCmd.Parameters.AddWithValue("@StepID", stepToAssign);
+                    insertNextCmd.Parameters.AddWithValue("@PreviousEventID", currentEventId);
+                    insertNextCmd.Parameters.AddWithValue("@GroupID", assignedGroupId);
+                    insertNextCmd.Parameters.AddWithValue("@UserID", assignedUserId);
+                    insertNextCmd.ExecuteNonQuery();
+                }
+
+                result.NextStepExists = true;
+            }
+            else
+            {
+                // 🔥 No next step — check approvals
+                if (SendForApproval && SelectedApproverIds?.Any() == true)
+                {
+                    // ➡️ Insert ad-hoc approvals into foApprovalEvents
+                    foreach (var approverId in SelectedApproverIds)
+                    {
+                        using (var insertApprovalCmd = new SqlCommand(@"
+                    INSERT INTO foApprovalEvents
+                    (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, Active)
+                    VALUES (@ProcessInstanceID, 0, @PreviousEventID, NULL, @UserID, GETDATE(), 1)", conn, transaction))
+                        {
+                            insertApprovalCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                            insertApprovalCmd.Parameters.AddWithValue("@PreviousEventID", -currentEventId); // 🧠 Negative for rework tracking
+                            insertApprovalCmd.Parameters.AddWithValue("@UserID", approverId);
+                            insertApprovalCmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    result.ApprovalStarted = true;
+                }
+                else
+                {
+                    // 🔥 No ad-hoc approvals — check if predefined approvals exist
+                    int processId;
+                    using (var processIdCmd = new SqlCommand(@"
+                SELECT ProcessID
+                FROM foProcessSteps
+                WHERE ID = @CurrentStepID", conn, transaction))
+                    {
+                        processIdCmd.Parameters.AddWithValue("@CurrentStepID", currentStepId);
+                        processId = Convert.ToInt32(processIdCmd.ExecuteScalar());
+                    }
+
+                    int? approvalStepId = null;
+                    object groupId = DBNull.Value, userIdApproval = DBNull.Value;
+
+                    using (var approvalStepsCmd = new SqlCommand(@"
+                SELECT TOP 1 ID, GroupID, UserID
+                FROM foApprovalSteps
+                WHERE ProcessID = @ProcessID AND Active = 1
+                ORDER BY StepNo", conn, transaction))
+                    {
+                        approvalStepsCmd.Parameters.AddWithValue("@ProcessID", processId);
+                        using (var reader = approvalStepsCmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                approvalStepId = Convert.ToInt32(reader["ID"]);
+                                groupId = reader["GroupID"] ?? DBNull.Value;
+                                userIdApproval = reader["UserID"] ?? DBNull.Value;
+                            }
+                        }
+                    }
+
+                    if (approvalStepId.HasValue)
+                    {
+                        using (var insertApprovalEventCmd = new SqlCommand(@"
+                    INSERT INTO foApprovalEvents
+                    (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, Active)
+                    VALUES (@ProcessInstanceID, @StepID, @PreviousEventID, @GroupID, @UserID, GETDATE(), 1)", conn, transaction))
+                        {
+                            insertApprovalEventCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                            insertApprovalEventCmd.Parameters.AddWithValue("@StepID", approvalStepId.Value);
+                            insertApprovalEventCmd.Parameters.AddWithValue("@PreviousEventID", -currentEventId);
+                            insertApprovalEventCmd.Parameters.AddWithValue("@GroupID", groupId);
+                            insertApprovalEventCmd.Parameters.AddWithValue("@UserID", userIdApproval);
+                            insertApprovalEventCmd.ExecuteNonQuery();
+                        }
+
+                        result.ApprovalStarted = true;
+                    }
+                    else
+                    {
+                        ArchiveProcess(conn, transaction, processInstanceId);
+                        result.ApprovalStarted = false;
+                    }
+                }
+            }
+
+            return result;
         }
 
 
@@ -511,610 +1222,50 @@ namespace FreschOne.Controllers
         }
 
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult SaveNewStepData(IFormCollection form, int userId, int stepId, int? processInstanceId)
+        public class StepTransitionResult
         {
-            var insertedIds = new Dictionary<string, int>();
-            var rowErrors = new List<string>();
-            var baseAttachmentFolder = Path.Combine(Directory.GetCurrentDirectory(), "Attachments");
-            Directory.CreateDirectory(baseAttachmentFolder);
-
-            using (var conn = GetConnection())
-            {
-                conn.Open();
-                using (var transaction = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        // Load step's table definitions
-                        var tables = new List<foProcessDetail>();
-                        var cmd = new SqlCommand(@"SELECT TableName, FormType, FKColumn, TableDescription 
-                                           FROM foProcessDetail 
-                                           WHERE StepID = @StepID AND Active = 1", conn, transaction);
-                        cmd.Parameters.AddWithValue("@StepID", stepId);
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                tables.Add(new foProcessDetail
-                                {
-                                    TableName = reader["TableName"].ToString(),
-                                    FormType = reader["FormType"].ToString(),
-                                    FKColumn = reader["FKColumn"].ToString(),
-                                    TableDescription = reader["TableDescription"].ToString()
-                                });
-                            }
-                        }
-
-                        // Step description
-                        string stepDescription = "";
-                        using (var descCmd = new SqlCommand("SELECT StepDescription FROM foProcessSteps WHERE ID = @StepID", conn, transaction))
-                        {
-                            descCmd.Parameters.AddWithValue("@StepID", stepId);
-                            stepDescription = descCmd.ExecuteScalar()?.ToString();
-                        }
-
-                        // Get or generate ProcessInstanceID
-                        if (!processInstanceId.HasValue || processInstanceId == 0)
-                        {
-                            string getMaxInstanceIdSql = @"
-                        SELECT ISNULL(MAX(ProcessInstanceID), 0) + 1 
-                        FROM (
-                            SELECT ProcessInstanceID FROM foProcessEvents
-                            UNION ALL
-                            SELECT ProcessInstanceID FROM foApprovalEventsArchive
-                        ) AS Combined";
-                            using (var getInstanceCmd = new SqlCommand(getMaxInstanceIdSql, conn, transaction))
-                            {
-                                processInstanceId = Convert.ToInt32(getInstanceCmd.ExecuteScalar());
-                            }
-                        }
-
-                        // Insert initial event for this step
-                        int firstEventId;
-                        using (var insertEventCmd = new SqlCommand(@"
-                    INSERT INTO foProcessEvents (ProcessInstanceID, StepID, PreviousEventID, UserID, DateAssigned, DateCompleted, Active)
-                    OUTPUT INSERTED.ID 
-                    VALUES (@ProcessInstanceID, @StepID, 0, @UserID, GETDATE(), GETDATE(), 1)", conn, transaction))
-                        {
-                            insertEventCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                            insertEventCmd.Parameters.AddWithValue("@StepID", stepId);
-                            insertEventCmd.Parameters.AddWithValue("@UserID", userId);
-                            firstEventId = Convert.ToInt32(insertEventCmd.ExecuteScalar());
-                        }
-
-                        // Insert into all tables in order
-                        foreach (var table in tables)
-                        {
-                            string tableName = table.TableName;
-                            string fkColumn = table.FKColumn;
-                            var columnDefs = GetColumnDefinitions(tableName, conn, transaction).Select(cd => cd.ColumnName).ToList();
-
-                            var rows = form.Keys
-                                .Where(k => k.StartsWith(tableName + "_"))
-                                .GroupBy(k => Regex.Match(k, @"_(\d+)$").Success ? Regex.Match(k, @"_(\d+)$").Groups[1].Value : "0")
-                                .ToList();
-
-                            foreach (var rowGroup in rows)
-                            {
-                                var rowIndex = rowGroup.Key;
-
-                                try
-                                {
-                                    var fields = rowGroup.ToDictionary(k => k, k => form[k]);
-                                    var columnsSqlList = new List<string>();
-                                    var parametersSqlList = new List<string>();
-                                    var parameterValues = new Dictionary<string, object>();
-
-                                    foreach (var field in fields)
-                                    {
-                                        var rawColName = field.Key.Substring(tableName.Length + 1);
-                                        var colName = Regex.Replace(rawColName, "_\\d+$", "");
-                                        var value = field.Value.ToString();
-
-                                        if (!columnDefs.Contains(colName, StringComparer.OrdinalIgnoreCase)) continue;
-
-                                        if (colName.StartsWith("attachment_"))
-                                        {
-                                            string descKey = $"desc_{tableName}_{colName}_{rowIndex}";
-                                            string fileKey = $"file_{tableName}_{colName}_{rowIndex}";
-                                            string desc = form.TryGetValue(descKey, out var d) ? d.ToString() : "";
-                                            string file = form.Files.FirstOrDefault(f => f.Name == fileKey)?.FileName ?? "";
-                                            value = !string.IsNullOrWhiteSpace(file) ? $"{desc};Attachments/{tableName}/{file}" : null;
-                                        }
-
-                                        parameterValues[colName] = string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
-                                        columnsSqlList.Add(colName);
-                                        parametersSqlList.Add("@" + colName);
-                                    }
-
-                                    // FK resolution (new logic)
-                                    if (!string.IsNullOrEmpty(fkColumn))
-                                    {
-                                        var fkBase = fkColumn.Replace("ID", "", StringComparison.OrdinalIgnoreCase).ToLower();
-                                        var parentKey = insertedIds.Keys.FirstOrDefault(k =>
-                                            k.StartsWith("tbl_tran_", StringComparison.OrdinalIgnoreCase) &&
-                                            k.ToLower().Contains(fkBase));
-
-                                        if (!string.IsNullOrEmpty(parentKey) && insertedIds.TryGetValue(parentKey, out int fkValue))
-                                        {
-                                            parameterValues[fkColumn] = fkValue;
-                                            columnsSqlList.Add(fkColumn);
-                                            parametersSqlList.Add("@" + fkColumn);
-                                        }
-                                        else
-                                        {
-                                            rowErrors.Add($"Unable to resolve FK '{fkColumn}' for '{tableName}'");
-                                        }
-                                    }
-
-                                    // Add system fields
-                                    parameterValues["Active"] = 1;
-                                    parameterValues["CreatedUserID"] = userId;
-                                    parameterValues["CreatedDate"] = DateTime.Now;
-                                    columnsSqlList.AddRange(new[] { "Active", "CreatedUserID", "CreatedDate" });
-                                    parametersSqlList.AddRange(new[] { "@Active", "@CreatedUserID", "@CreatedDate" });
-
-                                    // Insert business record
-                                    string insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnsSqlList)}) OUTPUT INSERTED.ID VALUES ({string.Join(", ", parametersSqlList)})";
-                                    int newId;
-                                    using (var insertCmd = new SqlCommand(insertSql, conn, transaction))
-                                    {
-                                        foreach (var col in columnsSqlList)
-                                        {
-                                            insertCmd.Parameters.AddWithValue("@" + col, parameterValues[col] ?? DBNull.Value);
-                                        }
-                                        newId = Convert.ToInt32(insertCmd.ExecuteScalar());
-                                        insertedIds[$"{tableName}_{rowIndex}"] = newId;
-                                    }
-
-                                    // Snapshot to foProcessEventsDetail
-                                    var rowSnapshot = parameterValues.ToDictionary(k => k.Key, k => k.Value);
-                                    rowSnapshot["StepDescription"] = stepDescription;
-                                    rowSnapshot["TableDescription"] = table.TableDescription;
-                                    rowSnapshot["interactionType"] = "Insert";
-                                    rowSnapshot["CreatedUserID"] = userId;
-                                    rowSnapshot["CreatedDate"] = DateTime.Now;
-
-                                    string json = JsonConvert.SerializeObject(rowSnapshot);
-
-                                    using var auditCmd = new SqlCommand(@"
-                                INSERT INTO foProcessEventsDetail 
-                                (ProcessEventID, ProcessInstanceID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active)
-                                VALUES (@ProcessEventID, @ProcessInstanceID, @StepID, @TableName, @RecordID, @DataSetUpdate, GETDATE(), @CreatedUserID, 1)", conn, transaction);
-
-                                    auditCmd.Parameters.AddWithValue("@ProcessEventID", firstEventId);
-                                    auditCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                                    auditCmd.Parameters.AddWithValue("@StepID", stepId);
-                                    auditCmd.Parameters.AddWithValue("@TableName", tableName);
-                                    auditCmd.Parameters.AddWithValue("@RecordID", newId);
-                                    auditCmd.Parameters.AddWithValue("@DataSetUpdate", json);
-                                    auditCmd.Parameters.AddWithValue("@CreatedUserID", userId);
-                                    auditCmd.ExecuteNonQuery();
-                                }
-                                catch (Exception ex)
-                                {
-                                    rowErrors.Add($"Error saving to table '{tableName}', row {rowIndex}: {ex.Message}");
-                                }
-                            }
-                        }
-
-                        if (rowErrors.Any())
-                        {
-                            transaction.Rollback();
-                            TempData["RowErrors"] = rowErrors;
-                            return RedirectToAction("ExecuteStep", new { stepId, processInstanceId, userId });
-                        }
-
-                        // Route to next step or approval
-                        string nextStepQuery = @"SELECT TOP 1 ID, GroupID, UserID 
-                                         FROM foProcessSteps 
-                                         WHERE ProcessID = (SELECT ProcessID FROM foProcessSteps WHERE ID = @StepID) 
-                                         AND StepNo > (SELECT StepNo FROM foProcessSteps WHERE ID = @StepID) 
-                                         ORDER BY StepNo";
-                        long? nextStepId = null;
-                        object nextGroupId = DBNull.Value, nextUserId = DBNull.Value;
-
-                        using (var getNextCmd = new SqlCommand(nextStepQuery, conn, transaction))
-                        {
-                            getNextCmd.Parameters.AddWithValue("@StepID", stepId);
-                            using var reader = getNextCmd.ExecuteReader();
-                            if (reader.Read())
-                            {
-                                nextStepId = reader.GetInt64(0);
-                                nextGroupId = reader["GroupID"];
-                                nextUserId = reader["UserID"];
-                            }
-                        }
-
-                        if (nextStepId.HasValue)
-                        {
-                            using var nextCmd = new SqlCommand(@"
-                        INSERT INTO foProcessEvents (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, Active)
-                        VALUES (@ProcessInstanceID, @StepID, @PreviousEventID, @GroupID, @UserID, GETDATE(), 1)", conn, transaction);
-                            nextCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                            nextCmd.Parameters.AddWithValue("@StepID", nextStepId);
-                            nextCmd.Parameters.AddWithValue("@PreviousEventID", firstEventId);
-                            nextCmd.Parameters.AddWithValue("@GroupID", nextGroupId);
-                            nextCmd.Parameters.AddWithValue("@UserID", nextUserId);
-                            nextCmd.ExecuteNonQuery();
-                        }
-                        else
-                        {
-                            var markCompleteCmd = new SqlCommand("UPDATE foProcessEvents SET DateCompleted = GETDATE() WHERE ID = @EventID", conn, transaction);
-                            markCompleteCmd.Parameters.AddWithValue("@EventID", firstEventId);
-                            markCompleteCmd.ExecuteNonQuery();
-
-                            var getProcessIdCmd = new SqlCommand("SELECT ProcessID FROM foProcessSteps WHERE ID = @StepID", conn, transaction);
-                            getProcessIdCmd.Parameters.AddWithValue("@StepID", stepId);
-                            int processId = Convert.ToInt32(getProcessIdCmd.ExecuteScalar());
-
-                            var approvalStepCmd = new SqlCommand(@"
-                        SELECT TOP 1 ID, GroupID, UserID 
-                        FROM foApprovalSteps 
-                        WHERE ProcessID = @ProcessID AND Active = 1 
-                        ORDER BY StepNo", conn, transaction);
-                            approvalStepCmd.Parameters.AddWithValue("@ProcessID", processId);
-
-                            using var reader = approvalStepCmd.ExecuteReader();
-                            if (reader.Read())
-                            {
-                                int approvalStepId = Convert.ToInt32(reader["ID"]);
-                                var approvalGroupId = reader["GroupID"];
-                                var approvalUserId = reader["UserID"];
-
-                                var insertApproval = new SqlCommand(@"
-                            INSERT INTO foApprovalEvents (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned)
-                            VALUES (@ProcessInstanceID, @StepID, @PreviousEventID, @GroupID, @UserID, GETDATE())", conn, transaction);
-                                insertApproval.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                                insertApproval.Parameters.AddWithValue("@StepID", approvalStepId);
-                                insertApproval.Parameters.AddWithValue("@PreviousEventID", -firstEventId);
-                                insertApproval.Parameters.AddWithValue("@GroupID", approvalGroupId ?? DBNull.Value);
-                                insertApproval.Parameters.AddWithValue("@UserID", approvalUserId ?? DBNull.Value);
-                                insertApproval.ExecuteNonQuery();
-                            }
-                        }
-
-                        transaction.Commit();
-
-                        return nextStepId.HasValue
-                            ? RedirectToAction("PendingItems", new { userId })
-                            : RedirectToAction("PendingApprovalItems", "ApprovalEvents", new { userId });
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        rowErrors.Add(ex.Message);
-                        TempData["RowErrors"] = rowErrors;
-                        TempData["Error"] = "An error occurred while saving step data.";
-                        return RedirectToAction("ExecuteStep", new { stepId, processInstanceId, userId });
-                    }
-                }
-            }
+            public bool NextStepExists { get; set; }
+            public bool ApprovalStarted { get; set; }
+            public bool Cancelled { get; set; }
         }
 
-
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult SavePendingStepData(IFormCollection form, int userId, int stepId, int processInstanceId)
+        private void ArchiveProcess(SqlConnection conn, SqlTransaction transaction, int? processInstanceId)
         {
-            var insertedIds = new Dictionary<string, int>();
-            var rowErrors = new List<string>();
-            var baseAttachmentFolder = Path.Combine(Directory.GetCurrentDirectory(), "Attachments");
-            Directory.CreateDirectory(baseAttachmentFolder);
+            // 🟰 Copy Process Events into Archive
+            var archiveEventsCmd = new SqlCommand(@"
+        INSERT INTO foProcessEventsArchive (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active, Cancelled)
+        SELECT ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active, Cancelled
+        FROM foProcessEvents
+        WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
 
-            using (var conn = GetConnection())
-            {
-                conn.Open();
-                using (var transaction = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        var tables = new List<foProcessDetail>();
-                        var cmd = new SqlCommand(@"SELECT TableName, FormType, Parent, FKColumn FROM foProcessDetail WHERE StepID = @StepID AND Active = 1", conn, transaction);
-                        cmd.Parameters.AddWithValue("@StepID", stepId);
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                tables.Add(new foProcessDetail
-                                {
-                                    TableName = reader["TableName"].ToString(),
-                                    FormType = reader["FormType"].ToString(),
-                                    Parent = Convert.ToBoolean(reader["Parent"]),
-                                    FKColumn = reader["FKColumn"]?.ToString()
-                                });
-                            }
-                        }
+            archiveEventsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            archiveEventsCmd.ExecuteNonQuery();
 
-                        string stepDescription = "";
-                        using (var descCmd = new SqlCommand("SELECT StepDescription FROM foProcessSteps WHERE ID = @StepID", conn, transaction))
-                        {
-                            descCmd.Parameters.AddWithValue("@StepID", stepId);
-                            var result = descCmd.ExecuteScalar();
-                            if (result != null) stepDescription = result.ToString();
-                        }
+            // 🟰 Copy Process Event Details into Archive
+            var archiveDetailsCmd = new SqlCommand(@"
+        INSERT INTO foProcessEventsDetailArchive (ProcessEventID, ProcessInstanceID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active)
+        SELECT ProcessEventID, ProcessInstanceID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active
+        FROM foProcessEventsDetail
+        WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
 
-                        int processEventId;
-                        using (var getEventCmd = new SqlCommand(@"
-                    SELECT TOP 1 ID FROM foProcessEvents 
-                    WHERE ProcessInstanceID = @ProcessInstanceID AND StepID = @StepID AND DateCompleted IS NULL 
-                    ORDER BY ID DESC", conn, transaction))
-                        {
-                            getEventCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                            getEventCmd.Parameters.AddWithValue("@StepID", stepId);
-                            processEventId = Convert.ToInt32(getEventCmd.ExecuteScalar());
-                        }
+            archiveDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            archiveDetailsCmd.ExecuteNonQuery();
 
-                        using (var updateCmd = new SqlCommand("UPDATE foProcessEvents SET DateCompleted = GETDATE() WHERE ID = @ID", conn, transaction))
-                        {
-                            updateCmd.Parameters.AddWithValue("@ID", processEventId);
-                            updateCmd.ExecuteNonQuery();
-                        }
+            // 🔥 Deactivate or delete original process events
+            var deactivateCmd = new SqlCommand(@"
+        DELETE FROM  foProcessEvents
+        WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
 
-                        int? rootParentId = null;
-                        string rootParentQuery = @"
-                    SELECT TOP 1 RecordID FROM foProcessEventsDetail 
-                    WHERE ProcessInstanceID = @ProcessInstanceID 
-                    AND StepID = (SELECT MIN(StepID) FROM foProcessEvents WHERE ProcessInstanceID = @ProcessInstanceID)
-                    AND TableName IN (SELECT TableName FROM foProcessDetail WHERE Parent = 1 AND FKColumn IS NULL)";
-                        using (var rootCmd = new SqlCommand(rootParentQuery, conn, transaction))
-                        {
-                            rootCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                            var result = rootCmd.ExecuteScalar();
-                            if (result != null) rootParentId = Convert.ToInt32(result);
-                        }
+            deactivateCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            deactivateCmd.ExecuteNonQuery();
 
-                        var stepParent = tables.FirstOrDefault(t => t.Parent && !string.IsNullOrEmpty(t.FKColumn));
-                        var stepParentTable = stepParent?.TableName;
+            var deactivateDetailsCmd = new SqlCommand(@"
+        DELETE FROM foProcessEventsDetail
+        WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
 
-                        foreach (var table in tables.OrderBy(t => t.Parent ? 0 : 1))
-                        {
-                            string tableName = table.TableName;
-                            string formType = table.FormType;
-                            string fkColumn = table.FKColumn;
-                            var columnDefs = GetColumnDefinitions(tableName, conn, transaction).Select(cd => cd.ColumnName).ToList();
-
-                            var rows = form.Keys
-                                .Where(k => k.StartsWith(tableName + "_"))
-                                .GroupBy(k => Regex.Match(k, @"_(\d+)$").Success ? Regex.Match(k, @"_(\d+)$").Groups[1].Value : "0")
-                                .ToList();
-
-                            foreach (var rowGroup in rows)
-                            {
-                                var rowIndex = rowGroup.Key;
-                                try
-                                {
-                                    var recordIdKey = $"{tableName}_RecordID_{rowIndex}";
-                                    int recordId = form.TryGetValue(recordIdKey, out var rid) && int.TryParse(rid, out var parsedRid) ? parsedRid : 0;
-
-                                    var fields = rowGroup.ToDictionary(k => k, k => form[k]);
-                                    var columnsSqlList = new List<string>();
-                                    var parametersSqlList = new List<string>();
-                                    var parameterValues = new Dictionary<string, object>();
-
-                                    foreach (var field in fields)
-                                    {
-                                        var rawColName = field.Key.Substring(tableName.Length + 1);
-                                        var colName = Regex.Replace(rawColName, "_\\d+$", "");
-                                        if (!columnDefs.Contains(colName, StringComparer.OrdinalIgnoreCase)) continue;
-
-                                        var value = field.Value.ToString();
-                                        parameterValues[colName] = string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
-                                        columnsSqlList.Add(colName);
-                                        parametersSqlList.Add("@" + colName);
-                                    }
-
-                                    // FK logic
-                                    if (!string.IsNullOrEmpty(fkColumn))
-                                    {
-                                        int? fkValue = null;
-                                        if (table.Parent && string.IsNullOrEmpty(fkColumn))
-                                        {
-                                            fkValue = null;
-                                        }
-                                        else if (!table.Parent && stepParentTable != null && insertedIds.TryGetValue($"{stepParentTable}_{rowIndex}", out int stepParentId))
-                                        {
-                                            fkValue = stepParentId;
-                                        }
-                                        else if (rootParentId.HasValue)
-                                        {
-                                            fkValue = rootParentId.Value;
-                                        }
-
-                                        if (fkValue.HasValue)
-                                        {
-                                            parameterValues[fkColumn] = fkValue.Value;
-                                            columnsSqlList.Add(fkColumn);
-                                            parametersSqlList.Add("@" + fkColumn);
-                                        }
-                                    }
-
-                                    parameterValues["Active"] = 1;
-                                    parameterValues["ModifiedUserID"] = userId;
-                                    parameterValues["ModifiedDate"] = DateTime.Now;
-
-                                    if (formType == "F" && recordId > 0)
-                                    {
-                                        // 🔥 UPDATE instead of insert for Freeform if record exists
-                                        var setClause = columnsSqlList.Select(col => $"{col} = @{col}").ToList();
-                                        setClause.Add("ModifiedUserID = @ModifiedUserID");
-                                        setClause.Add("ModifiedDate = @ModifiedDate");
-
-                                        var updateSql = $"UPDATE {tableName} SET {string.Join(", ", setClause)} WHERE ID = @RecordID";
-                                        using var updateCmd = new SqlCommand(updateSql, conn, transaction);
-                                        foreach (var kvp in parameterValues)
-                                            updateCmd.Parameters.AddWithValue("@" + kvp.Key, kvp.Value);
-                                        updateCmd.Parameters.AddWithValue("@RecordID", recordId);
-                                        updateCmd.ExecuteNonQuery();
-                                    }
-                                    else
-                                    {
-                                        // INSERT (for Tabular, or new Freeform record)
-                                        parameterValues["CreatedUserID"] = userId;
-                                        parameterValues["CreatedDate"] = DateTime.Now;
-                                        columnsSqlList.AddRange(new[] { "CreatedUserID", "CreatedDate" });
-                                        parametersSqlList.AddRange(new[] { "@CreatedUserID", "@CreatedDate" });
-
-                                        string insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnsSqlList)}) OUTPUT INSERTED.ID VALUES ({string.Join(", ", parametersSqlList)})";
-                                        using var insertCmd = new SqlCommand(insertSql, conn, transaction);
-                                        foreach (var kvp in parameterValues)
-                                            insertCmd.Parameters.AddWithValue("@" + kvp.Key, kvp.Value);
-                                        recordId = Convert.ToInt32(insertCmd.ExecuteScalar());
-                                    }
-
-                                    insertedIds[$"{tableName}_{rowIndex}"] = recordId;
-
-                                    var rowSnapshot = new Dictionary<string, object>(parameterValues)
-                                    {
-                                        ["RecordID"] = recordId,
-                                        ["StepDescription"] = stepDescription,
-                                        ["interactionType"] = recordId > 0 ? "Update" : "Insert",
-                                        ["CreatedUserID"] = userId,
-                                        ["CreatedDate"] = DateTime.Now
-                                    };
-
-                                    string json = JsonConvert.SerializeObject(rowSnapshot);
-
-                                    using var auditCmd = new SqlCommand(@"
-                                INSERT INTO foProcessEventsDetail 
-                                (ProcessEventID, ProcessInstanceID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active) 
-                                VALUES (@ProcessEventID, @ProcessInstanceID, @StepID, @TableName, @RecordID, @DataSetUpdate, GETDATE(), @CreatedUserID, 1)", conn, transaction);
-                                    auditCmd.Parameters.AddWithValue("@ProcessEventID", processEventId);
-                                    auditCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                                    auditCmd.Parameters.AddWithValue("@StepID", stepId);
-                                    auditCmd.Parameters.AddWithValue("@TableName", tableName);
-                                    auditCmd.Parameters.AddWithValue("@RecordID", recordId);
-                                    auditCmd.Parameters.AddWithValue("@DataSetUpdate", json);
-                                    auditCmd.Parameters.AddWithValue("@CreatedUserID", userId);
-                                    auditCmd.ExecuteNonQuery();
-                                }
-                                catch (Exception ex)
-                                {
-                                    rowErrors.Add($"Error saving '{tableName}' row {rowIndex}: {ex.Message}");
-                                }
-                            }
-                        }
-
-                        if (rowErrors.Any())
-                        {
-                            transaction.Rollback();
-                            TempData["RowErrors"] = rowErrors;
-                            return RedirectToAction("ExecuteStep", new { stepId, processInstanceId, userId });
-                        }
-
-                        // ➕ Handle next step creation
-                        HandleNextStep(conn, transaction, stepId, processEventId, processInstanceId, userId);
-
-                        transaction.Commit();
-                        return RedirectToAction("PendingItems", new { userId });
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        TempData["RowErrors"] = new List<string> { ex.Message };
-                        return RedirectToAction("ExecuteStep", new { stepId, processInstanceId, userId });
-                    }
-                }
-            }
+            deactivateDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            deactivateDetailsCmd.ExecuteNonQuery();
         }
-
-        private void HandleNextStep(SqlConnection conn, SqlTransaction transaction, int currentStepId, int currentEventId, int processInstanceId, int userId)
-        {
-            // ➡️ Find next normal step
-            string nextStepQuery = @"
-        SELECT TOP 1 ID, GroupID, UserID 
-        FROM foProcessSteps 
-        WHERE ProcessID = (SELECT ProcessID FROM foProcessSteps WHERE ID = @CurrentStepID) 
-        AND StepNo > (SELECT StepNo FROM foProcessSteps WHERE ID = @CurrentStepID) 
-        ORDER BY StepNo";
-
-            long? nextStepId = null;
-            object nextGroupId = DBNull.Value, nextUserId = DBNull.Value;
-
-            using (var getNextCmd = new SqlCommand(nextStepQuery, conn, transaction))
-            {
-                getNextCmd.Parameters.AddWithValue("@CurrentStepID", currentStepId);
-                using (var reader = getNextCmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        nextStepId = reader.GetInt64(0);
-                        nextGroupId = reader["GroupID"] ?? DBNull.Value;
-                        nextUserId = reader["UserID"] ?? DBNull.Value;
-                    }
-                }
-            }
-
-            if (nextStepId.HasValue)
-            {
-                // ➡️ Create next process event (normal step)
-                using (var insertNextCmd = new SqlCommand(@"
-            INSERT INTO foProcessEvents 
-            (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, Active)
-            VALUES (@ProcessInstanceID, @StepID, @PreviousEventID, @GroupID, @UserID, GETDATE(), 1)", conn, transaction))
-                {
-                    insertNextCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                    insertNextCmd.Parameters.AddWithValue("@StepID", nextStepId.Value);
-                    insertNextCmd.Parameters.AddWithValue("@PreviousEventID", currentEventId);
-                    insertNextCmd.Parameters.AddWithValue("@GroupID", nextGroupId);
-                    insertNextCmd.Parameters.AddWithValue("@UserID", nextUserId);
-                    insertNextCmd.ExecuteNonQuery();
-                }
-            }
-            else
-            {
-                // 🚀 No next step ➡️ Complete and move to Approval phase
-                using (var markDoneCmd = new SqlCommand(
-                    "UPDATE foProcessEvents SET DateCompleted = GETDATE() WHERE ID = @EventID", conn, transaction))
-                {
-                    markDoneCmd.Parameters.AddWithValue("@EventID", currentEventId);
-                    markDoneCmd.ExecuteNonQuery();
-                }
-
-                int processId;
-                using (var processIdCmd = new SqlCommand(
-                    "SELECT ProcessID FROM foProcessSteps WHERE ID = @StepID", conn, transaction))
-                {
-                    processIdCmd.Parameters.AddWithValue("@StepID", currentStepId);
-                    processId = Convert.ToInt32(processIdCmd.ExecuteScalar());
-                }
-
-                using (var approvalStepCmd = new SqlCommand(@"
-            SELECT TOP 1 ID, GroupID, UserID 
-            FROM foApprovalSteps 
-            WHERE ProcessID = @ProcessID AND Active = 1 
-            ORDER BY StepNo", conn, transaction))
-                {
-                    approvalStepCmd.Parameters.AddWithValue("@ProcessID", processId);
-                    using (var reader = approvalStepCmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            var approvalStepId = Convert.ToInt32(reader["ID"]);
-                            var approvalGroupId = reader["GroupID"] ?? DBNull.Value;
-                            var approvalUserId = reader["UserID"] ?? DBNull.Value;
-
-                            using (var insertApproval = new SqlCommand(@"
-                        INSERT INTO foApprovalEvents 
-                        (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned)
-                        VALUES (@ProcessInstanceID, @StepID, @PreviousEventID, @GroupID, @UserID, GETDATE())", conn, transaction))
-                            {
-                                insertApproval.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                                insertApproval.Parameters.AddWithValue("@StepID", approvalStepId);
-                                insertApproval.Parameters.AddWithValue("@PreviousEventID", -currentEventId); // 🔥 Negative for tracking
-                                insertApproval.Parameters.AddWithValue("@GroupID", approvalGroupId);
-                                insertApproval.Parameters.AddWithValue("@UserID", approvalUserId);
-                                insertApproval.ExecuteNonQuery();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
 
 
         private void PopulateProcessHistory(SqlConnection conn, SqlTransaction transaction, int? processInstanceId)
@@ -1378,8 +1529,8 @@ FROM foApprovalEventsDetail a LEFT OUTER JOIN foApprovalSteps b on a.StepID = b.
             {
                 TableName = table.TableName,
                 Columns = columns,
-                RowCount = model.CurrentRowCount + 1,
-                RenderRowIndex = model.CurrentRowCount,
+                RowCount =  1,
+                StartIndex = model.CurrentRowCount,
                 ColumnTypes = columnTypes,
                 ColumnLengths = columnLengths,
                 ForeignKeys = foreignKeys,
@@ -1392,75 +1543,10 @@ FROM foApprovalEventsDetail a LEFT OUTER JOIN foApprovalSteps b on a.StepID = b.
 
 
 
-        ///PENDING
-        ///
-        public IActionResult PendingItems(int userId)
-        {
-            SetUserAccess(userId);
-            var pendingSteps = new List<PendingStepViewModel>();
-
-            using (var conn = GetConnection())
-            {
-                conn.Open();
-
-                string query = @"
-            SELECT 
-                e.ID,
-                e.ProcessInstanceID,
-                e.StepID,
-                e.GroupID,
-                g.Description AS GroupDescription,
-                e.UserID,
-                u.FirstName,
-                u.LastName,
-                e.DateAssigned,
-                s.StepDescription,
-                s.StepNo,
-                s.ProcessID
-            FROM foProcessEvents e
-            JOIN foProcessSteps s ON e.StepID = s.ID 
-            LEFT JOIN foGroups g ON e.GroupID = g.ID
-            LEFT JOIN foUsers u ON e.UserID = u.ID
-            WHERE e.DateCompleted IS NULL
-              AND (e.UserID = @UserID 
-                   OR e.GroupID IN (SELECT GroupID FROM foUserGroups WHERE UserID = @UserID))
-            ORDER BY e.DateAssigned DESC";
-
-                using (var cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@UserID", userId);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            pendingSteps.Add(new PendingStepViewModel
-                            {
-                                EventID = reader.GetInt32(0),
-                                ProcessInstanceID = reader.GetInt64(1),
-                                StepID = reader.GetInt64(2),
-                                GroupID = reader.IsDBNull(3) ? null : reader.GetInt64(3),
-                                GroupDescription = reader.IsDBNull(4) ? null : reader.GetString(4),
-                                UserID = reader.IsDBNull(5) ? null : reader.GetInt64(5),
-                                FullName = reader.IsDBNull(6) && reader.IsDBNull(7)
-                                    ? null
-                                    : $"{reader.GetString(6)} {reader.GetString(7)}",
-                                DateAssigned = reader.GetDateTime(8),
-                                StepDescription = reader.GetString(9),
-                                StepNo = Convert.ToDouble(reader["StepNo"]),
-                                ProcessID = Convert.ToInt32(reader["ProcessID"])
-                            });
-                        }
-                    }
-                }
-            }
-
-            ViewBag.UserID = userId;
-            return View(pendingSteps);
-        }
-
+       
 
         [HttpPost]
-        public IActionResult ClaimStep(int eventId, int userId, int stepId, int processInstanceId, int processId)
+        public IActionResult ClaimStep(int id, int userId, int stepId, int processInstanceId, int processId)
         {
             using var conn = GetConnection();
             conn.Open();
@@ -1468,10 +1554,10 @@ FROM foApprovalEventsDetail a LEFT OUTER JOIN foApprovalSteps b on a.StepID = b.
             using var cmd = new SqlCommand(@"
         UPDATE foProcessEvents
         SET UserID = @UserID, GroupID = NULL
-        WHERE ID = @EventID AND UserID IS NULL", conn);
+        WHERE ID = @id AND UserID IS NULL", conn);
 
             cmd.Parameters.AddWithValue("@UserID", userId);
-            cmd.Parameters.AddWithValue("@EventID", eventId);
+            cmd.Parameters.AddWithValue("@id", id);
             cmd.ExecuteNonQuery();
 
             // Redirect straight to the step form after claiming
@@ -1484,6 +1570,29 @@ FROM foApprovalEventsDetail a LEFT OUTER JOIN foApprovalSteps b on a.StepID = b.
             });
         }
 
+        private List<SelectListItem> GetApproverSelectList()
+        {
+            var list = new List<SelectListItem>();
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers WHERE Active = 1 ORDER BY 2", conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        list.Add(new SelectListItem
+                        {
+                            Value = reader["ID"].ToString(),
+                            Text = reader["FullName"].ToString()
+                        });
+                    }
+                }
+            }
+
+            return list;
+        }
 
 
 

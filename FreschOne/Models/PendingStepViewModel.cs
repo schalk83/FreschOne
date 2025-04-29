@@ -2,6 +2,7 @@
 {
     public class PendingStepViewModel
     {
+
         public int EventID { get; set; }
         public long ProcessInstanceID { get; set; }
         public long StepID { get; set; }
@@ -17,6 +18,9 @@
         public string StepDescription { get; set; }
         public double StepNo { get; set; }
         public int ProcessID { get; set; }
+
+        public string StepType { get; set; } // "Process" or "Approval"
+
     }
 
 }

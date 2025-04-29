@@ -30,7 +30,7 @@
 
 <partial name="_Sidebar" />
 
-<h2 class="mb-3">Step @stepId - Data Entry</h2>
+<h2 class="mb-3">Step @ViewBag.StepNo - @ViewBag.StepDescription</h2>
 
 <form method="post" asp-action="SaveNewStepData" asp-controller="ProcessEvents" enctype="multipart/form-data">
     <input type="hidden" name="userId" value="@userId" />
@@ -54,7 +54,7 @@
             && !k.Equals("Active", StringComparison.OrdinalIgnoreCase)
             && !k.Equals("RecordID", StringComparison.OrdinalIgnoreCase))
             .ToList();
-            
+
             int rowCount = rowCounts.ContainsKey(tableName) ? rowCounts[tableName] : 1;
 
             <div class="accordion-item">
@@ -72,6 +72,7 @@
                         TableName = tableName,
                         Columns = columns,
                         RowCount = rowCount,
+                        StartIndex = 0, // 🟢 CreateStep always starts from 0
                         ColumnTypes = columnTypes.ContainsKey(tableName) ? columnTypes[tableName] : new Dictionary<string, string>(),
                         ColumnLengths = columnLengths.ContainsKey(tableName) ? columnLengths[tableName] : new Dictionary<string, int>(),
                         ForeignKeys = foreignKeys.ContainsKey(tableName) ? foreignKeys[tableName] : new List<ForeignKeyInfo>(),
@@ -107,12 +108,12 @@
                                 ➕ Add Row
                             </button>
                         }
-
                         else if (table.FormType == "F")
                         {
                             int columnCount = table.ColumnCount ?? 2;
                             int colWidth = columnCount >= 1 && columnCount <= 12 ? 12 / columnCount : 6;
                             int columnRendered = 0;
+
                             while (columnRendered < columns.Count)
                             {
                                 <div class="row">
@@ -121,6 +122,7 @@
                                         var column = columns[columnRendered];
                                         string fieldName = $"{tableName}_{column}";
                                         var columnValue = row[column]?.ToString();
+
                                         string label = column;
                                         if (label.EndsWith("ID")) label = label[..^2];
                                         label = System.Text.RegularExpressions.Regex.Replace(label, "(?<=.)([A-Z])", " $1");
@@ -138,9 +140,7 @@
 
                                                 string fullColumnKey = $"{tableName}_{column}";
 
-                                                <label for="@fullColumnKey" class="fw-bold">
-                                                    @label.Replace("attachment_", "").Replace("_", " ")
-                                                </label>
+                                                <label for="@fullColumnKey" class="fw-bold">@label.Replace("attachment_", "").Replace("_", " ")</label>
                                                 <div class="attachment-group">
                                                     <input type="text" name="desc_@fullColumnKey" id="desc_@fullColumnKey" placeholder="Attachment Description" value="@desc" class="form-control" />
                                                     <input type="file" name="file_@fullColumnKey" id="file_@fullColumnKey" class="form-control" onchange="updateAttachmentField('@fullColumnKey')" />
@@ -151,7 +151,6 @@
                                                 }
                                                 <input type="hidden" name="@fullColumnKey" id="hidden_@fullColumnKey" value="@desc;@path" />
                                             }
-
                                             else if (foreignKeys != null && foreignKeys.ContainsKey(tableName) && foreignKeys[tableName].Any(fk => fk.ColumnName == column))
                                             {
                                                 <label for="@fieldName" class="fw-bold">@label</label>
@@ -164,7 +163,7 @@
                                                 <label for="@fieldName" class="fw-bold">@label</label>
                                                 <textarea name="@fieldName" class="form-control">@columnValue</textarea>
                                             }
-                                            else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
+                                            else if (columnType is "int" or "bigint" or "decimal")
                                             {
                                                 <label for="@fieldName" class="fw-bold">@label</label>
                                                 <input type="number" name="@fieldName" value="@columnValue" class="form-control input-short" />
@@ -198,10 +197,43 @@
         }
     </div>
 
-    <div class="mt-4">
-        <button type="submit" name="action" value="Save" class="btn btn-success">Save & Continue</button>
+    <hr class="my-4" />
+
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" value="true" id="sendForApprovalCheckbox" name="SendForApproval" />
+        <label class="form-check-label fw-bold" for="sendForApprovalCheckbox">
+            Send for Approval?
+        </label>
     </div>
+
+    <div id="approvalOptions" style="display:none;">
+        <label for="approvalUsers" class="form-label fw-bold">Select Approvers:</label>
+        <select id="approvalUsers" name="SelectedApproverIds" class="form-select" multiple="multiple" style="width: 100%;">
+            @foreach (var user in ViewBag.UserList as List<SelectListItem>)
+            {
+                <option value="@user.Value">@user.Text</option>
+            }
+        </select>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <button type="submit" name="action" value="SaveLater" class="btn custom-button btn-gold" onclick="showLoading();">
+            Save & Continue Later
+        </button>
+        <button type="submit" name="action" value="SaveContinue" class="btn custom-button btn-green" onclick="showLoading();">
+            Save & Proceed
+        </button>
+    </div>
+
+
+    <div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:9999; justify-content:center; align-items:center; opacity:0; transition: opacity 0.3s;">
+        <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
 </form>
+
 
 <style>
     .accordion-button {
@@ -219,6 +251,51 @@
     .input-short {
         max-width: 180px;
     }
+      
+    /* Common button style */
+    .custom-button {
+        border: 2px solid;
+        font-weight: bold;
+        transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+
+    /* Specific styles */
+    .btn-green {
+        color: #198754; /* Bootstrap green */
+        border-color: #198754;
+        background-color: transparent;
+    }
+
+        .btn-green:hover {
+            color: white;
+            background-color: #198754;
+            border-color: #198754;
+        }
+
+    .btn-gold {
+        color: #ffc107; /* Bootstrap warning/yellow */
+        border-color: #ffc107;
+        background-color: transparent;
+    }
+
+        .btn-gold:hover {
+            color: black;
+            background-color: #ffc107;
+            border-color: #ffc107;
+        }
+
+    .btn-red {
+        color: #dc3545; /* Bootstrap red */
+        border-color: #dc3545;
+        background-color: transparent;
+    }
+
+        .btn-red:hover {
+            color: white;
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
 </style>
 
 
@@ -247,136 +324,152 @@
         max-width: 180px;
     }
 </style>
-
-<script>
-        function updateAttachmentField(fullKey) {
-        const descInput = document.getElementById('desc_' + fullKey);
-        const fileInput = document.getElementById('file_' + fullKey);
-        const hiddenInput = document.getElementById('hidden_' + fullKey);
-
-        const description = descInput?.value?.trim() || "No Description";
-        const fileName = fileInput?.files?.[0]?.name || "";
-
-        const parts = fullKey.split('_');
-        let tableName = parts[0];
-        if (parts.length >= 4) {
-            const attachmentIndex = parts.findIndex(p => p === 'attachment');
-            if (attachmentIndex > 0) {
-                tableName = parts.slice(0, attachmentIndex).join('_');
-            }
-        }
-
-        const virtualPath = fileName ? `Attachments/${tableName}/${fileName}` : "";
-        const combined = `${description};${virtualPath}`;
-        if (hiddenInput) hiddenInput.value = combined;
-    }
-
-    // 🆕 Run update when file is selected
-    document.addEventListener("change", function (e) {
-        if (e.target && e.target.matches("input[type='file'][name^='file_']")) {
-            const fullKey = e.target.name.replace("file_", "");
-            updateAttachmentField(fullKey);
-        }
-    });
-
-
-        function addRowAjax(tableName) {
-        const stepId = document.querySelector('input[name="stepId"]').value;
-        const userId = document.querySelector('input[name="userId"]').value;
-        const processIdInput = document.querySelector('input[name="processInstanceId"]');
-        const processId = processIdInput ? processIdInput.value : null;
-
-        // 🔥 Calculate current row count in DOM
-        const rowContainer = document.querySelector(`#${tableName}_rows`);
-        const currentRowCount = rowContainer ? rowContainer.querySelectorAll("tr").length : 0;
-
-        const data = {
-            tableName,
-            stepId,
-            userId,
-            processInstanceId: processId,
-            currentRowCount: currentRowCount  // pass this to the controller
-        };
-
-        fetch(`/ProcessEvents/AddTableRowPartial`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-            },
-            body: JSON.stringify(data)
-        })
-        .then(res => res.text())
-        .then(html => {
-            const container = document.querySelector(`#${tableName}_rows`);
-            if (container) {
-                container.insertAdjacentHTML("beforeend", html); // ✅ append only
-            }
-        })
-        .catch(err => console.error("Add Row Error:", err));
-    }
-
-    function removeRow(button) {
-        const row = button.closest('tr');
-        const tbody = row.parentElement;
-        const rowCount = tbody.querySelectorAll('tr').length;
-        if (rowCount > 1) {
-            row.remove();
-            updateRowIndices(tbody);
-        }
-    }
-
-    function updateRowIndices(tbody) {
-        const rows = tbody.querySelectorAll('tr');
-        rows.forEach((row, index) => {
-            row.setAttribute('data-row-index', index);
-            const rowNo = row.querySelector('.row-no');
-            if (rowNo) rowNo.innerText = index + 1;
-
-            row.querySelectorAll('[name], [id], [for]').forEach(el => {
-                ['name', 'id', 'for'].forEach(attr => {
-                    const val = el.getAttribute(attr);
-                    if (val) {
-                        el.setAttribute(attr, val.replace(/_(\d+)$/, `_${index}`));
-                    }
-                });
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Initialize Select2
+            $('#approvalUsers').select2({
+                placeholder: "Select users for approval...",
+                allowClear: true
             });
-        });
-    }
 
-
-        
-    // ✅ Dynamically resize foreign key dropdowns for clean UI
-    function resizeDropdowns() {
-        document.querySelectorAll("select.form-select").forEach(select => {
-            const tempSpan = document.createElement("span");
-            tempSpan.style.visibility = "hidden";
-            tempSpan.style.position = "absolute";
-            tempSpan.style.whiteSpace = "nowrap";
-            tempSpan.style.font = getComputedStyle(select).font;
-
-            let maxText = "";
-            Array.from(select.options).forEach(opt => {
-                if (opt.text.length > maxText.length) {
-                    maxText = opt.text;
+            // Toggle visibility
+            $('#sendForApprovalCheckbox').on('change', function () {
+                if (this.checked) {
+                    $('#approvalOptions').slideDown();
+                } else {
+                    $('#approvalOptions').slideUp();
+                    $('#approvalUsers').val(null).trigger('change');
                 }
             });
 
-            tempSpan.textContent = maxText;
-            document.body.appendChild(tempSpan);
-
-            const width = tempSpan.offsetWidth + 50;
-            select.style.width = width + "px";
-
-            document.body.removeChild(tempSpan);
+            resizeDropdowns();
         });
-    }
 
-    // ✅ Ensure dropdowns resize after load
-    window.addEventListener('load', () => {
-        setTimeout(resizeDropdowns, 100);
-    });
-</script>
+        function updateAttachmentField(fullKey) {
+            const descInput = document.getElementById('desc_' + fullKey);
+            const fileInput = document.getElementById('file_' + fullKey);
+            const hiddenInput = document.getElementById('hidden_' + fullKey);
 
+            const description = descInput?.value?.trim() || "No Description";
+            const fileName = fileInput?.files?.[0]?.name || "";
 
+            const parts = fullKey.split('_');
+            let tableName = parts[0];
+            if (parts.length >= 4) {
+                const attachmentIndex = parts.findIndex(p => p === 'attachment');
+                if (attachmentIndex > 0) {
+                    tableName = parts.slice(0, attachmentIndex).join('_');
+                }
+            }
+
+            const virtualPath = fileName ? `Attachments/${tableName}/${fileName}` : "";
+            const combined = `${description};${virtualPath}`;
+            if (hiddenInput) hiddenInput.value = combined;
+        }
+
+        document.addEventListener("change", function (e) {
+            if (e.target && e.target.matches("input[type='file'][name^='file_']")) {
+                const fullKey = e.target.name.replace("file_", "");
+                updateAttachmentField(fullKey);
+            }
+        });
+
+        function addRowAjax(tableName) {
+            const stepId = document.querySelector('input[name="stepId"]').value;
+            const userId = document.querySelector('input[name="userId"]').value;
+            const processIdInput = document.querySelector('input[name="processInstanceId"]');
+            const processId = processIdInput ? processIdInput.value : null;
+
+            const rowContainer = document.querySelector(`#${tableName}_rows`);
+            const currentRowCount = rowContainer ? rowContainer.querySelectorAll("tr").length : 0;
+
+            const data = {
+                tableName,
+                stepId,
+                userId,
+                processInstanceId: processId,
+                currentRowCount: currentRowCount
+            };
+
+            fetch(`/ProcessEvents/AddTableRowPartial`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.text())
+            .then(html => {
+                const container = document.querySelector(`#${tableName}_rows`);
+                if (container) {
+                    container.insertAdjacentHTML("beforeend", html);
+                }
+            })
+            .catch(err => console.error("Add Row Error:", err));
+        }
+
+        function removeRow(button) {
+            const row = button.closest('tr');
+            const tbody = row.parentElement;
+            const rowCount = tbody.querySelectorAll('tr').length;
+            if (rowCount > 1) {
+                row.remove();
+                updateRowIndices(tbody);
+            }
+        }
+
+        function updateRowIndices(tbody) {
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach((row, index) => {
+                row.setAttribute('data-row-index', index);
+                const rowNo = row.querySelector('.row-no');
+                if (rowNo) rowNo.innerText = index + 1;
+
+                row.querySelectorAll('[name], [id], [for]').forEach(el => {
+                    ['name', 'id', 'for'].forEach(attr => {
+                        const val = el.getAttribute(attr);
+                        if (val) {
+                            el.setAttribute(attr, val.replace(/_(\d+)$/, `_${index}`));
+                        }
+                    });
+                });
+            });
+        }
+
+        function resizeDropdowns() {
+            document.querySelectorAll("select.form-select").forEach(select => {
+                const tempSpan = document.createElement("span");
+                tempSpan.style.visibility = "hidden";
+                tempSpan.style.position = "absolute";
+                tempSpan.style.whiteSpace = "nowrap";
+                tempSpan.style.font = getComputedStyle(select).font;
+
+                let maxText = "";
+                Array.from(select.options).forEach(opt => {
+                    if (opt.text.length > maxText.length) {
+                        maxText = opt.text;
+                    }
+                });
+
+                tempSpan.textContent = maxText;
+                document.body.appendChild(tempSpan);
+
+                const width = tempSpan.offsetWidth + 50;
+                select.style.width = width + "px";
+
+                document.body.removeChild(tempSpan);
+            });
+        }
+
+        function showLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+            }, 10);
+        }
+    </script>
+}
 
