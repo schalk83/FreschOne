@@ -19,7 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Attachments\" />
     <Folder Include="Customised\" />
+    <Folder Include="Scripts\" />
     <Folder Include="Services\" />
   </ItemGroup>
 

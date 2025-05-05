@@ -127,6 +127,24 @@ namespace FreschOne.Controllers
                 }
             }
 
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+
+                foreach (var step in pendingSteps)
+                {
+                    var reworkCheckCmd = new SqlCommand(@"
+            SELECT COUNT(1)
+            FROM foProcessEvents
+            WHERE ProcessInstanceID = @ProcessInstanceID
+              AND PreviousEventID < 0", conn);
+
+                    reworkCheckCmd.Parameters.AddWithValue("@ProcessInstanceID", step.ProcessInstanceID);
+                    step.IsReworkInstance = (int)reworkCheckCmd.ExecuteScalar() > 0;
+                }
+            }
+
+
             // Sort the merged list by DateAssigned DESC (newest first)
             pendingSteps = pendingSteps.OrderByDescending(x => x.DateAssigned).ToList();
 
@@ -141,6 +159,19 @@ namespace FreschOne.Controllers
 
             ViewBag.UserID = userId;
             return View(pendingSteps); // Will look for /Views/PendingItems/MergedPendingItems.cshtml
+        }
+
+        private bool IsReworkInstance(SqlConnection conn, long processInstanceId)
+        {
+            using (var cmd = new SqlCommand(@"
+        SELECT COUNT(*) 
+        FROM foApprovalEvents 
+        WHERE ProcessInstanceID = @ProcessInstanceID 
+          AND PreviousEventID < 0", conn))
+            {
+                cmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+            }
         }
     }
 }

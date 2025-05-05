@@ -8,27 +8,32 @@
 
 <partial name="_Sidebar" />
 
-<h2>Pending Items for @fullName</h2>
+<h2 class="mb-3">Pending Items for @fullName</h2>
 
-<table class="table table-bordered table-hover align-middle">
+<table id="pendingTable" class="table table-bordered table-hover align-middle">
     <thead class="table-light">
         <tr>
-            <th>ID</th>
-            <th>Process Number</th>
-            <th>Step No</th>
-            <th>Step Description</th>
-            <th>Assigned To</th>
-            <th>Type</th>
-            <th>Date Assigned</th>
+            <th data-column="ProcessInstanceID">Process Number</th>
+            <th data-column="StepNo">Step No</th>
+            <th data-column="StepDescription">Step Description</th>
+            <th data-column="AssignedTo">Assigned To</th>
+            <th data-column="DateAssigned">Date Assigned</th>
             <th>Action</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
-            <tr>
-                <td>@item.EventID</td>
-                <td>@item.ProcessInstanceID</td>
+            <tr class="@(item.IsReworkInstance ? "table-danger" : "")">
+                <td>
+                    @item.ProcessInstanceID
+                    @if (item.IsReworkInstance)
+                    {
+                        <i class="bi bi-arrow-repeat text-danger ms-2"
+                           data-bs-toggle="tooltip"
+                           title="Reworked process instance"></i>
+                    }
+                </td>
                 <td>@item.StepNo</td>
                 <td>@item.StepDescription</td>
                 <td>
@@ -41,22 +46,11 @@
                         <span>@item.GroupDescription</span>
                     }
                 </td>
-                <td>
-                    @if (item.StepType == "Approval")
-                    {
-                        <span class="badge bg-primary">Approval</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-warning text-dark">Step</span>
-                    }
-                </td>
-                <td>@item.DateAssigned.ToString("yyyy-MM-dd HH:mm")</td>
+                <td data-sort="@item.DateAssigned.Ticks">@item.DateAssigned.ToString("yyyy-MM-dd HH:mm")</td>
                 <td>
                     @if (item.UserID == null && item.GroupID != null)
                     {
-                        <!-- Claim Step / Approval Button -->
-                        <button class="btn btn-sm @(item.StepType == "Approval" ? "btn-primary" : "btn-warning")"
+                        <button class="btn custom-button btn-gold"
                                 data-bs-toggle="modal"
                                 data-bs-target="#confirmClaimModal_@item.EventID">
                             Claim @(item.StepType == "Approval" ? "Approval" : "Step")
@@ -73,7 +67,7 @@
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        Are you sure you want to claim <strong>@(item.StepType == "Approval" ? "Approval" : "Step") @item.StepNo</strong> of Process <strong>@item.ProcessInstanceID</strong>?
+                                        Are you sure you want to claim <strong>@item.StepDescription</strong>?
                                     </div>
                                     <div class="modal-footer">
                                         <form method="post"
@@ -94,8 +88,7 @@
                     }
                     else
                     {
-                        <!-- Go To Step / Approval Button -->
-                        <a class="btn btn-sm @(item.StepType == "Approval" ? "btn-primary" : "btn-warning")"
+                        <a class="btn custom-button @(item.StepType == "Approval" ? "btn-green" : "btn-blue")"
                            asp-action="PendingStep"
                            asp-controller="@(item.StepType == "Approval" ? "ApprovalEvents" : "ProcessEvents")"
                            asp-route-userId="@userId"
@@ -111,3 +104,53 @@
         }
     </tbody>
 </table>
+
+
+<script>
+    document.querySelectorAll("#pendingTable th[data-column]").forEach(header => {
+        header.style.cursor = "pointer";
+        header.addEventListener("click", () => {
+            const table = header.closest("table");
+            const tbody = table.querySelector("tbody");
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            const columnIndex = Array.from(header.parentNode.children).indexOf(header);
+            const sortAsc = !header.classList.contains("asc");
+
+            rows.sort((a, b) => {
+                let cellA = a.children[columnIndex];
+                let cellB = b.children[columnIndex];
+
+                // If there's a data-sort attribute, use it
+                let valueA = cellA.getAttribute("data-sort") || cellA.textContent.trim();
+                let valueB = cellB.getAttribute("data-sort") || cellB.textContent.trim();
+
+                // Numeric or text comparison
+                if (!isNaN(valueA) && !isNaN(valueB)) {
+                    return sortAsc ? valueA - valueB : valueB - valueA;
+                }
+
+                return sortAsc
+                    ? valueA.localeCompare(valueB, undefined, { numeric: true })
+                    : valueB.localeCompare(valueA, undefined, { numeric: true });
+            });
+
+            rows.forEach(row => tbody.appendChild(row)); // Reorder rows
+
+            // Reset header classes
+            table.querySelectorAll("th").forEach(th => th.classList.remove("asc", "desc"));
+            header.classList.add(sortAsc ? "asc" : "desc");
+        });
+    });
+</script>
+
+<style>
+    th.asc::after {
+        content: " ▲";
+        font-size: 0.8em;
+    }
+
+    th.desc::after {
+        content: " ▼";
+        font-size: 0.8em;
+    }
+</style>

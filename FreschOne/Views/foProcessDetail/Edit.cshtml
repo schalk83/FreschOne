@@ -105,7 +105,7 @@
     <div class="mb-3" id="fkColumnGroup">
         <label asp-for="FKColumn" class="form-label">Foreign Key Column</label>
         <select asp-for="FKColumn" class="form-select" id="FKColumnSelect">
-            <option value="">-- Select FK Column --</option>
+            <option value=""></option>
         </select>
         <span asp-validation-for="FKColumn" class="text-danger"></span>
     </div>
@@ -115,6 +115,19 @@
         <input asp-for="TableDescription" class="form-control" />
         <span asp-validation-for="TableDescription" class="text-danger"></span>
     </div>
+
+    <div id="columnCalcsContainer" class="mb-3">
+        <label for="ColumnCalcs" class="form-label fw-bold">Column Calcs</label>
+        <input type="text" class="form-control" id="ColumnCalcs" name="ColumnCalcs" placeholder="e.g. Count(Field1), Sum(Field2)" />
+        <div id="columnCalcsHelp" class="form-text">
+            Use format: <code>Count(FieldName)</code>, <code>Sum(FieldName)</code>, separated by commas.
+        </div>
+        <div id="columnCalcsError" class="text-danger mt-1" style="display:none;">
+            Invalid format. Please use: Count(FieldName), Sum(FieldName)
+        </div>
+    </div>
+
+
 
     <div class="mb-3 form-check">
         <input asp-for="Active" class="form-check-input" type="checkbox" />
@@ -144,10 +157,10 @@
         function loadFKColumns(tableName, selectedColumn = null) {
             const fkSelect = document.getElementById("FKColumnSelect");
             if (!tableName) return;
-            fetch(`/foReportTable/GetFKColumns?tableName=${encodeURIComponent(tableName)}`)
+            fetch(`/foProcessDetail/GetFKColumns?tableName=${encodeURIComponent(tableName)}`)
                 .then(res => res.json())
                 .then(data => {
-                    fkSelect.innerHTML = '<option value="">-- Select FK Column --</option>';
+                    fkSelect.innerHTML = '<option value=""></option>';
                     data.forEach(col => {
                         const opt = document.createElement("option");
                         opt.value = col;
@@ -184,6 +197,85 @@
                 });
         }
 
+        function handleFormTypeChange() {
+            const formType = document.getElementById("FormType").value;
+            const columnCountInput = document.getElementById("ColumnCount");
+
+            if (formType === "T") {
+                columnCountInput.value = 0;
+                columnCountInput.setAttribute("readonly", "readonly");
+            } else {
+                columnCountInput.removeAttribute("readonly");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("FormType").addEventListener("change", handleFormTypeChange);
+            handleFormTypeChange(); // run on load
+        });
+
+        function handleFormTypeChange() {
+            const formType = document.getElementById("FormType").value;
+            const columnCalcsContainer = document.getElementById("columnCalcsContainer");
+
+            if (formType === "T") {
+                columnCalcsContainer.style.display = "block";
+            } else {
+                columnCalcsContainer.style.display = "none";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const formTypeEl = document.getElementById("FormType");
+            if (formTypeEl) {
+                formTypeEl.addEventListener("change", handleFormTypeChange);
+                handleFormTypeChange(); // run on load
+            }
+        });
+
+            function toggleFKDropdown() {
+            const isParent = document.querySelector('[name="Parent"]').value === "true";
+            const fkGroup = document.getElementById('fkColumnGroup');
+            const fkSelect = document.getElementById('FKColumnSelect');
+
+            fkGroup.style.display = isParent ? "none" : "block";
+
+            if (isParent) {
+                fkSelect.value = "";
+                fkSelect.removeAttribute("required");
+            } else {
+                fkSelect.setAttribute("required", "required");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelector('[name="Parent"]').addEventListener("change", toggleFKDropdown);
+            toggleFKDropdown(); // run on load
+        });
+
+        function validateColumnCalcs() {
+            const input = document.getElementById("ColumnCalcs");
+            const error = document.getElementById("columnCalcsError");
+
+            const pattern = /^\s*(Count|Sum)\(\s*\w+\s*\)\s*(,\s*(Count|Sum)\(\s*\w+\s*\)\s*)*$/i;
+
+            if (!input.value.trim() || pattern.test(input.value.trim())) {
+                error.style.display = "none";
+                return true;
+            } else {
+                error.style.display = "block";
+                return false;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const input = document.getElementById("ColumnCalcs");
+            if (input) {
+                input.addEventListener("input", validateColumnCalcs);
+                validateColumnCalcs(); // Initial run
+            }
+        });
+
         function checkTestQueryVisibility() {
             const tableName = document.getElementById("TableNameInput").value.trim();
             const columnQuery = document.querySelector('[name="ColumnQuery"]').value.trim();
@@ -211,4 +303,57 @@
             checkTestQueryVisibility();
         });
     </script>
+
+    <script>
+        function recalculateSummaries(tableName) {
+            const rows = document.querySelectorAll(`#${tableName}_rows tr`);
+            const calcs = {};
+
+            rows.forEach(row => {
+                row.querySelectorAll("input[type='number'], input[type='text'], select").forEach(input => {
+                    const name = input.name;
+                    if (!name || !name.startsWith(tableName + "_")) return;
+
+                    const parts = name.split("_");
+                    if (parts.length < 3) return;
+
+                    const col = parts.slice(1, -1).join("_"); // handles column names with underscores
+                    const val = input.value;
+
+                    if (!calcs[col]) calcs[col] = { sum: 0, count: 0 };
+
+                    const numeric = parseFloat(val);
+                    if (!isNaN(numeric)) {
+                        calcs[col].sum += numeric;
+                        calcs[col].count++;
+                    } else if (val?.trim()) {
+                        calcs[col].count++;
+                    }
+                });
+            });
+
+            for (const [col, { sum, count }] of Object.entries(calcs)) {
+                const sumCell = document.querySelector(`.summary-sum[data-table='${tableName}'][data-column='${col}']`);
+                const countCell = document.querySelector(`.summary-count[data-table='${tableName}'][data-column='${col}']`);
+                if (sumCell) sumCell.textContent = sum.toFixed(2);
+                if (countCell) countCell.textContent = count;
+            }
+        }
+
+        document.addEventListener("input", function (e) {
+            const input = e.target;
+            if (!input.name || !input.name.includes("_")) return;
+
+            const tableName = input.name.split("_")[0];
+            recalculateSummaries(tableName);
+        });
+
+        window.addEventListener("load", () => {
+            document.querySelectorAll("tbody[id$='_rows']").forEach(tb => {
+                const tableName = tb.id.replace("_rows", "");
+                recalculateSummaries(tableName);
+            });
+        });
+    </script>
+
 }

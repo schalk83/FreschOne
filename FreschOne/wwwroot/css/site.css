@@ -1,72 +1,142 @@
-html {
-  font-size: 14px;
+/*html {
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+    html {
+        font-size: 16px;
+    }
 }
 
 body {
-  margin-bottom: 60px;
-}
-.container {
-    max-width: 90% !important; /* Change this to control width */
-    margin: 0 auto; /* Center align */
-}
+    margin-bottom: 60px;
+    background-color: #eef6fb;*/ /* soft blue background */
+/*}
+
+.container,
 .content-wrapper {
     max-width: 90% !important;
     margin: 0 auto;
-    padding: 20px; /* Add spacing inside */
-    background-color: #f8f9fa; /* Light gray background */
-    border-radius: 8px; /* Rounded corners */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
 }
 
-
-.reset-password-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: #f8f9fa;
-}
-
-.reset-password-box {
-    background-color: #ffffff;
+.content-wrapper {
     padding: 20px;
-    border-radius: 8px;
+    background-color: #f0f8ff;*/ /* light blue */
+    /*border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    width: 300px;
+}*/
+
+/* Utility & Form Controls */
+/*.text-center {
+    text-align: center;
+    vertical-align: middle;
 }
 
+.form-label {
+    font-weight: 500;
+}
+
+.input-short {
+    max-width: 180px;
+}*/
+
+/* Button Styles */
+/*.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #4aa3df;
+}
+
+.custom-button {
+    border: 2px solid;
+    font-weight: bold;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-green {
+    color: #198754;
+    border-color: #198754;
+    background-color: transparent;
+}
+
+.btn-green:hover {
+    color: white;
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.btn-gold {
+    color: #ffc107;
+    border-color: #ffc107;
+    background-color: transparent;
+}
+
+.btn-gold:hover {
+    color: black;
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+
+.btn-red {
+    color: #dc3545;
+    border-color: #dc3545;
+    background-color: transparent;
+}
+
+.btn-red:hover,
+.custom-hover-red:hover {
+    color: white;
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.custom-hover-red {
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}*/
+
+/* Layout Containers */
+/*.reset-password-container,
 .login-container {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: f8f9fa;
+    background-color: #eef6fb;
 }
 
+.reset-password-box,
 .login-box {
     background-color: #ffffff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     width: 300px;
+}*/
+
+/* Navigation */
+/*.nav-item {
+    position: relative;
 }
 
-/* Hide sub-menu initially */
+.nav-item .nav-link,
+.sub-menu .nav-link {
+    display: block;
+    color: #004b6b;
+    text-decoration: none;
+    padding: 10px 15px;
+    font-size: 16px;
+}
+
+.nav-item .nav-link:hover,
+.sub-menu .nav-link:hover {
+    background: #d0eafc;
+    color: #004b6b;
+}
+
 .sub-menu {
     display: none;
     list-style: none;
@@ -74,29 +144,6 @@ body {
     padding: 0;
 }
 
-    /* Make all items look the same */
-    .nav-item .nav-link,
-    .sub-menu .nav-link {
-        display: block;
-        color: black;
-        text-decoration: none;
-        padding: 10px 15px; /* Same padding for consistency */
-        font-size: 16px; /* Ensure same text size */
-    }
-
-        /* Add a consistent hover effect for all items */
-        .nav-item .nav-link:hover,
-        .sub-menu .nav-link:hover {
-            background: rgba(0, 0, 0, 0.1); /* Slightly darker grey */  
-            color: black;
-        }
-
-/* Main menu item wrapper (ensures alignment) */
-.nav-item {
-    position: relative;
-}
-
-/* Style for the toggle arrow */
 .toggle-arrow {
     font-size: 12px;
     cursor: pointer;
@@ -104,21 +151,68 @@ body {
     margin-left: 5px;
 }
 
-    /* Rotate arrow when expanded */
-    .toggle-arrow.open {
-        transform: rotate(180deg);
-    }
+.toggle-arrow.open {
+    transform: rotate(180deg);
+}*/
 
+/* Table Styling */
+/*#dataTable {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+}
 
-.text-center {
-    text-align: center;
+#dataTable th,
+#dataTable td {
+    padding: 4px 6px;
+    line-height: 1.2;
+    border: 1px solid #cce3f6;
     vertical-align: middle;
 }
 
-.actions-column {
-    width: 180px; /* Fixed width for the action column */
-    min-width: 180px; /* Ensures it never shrinks */
-    max-width: 180px; /* Prevents expansion */
+#dataTable th:first-child,
+#dataTable td:first-child {
+    width: 5%;
+    min-width: 50px;
+    max-width: 5%;
+    text-align: center;
+}
+
+#dataTable th:not(:first-child),
+#dataTable td:not(:first-child) {
+    min-width: 120px;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+}
+
+#dataTable thead th {
+    background-color: #d0eafc;
+    font-weight: bold;
+    text-align: left;
+    padding: 6px;
+}
+
+#dataTable tbody tr:nth-child(even) {
+    background-color: #eaf6fc;
+}
+
+#dataTable tbody tr:hover {
+    background-color: #d9f0ff;
+}
+
+#dataTable td .btn {
+    padding: 3px 5px;
+    font-size: 12px;
+}*/
+
+/* Table Utility */
+/*.actions-column {
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
     text-align: center;
 }
 
@@ -126,81 +220,10 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 5px; /* Space between buttons */
-    flex-wrap: nowrap; /* Prevents buttons from wrapping */
+    gap: 5px;
+    flex-wrap: nowrap;
 }
 
-    .action-buttons .btn {
-        padding: 5px 10px; /* Makes buttons more compact */
-        white-space: nowrap; /* Prevents text from wrapping */
-    }
-
-/* Make table layout fixed */
-#dataTable {
-    table-layout: fixed;
-    width: 100%;
-    border-collapse: collapse;
-}
-
-    /* Ensure the first column (ID column) has a fixed width of 5% */
-    #dataTable th:first-child,
-    #dataTable td:first-child {
-        width: 5%;
-        min-width: 50px; /* Ensure it doesn't become too small */
-        max-width: 5%;
-        text-align: center; /* Center align ID values */
-    }
-
-    /* Ensure the rest of the columns have a reasonable width */
-    #dataTable th:not(:first-child),
-    #dataTable td:not(:first-child) {
-        min-width: 120px; /* Ensure minimum column width */
-        max-width: 220px; /* Prevent overly wide columns */
-        white-space: nowrap; /* Prevent text wrapping */
-        overflow: hidden;
-        text-overflow: ellipsis; /* Show "..." for overflow text */
-        padding: 4px 6px; /* Reduced padding for compact rows */
-        font-size: 14px; /* Adjust font size if needed */
-        border: 1px solid #ddd;
-    }
-
-    /* Reduce row height by decreasing padding */
-    #dataTable th,
-    #dataTable td {
-        padding: 4px 6px; /* Make cells more compact */
-        line-height: 1.2; /* Reduce line height */
-    }
-
-    /* Improve table header styling */
-    #dataTable thead th {
-        background-color: #f8f9fa;
-        font-weight: bold;
-        text-align: left;
-        padding: 6px;
-    }
-
-    /* Alternate row colors for readability */
-    #dataTable tbody tr:nth-child(even) {
-        background-color: #f2f2f2;
-    }
-
-    /* Hover effect for rows */
-    #dataTable tbody tr:hover {
-        background-color: #e6f7ff;
-    }
-
-    /* Ensure checkboxes and small content align properly */
-    #dataTable td {
-        vertical-align: middle; /* Aligns content to center vertically */
-    }
-
-        /* Reduce button size for compact design */
-        #dataTable td .btn {
-            padding: 3px 5px;
-            font-size: 12px; /* Slightly smaller buttons */
-        }
-
-/* Ensure pagination stays aligned */
 .pagination {
     display: flex;
     flex-wrap: wrap;
@@ -208,12 +231,19 @@ body {
     margin-top: 10px;
 }
 
-/* Responsive adjustments */
+#searchRow th select,
+#searchRow th input {
+    width: 100%;
+    padding: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
 @media screen and (max-width: 992px) {
     #dataTable th:not(:first-child),
     #dataTable td:not(:first-child) {
         max-width: 160px;
-        font-size: 13px;
+        font-size: 14px;
     }
 }
 
@@ -224,24 +254,382 @@ body {
         white-space: nowrap;
     }
 
-        #dataTable th:not(:first-child),
-        #dataTable td:not(:first-child) {
-            max-width: 140px;
-            font-size: 12px;
-        }
+    #dataTable th:not(:first-child),
+    #dataTable td:not(:first-child) {
+        max-width: 140px;
+        font-size: 13px;
+    }
+}*/
+
+/* Popups */
+/*.popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 260px;
+    max-width: 90%;
+    background-color: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+    border: 1px solid #cce3f6;
+    padding: 5px;
+    z-index: 1000;
 }
 
+.popup-content table {
+    width: 100%;
+    border-collapse: collapse;
+}
 
-/* Ensure search inputs fit within columns */
+.popup-content th,
+.popup-content td {
+    padding: 6px;
+    text-align: left;
+    border-bottom: 1px solid #cce3f6;
+}
+
+.popup-content th {
+    background-color: #d0eafc;
+    font-weight: 600;
+}
+
+.popup-content th:first-child {
+    width: 80%;
+}
+
+.popup-content th:last-child {
+    text-align: right;
+    width: 20%;
+}
+
+.popup-close {
+    cursor: pointer;
+    font-size: 1.6em;
+    font-weight: bold;
+    color: #666;
+    margin-left: auto;
+}
+
+.popup-close:hover {
+    color: #333;
+}*/
+
+/* Other Components */
+/*.clickable-row {
+    cursor: pointer;
+}
+
+.clickable-row:hover {
+    background-color: #eef4fb;
+}
+
+.freeform-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #cce3f6;
+    background: #f4faff;
+    border-radius: 8px;
+}
+
+.freeform-row {
+    display: flex;
+    gap: 10px;
+}
+
+.freeform-item {
+    flex: 1;
+    padding: 10px;
+    background: #ffffff;
+    border: 1px solid #99ccea;
+    border-radius: 5px;
+}
+
+.freeform-item.empty {
+    background: transparent;
+    border: none;
+}
+
+.accordion-button {
+    background-color: #d0eafc;
+    color: #003b5c;
+    font-weight: bold;
+    border: none;
+    box-shadow: none;
+}
+
+.attachment-group {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    align-items: end;
+}*/
+
+/* another */
+html {
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+body {
+    margin-bottom: 60px;
+    background-color: #ffffff;
+}
+
+.container,
+.content-wrapper {
+    max-width: 90% !important;
+    margin: 0 auto;
+}
+
+.content-wrapper {
+    padding: 20px;
+    background-color: transparent;
+    border-radius: 8px;
+    border: 1px solid #cce3f6;
+}
+
+/* Utility & Form Controls */
+.text-center {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+.input-short {
+    max-width: 180px;
+    border: 1px solid #99ccea;
+}
+
+/* Button Styles */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #4aa3df;
+}
+
+.custom-button {
+    border: 2px solid #4aa3df;
+    font-weight: bold;
+    background-color: transparent;
+    color: #004b6b;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-green {
+    color: #198754;
+    border-color: #198754;
+    background-color: transparent;
+}
+
+    .btn-green:hover {
+        color: white;
+        background-color: #198754;
+        border-color: #198754;
+    }
+
+.btn-gold {
+    color: #ffc107;
+    border-color: #ffc107;
+    background-color: transparent;
+}
+
+    .btn-gold:hover {
+        color: black;
+        background-color: #ffc107;
+        border-color: #ffc107;
+    }
+
+.btn-red {
+    color: #dc3545;
+    border-color: #dc3545;
+    background-color: transparent;
+}
+
+    .btn-red:hover,
+    .custom-hover-red:hover {
+        color: white;
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+
+.custom-hover-red {
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-blue {
+    color: #007bff;
+    border-color: #007bff;
+    background-color: transparent;
+}
+
+.btn-blue:hover,
+.custom-hover-blue:hover {
+    color: white;
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* Layout Containers */
+.reset-password-container,
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #ffffff;
+}
+
+.reset-password-box,
+.login-box {
+    background-color: transparent;
+    border: 1px solid #cce3f6;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: none;
+    width: 300px;
+}
+
+/* Navigation */
+.nav-item {
+    position: relative;
+}
+
+    .nav-item .nav-link,
+    .sub-menu .nav-link {
+        display: block;
+        color: #004b6b;
+        text-decoration: none;
+        padding: 10px 15px;
+        font-size: 16px;
+        border: 1px solid transparent;
+    }
+
+        .nav-item .nav-link:hover,
+        .sub-menu .nav-link:hover {
+            border-color: #4aa3df;
+            color: #004b6b;
+            background: transparent;
+        }
+
+.sub-menu {
+    display: none;
+    list-style: none;
+    margin-top: 0;
+    padding: 0;
+}
+
+.toggle-arrow {
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    margin-left: 5px;
+}
+
+    .toggle-arrow.open {
+        transform: rotate(180deg);
+    }
+
+/* Table Styling */
+#dataTable {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #cce3f6;
+}
+
+    #dataTable th,
+    #dataTable td {
+        padding: 4px 6px;
+        line-height: 1.2;
+        border: 1px solid #cce3f6;
+        vertical-align: middle;
+        background-color: transparent;
+    }
+
+        #dataTable th:first-child,
+        #dataTable td:first-child {
+            width: 5%;
+            min-width: 50px;
+            max-width: 5%;
+            text-align: center;
+        }
+
+        #dataTable th:not(:first-child),
+        #dataTable td:not(:first-child) {
+            min-width: 120px;
+            max-width: 220px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 14px;
+        }
+
+    #dataTable thead th {
+        background-color: transparent;
+        font-weight: bold;
+        text-align: left;
+        padding: 6px;
+        border-bottom: 2px solid #cce3f6;
+    }
+
+    #dataTable tbody tr:hover {
+        background-color: #f0faff;
+    }
+
+    #dataTable td .btn {
+        padding: 3px 5px;
+        font-size: 12px;
+    }
+
+/* Table Utility */
+.actions-column {
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+    text-align: center;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: nowrap;
+}
+
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 10px;
+}
+
 #searchRow th select,
 #searchRow th input {
     width: 100%;
     padding: 5px;
     font-size: 14px;
     box-sizing: border-box;
+    border: 1px solid #99ccea;
+    background-color: transparent;
 }
 
-/* Improve table responsiveness */
 @media screen and (max-width: 992px) {
     #dataTable th:not(:first-child),
     #dataTable td:not(:first-child) {
@@ -264,27 +652,20 @@ body {
         }
 }
 
-/* Ensure pagination stays aligned */
-.pagination {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 10px;
-}
-
+/* Popups */
 .popup {
     display: none;
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 260px; /* Make popup smaller */
+    width: 260px;
     max-width: 90%;
-    background-color: #ffffff;
+    background-color: transparent;
     border-radius: 6px;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
-    border: 1px solid #ddd;
-    padding: 5px; /* Reduce padding */
+    box-shadow: none;
+    border: 1px solid #cce3f6;
+    padding: 5px;
     z-index: 1000;
 }
 
@@ -293,11 +674,17 @@ body {
     border-collapse: collapse;
 }
 
-.popup-content th {
-    background-color: #f8f9fa;
-    font-weight: 600;
+.popup-content th,
+.popup-content td {
     padding: 6px;
     text-align: left;
+    border-bottom: 1px solid #cce3f6;
+    background-color: transparent;
+}
+
+.popup-content th {
+    font-weight: 600;
+    border-bottom: 2px solid #cce3f6;
 }
 
     .popup-content th:first-child {
@@ -311,7 +698,7 @@ body {
 
 .popup-close {
     cursor: pointer;
-    font-size: 1.6em; /* Make close button bigger */
+    font-size: 1.6em;
     font-weight: bold;
     color: #666;
     margin-left: auto;
@@ -321,18 +708,13 @@ body {
         color: #333;
     }
 
-.popup-content td {
-    padding: 6px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-
+/* Other Components */
 .clickable-row {
     cursor: pointer;
 }
 
     .clickable-row:hover {
-        background-color: #f0f0f0;
+        background-color: #f0faff;
     }
 
 .freeform-container {
@@ -340,8 +722,8 @@ body {
     flex-direction: column;
     gap: 10px;
     padding: 10px;
-    border: 1px solid #ddd;
-    background: #f9f9f9;
+    border: 1px solid #cce3f6;
+    background: transparent;
     border-radius: 8px;
 }
 
@@ -353,8 +735,8 @@ body {
 .freeform-item {
     flex: 1;
     padding: 10px;
-    background: #fff;
-    border: 1px solid #ccc;
+    background: transparent;
+    border: 1px solid #99ccea;
     border-radius: 5px;
 }
 
@@ -363,3 +745,17 @@ body {
         border: none;
     }
 
+.accordion-button {
+    background-color: #f0faff; /* Highlighted */
+    color: #003b5c;
+    font-weight: bold;
+    border: 1px solid #cce3f6;
+    box-shadow: 0 1px 3px rgba(74, 163, 223, 0.2);
+}
+
+.attachment-group {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    align-items: end;
+}

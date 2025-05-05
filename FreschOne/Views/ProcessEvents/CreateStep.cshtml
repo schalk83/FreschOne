@@ -98,6 +98,45 @@
                                 <tbody id="@($"{tableName}_rows")">
                                     @await Html.PartialAsync("_TableRows", model)
                                 </tbody>
+
+                                @if (ViewBag.CalculationConfig is Dictionary<string, List<(string Function, string Column)>> calcMap &&
+                               calcMap.TryGetValue(tableName, out var calcs) && calcs.Any())
+                                {
+                                    <tfoot>
+                                        <tr>
+                                            <td class="fw-bold text-end" colspan="1">Totals:</td>
+
+                                            @foreach (var column in columns)
+                                            {
+                                                var matchingCalc = calcs.FirstOrDefault(c => c.Column.Equals(column, StringComparison.OrdinalIgnoreCase));
+                                                var colLower = column.ToLower();
+                                                if (matchingCalc.Function?.ToLower() == "count")
+                                                {
+                                                    <td class="text-center text-primary fw-bold summary-count"
+                                                        data-table="@tableName"
+                                                        data-column="@colLower">
+                                                        0
+                                                    </td>
+                                                }
+                                                else if (matchingCalc.Function?.ToLower() == "sum")
+                                                {
+                                                    <td class="text-center text-success fw-bold summary-sum"
+                                                        data-table="@tableName"
+                                                        data-column="@colLower">
+                                                        0
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    <td></td>
+                                                }
+                                            }
+
+                                            <td></td> <!-- for delete column -->
+                                        </tr>
+                                    </tfoot>
+                                }
+
                             </table>
 
                             <input type="hidden" name="RowCount_@tableName" value="@rowCount" />
@@ -110,10 +149,11 @@
                         }
                         else if (table.FormType == "F")
                         {
-                            int columnCount = table.ColumnCount ?? 2;
+                            int columnCount = table.ColumnCount.GetValueOrDefault();
+                            if (columnCount <= 1) columnCount = 1; // Treat 0 and 1 the same
                             int colWidth = columnCount >= 1 && columnCount <= 12 ? 12 / columnCount : 6;
                             int columnRendered = 0;
-
+                            
                             while (columnRendered < columns.Count)
                             {
                                 <div class="row">
@@ -221,7 +261,7 @@
             Save & Continue Later
         </button>
         <button type="submit" name="action" value="SaveContinue" class="btn custom-button btn-green" onclick="showLoading();">
-            Save & Proceed
+            Submit & Proceed
         </button>
     </div>
 
@@ -235,95 +275,6 @@
 </form>
 
 
-<style>
-    .accordion-button {
-        background-color: #e9ecef;
-        color: #212529;
-        font-weight: bold;
-        border: none;
-        box-shadow: none;
-    }
-
-    .form-label {
-        font-weight: 500;
-    }
-
-    .input-short {
-        max-width: 180px;
-    }
-      
-    /* Common button style */
-    .custom-button {
-        border: 2px solid;
-        font-weight: bold;
-        transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    }
-
-    /* Specific styles */
-    .btn-green {
-        color: #198754; /* Bootstrap green */
-        border-color: #198754;
-        background-color: transparent;
-    }
-
-        .btn-green:hover {
-            color: white;
-            background-color: #198754;
-            border-color: #198754;
-        }
-
-    .btn-gold {
-        color: #ffc107; /* Bootstrap warning/yellow */
-        border-color: #ffc107;
-        background-color: transparent;
-    }
-
-        .btn-gold:hover {
-            color: black;
-            background-color: #ffc107;
-            border-color: #ffc107;
-        }
-
-    .btn-red {
-        color: #dc3545; /* Bootstrap red */
-        border-color: #dc3545;
-        background-color: transparent;
-    }
-
-        .btn-red:hover {
-            color: white;
-            background-color: #dc3545;
-            border-color: #dc3545;
-        }
-
-</style>
-
-
-
-<style>
-    .accordion-button {
-        background-color: #e9ecef;
-        color: #212529;
-        font-weight: bold;
-        border: none;
-        box-shadow: none;
-    }
-
-    .form-label {
-        font-weight: 500;
-    }
-
-    .attachment-group {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 1rem;
-        align-items: end;
-    }
-
-    .input-short {
-        max-width: 180px;
-    }
-</style>
 @section Scripts {
     <script>
         $(document).ready(function () {
@@ -404,21 +355,60 @@
             .then(html => {
                 const container = document.querySelector(`#${tableName}_rows`);
                 if (container) {
+                    // 🧱 Append HTML as-is
                     container.insertAdjacentHTML("beforeend", html);
+
+                    // 🔁 Bind summary-trigger events to the last inserted row only
+                           const lastRow = container.lastElementChild;
+                    if (lastRow) {
+                        lastRow.querySelectorAll("input[name], select[name], textarea[name]").forEach(el => {
+                            el.addEventListener("input", () => recalculateSummaries(tableName));
+                        });
+                    }
+
+
+                    // ✅ Recalculate immediately
+                    recalculateSummaries(tableName);
                 }
             })
             .catch(err => console.error("Add Row Error:", err));
         }
 
-        function removeRow(button) {
+                window.addEventListener("load", () => {
+            document.querySelectorAll("tbody[id$='_rows']").forEach(tb => {
+                const tableName = tb.id.replace("_rows", "");
+                recalculateSummaries(tableName);
+            });
+
+            // 🟢 Explicitly hook into all summary-trigger fields
+            document.querySelectorAll('.summary-trigger').forEach(el => {
+                el.addEventListener('blur', handleChangeOrBlur);
+                el.addEventListener('change', handleChangeOrBlur);
+                el.addEventListener('input', handleChangeOrBlur);
+            });
+        });
+
+                function handleChangeOrBlur(e) {
+            const input = e.target;
+            if (!input.name || !input.closest("tbody[id$='_rows']")) return;
+            const tbody = input.closest("tbody");
+            const tableName = tbody.id.replace("_rows", "");
+            recalculateSummaries(tableName);
+        }
+
+
+                function removeRow(button) {
             const row = button.closest('tr');
             const tbody = row.parentElement;
             const rowCount = tbody.querySelectorAll('tr').length;
             if (rowCount > 1) {
+                const tableName = tbody.id.replace("_rows", "");
                 row.remove();
                 updateRowIndices(tbody);
+                recalculateSummaries(tableName); // ✅ recalculate after removing row
             }
         }
+
 
         function updateRowIndices(tbody) {
             const rows = tbody.querySelectorAll('tr');
@@ -470,6 +460,61 @@
                 overlay.style.opacity = '1';
             }, 10);
         }
+        function recalculateSummaries(tableName) {
+            const rows = document.querySelectorAll(`#${tableName}_rows tr`);
+            const calcs = {};
+
+            rows.forEach(row => {
+                row.querySelectorAll("input[name], select[name], textarea[name]").forEach(input => {
+                    const name = input.name;
+                    const prefix = `${tableName}_`;
+                    const suffixMatch = name.match(/_(\d+)$/);
+                    if (!suffixMatch || !name.startsWith(prefix)) return;
+
+                    const withoutPrefix = name.slice(prefix.length);
+                    const col = withoutPrefix.replace(/_\d+$/, "").toLowerCase(); // ✅ always lowercase
+
+                    const val = input.value;
+                    const hasValue = val !== undefined && val !== null && val.toString().trim() !== "";
+
+                    if (!calcs[col]) calcs[col] = { sum: 0, count: 0 };
+
+                    if (!isNaN(parseFloat(val))) {
+                        calcs[col].sum += parseFloat(val);
+                        calcs[col].count++;
+                    } else if (hasValue) {
+                        calcs[col].count++;
+                    }
+                });
+            });
+
+            for (const [col, { sum, count }] of Object.entries(calcs)) {
+                const sumCell = document.querySelector(`.summary-sum[data-table='${tableName}'][data-column='${col}']`);
+                const countCell = document.querySelector(`.summary-count[data-table='${tableName}'][data-column='${col}']`);
+                if (sumCell) sumCell.textContent = sum.toFixed(2);
+                if (countCell) countCell.textContent = count;
+            }
+        }
+
+
+        // ✅ Hook into existing row change logic
+        document.addEventListener("input", function (e) {
+            const input = e.target;
+            if (!input.name || !input.name.includes("_")) return;
+
+            const parts = input.name.split("_");
+            if (parts.length < 3) return;
+            const tableName = parts[0];
+            recalculateSummaries(tableName);
+        });
+
+        // ✅ Recalculate on load
+        window.addEventListener("load", () => {
+            document.querySelectorAll("tbody[id$='_rows']").forEach(tb => {
+                const tableName = tb.id.replace("_rows", "");
+                recalculateSummaries(tableName);
+            });
+        });
     </script>
 }
 

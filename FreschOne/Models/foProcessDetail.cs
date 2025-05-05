@@ -28,6 +28,7 @@ namespace FreschOne.Models
         [Required]
         public string TableDescription { get; set; }
 
+        public string ? ColumnCalcs { get; set; }
         public bool Active { get; set; }
 
     }

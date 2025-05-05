@@ -5,6 +5,7 @@ using FreschOne.Models;
 using System.Data;
 using System.Text.Json;
 using System;
+using System.Security.AccessControl;
 
 namespace FreschOne.Controllers
 {
@@ -47,6 +48,8 @@ namespace FreschOne.Controllers
             bool isFirstDetail = !stepDetails.Any();
             ViewBag.IsFirstDetail = isFirstDetail;
 
+
+
             return View(new foProcessDetail
             {
                 StepID = stepId,
@@ -73,6 +76,36 @@ namespace FreschOne.Controllers
                 ModelState.AddModelError("ColumnQuery", "❌ Invalid SQL query. Please check your table name or column list.");
             }
 
+            // ✅ Enforce FKColumn when not Parent
+            if (!detail.Parent && string.IsNullOrWhiteSpace(detail.FKColumn))
+            {
+                ModelState.AddModelError("FKColumn", "Foreign Key Column is required when 'Is Parent Table' is set to No.");
+            }
+
+            if (detail.Parent)
+            {
+                using (var checkConn = GetConnection())
+                {
+                    checkConn.Open();
+                    var checkCmd = new SqlCommand(@"
+            SELECT COUNT(*) 
+            FROM foProcessDetail 
+            WHERE StepID = @StepID AND Parent = 1 AND Active = 1 AND ID <> @ID", checkConn);
+
+                    checkCmd.Parameters.AddWithValue("@StepID", detail.StepID);
+                    checkCmd.Parameters.AddWithValue("@ID", detail.ID); // ✅ Exclude self
+
+                    int parentCount = Convert.ToInt32(checkCmd.ExecuteScalar());
+
+                    if (parentCount > 0)
+                    {
+                        ModelState.AddModelError("Parent", "❌ Only one parent table is allowed per step.");
+                    }
+                }
+            }
+
+
+
             if (!ModelState.IsValid)
             {
                 ViewBag.StepId = detail.StepID;
@@ -83,9 +116,9 @@ namespace FreschOne.Controllers
             using (var conn = GetConnection())
             {
                 var cmd = new SqlCommand(@"INSERT INTO foProcessDetail
-            (StepID, TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription, Active)
-            VALUES
-            (@StepID, @TableName, @ColumnQuery, @FormType, @ColumnCount, @Parent, @FKColumn, @TableDescription, @Active)", conn);
+        (StepID, TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription,ColumnCalcs, Active)
+        VALUES
+        (@StepID, @TableName, @ColumnQuery, @FormType, @ColumnCount, @Parent, @FKColumn, @TableDescription, @ColumnCalcs, @Active)", conn);
 
                 cmd.Parameters.AddWithValue("@StepID", detail.StepID);
                 cmd.Parameters.AddWithValue("@TableName", detail.TableName ?? (object)DBNull.Value);
@@ -95,6 +128,7 @@ namespace FreschOne.Controllers
                 cmd.Parameters.AddWithValue("@Parent", detail.Parent);
                 cmd.Parameters.AddWithValue("@FKColumn", detail.FKColumn ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@TableDescription", detail.TableDescription ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ColumnCalcs", detail.ColumnCalcs ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Active", detail.Active);
 
                 conn.Open();
@@ -103,12 +137,12 @@ namespace FreschOne.Controllers
 
             try
             {
-                if (detail.TableName != "")
+                if (!string.IsNullOrWhiteSpace(detail.TableName))
                     EnsureAuditFieldsExist(detail.TableName);
             }
             catch
             {
-
+                // fail silently
             }
 
             if (action == "addanother")
@@ -118,6 +152,7 @@ namespace FreschOne.Controllers
 
             return RedirectToAction("Index", new { userid, processId, stepId = detail.StepID });
         }
+
 
         public IActionResult Edit(long id, int userid)
         {
@@ -147,6 +182,7 @@ namespace FreschOne.Controllers
                         Parent = reader["Parent"] != DBNull.Value && (bool)reader["Parent"],
                         FKColumn = reader["FKColumn"]?.ToString(),
                         TableDescription = reader["TableDescription"]?.ToString(),
+                        ColumnCalcs = reader["ColumnCalcs"]?.ToString(),
                         Active = reader["Active"] != DBNull.Value && (bool)reader["Active"]
                     };
                     processId = (long)reader["ProcessID"];
@@ -171,6 +207,33 @@ namespace FreschOne.Controllers
             {
                 ModelState.AddModelError("ColumnQuery", "❌ Invalid SQL query. Please check your table name or column list.");
             }
+            if (!detail.Parent && string.IsNullOrWhiteSpace(detail.FKColumn))
+            {
+                ModelState.AddModelError("FKColumn", "Foreign Key Column is required when 'Is Parent Table' is set to No.");
+            }
+
+            if (detail.Parent)
+            {
+                using (var checkConn = GetConnection())
+                {
+                    checkConn.Open();
+                    var checkCmd = new SqlCommand(@"
+            SELECT COUNT(*) 
+            FROM foProcessDetail 
+            WHERE StepID = @StepID AND Parent = 1 AND Active = 1 AND ID <> @ID", checkConn);
+
+                    checkCmd.Parameters.AddWithValue("@StepID", detail.StepID);
+                    checkCmd.Parameters.AddWithValue("@ID", detail.ID); // ✅ Exclude self
+
+                    int parentCount = Convert.ToInt32(checkCmd.ExecuteScalar());
+
+                    if (parentCount > 0)
+                    {
+                        ModelState.AddModelError("Parent", "❌ Only one parent table is allowed per step.");
+                    }
+                }
+            }
+
 
             if (!ModelState.IsValid)
             {
@@ -189,6 +252,7 @@ namespace FreschOne.Controllers
             Parent = @Parent,
             FKColumn = @FKColumn,
             TableDescription = @TableDescription,
+            ColumnCalcs = @ColumnCalcs,
             Active = @Active
             WHERE ID = @ID", conn);
 
@@ -199,6 +263,7 @@ namespace FreschOne.Controllers
                 cmd.Parameters.AddWithValue("@Parent", detail.Parent);
                 cmd.Parameters.AddWithValue("@FKColumn", detail.FKColumn ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@TableDescription", detail.TableDescription ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ColumnCalcs", detail.ColumnCalcs ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Active", detail.Active);
                 cmd.Parameters.AddWithValue("@ID", detail.ID);
 
@@ -273,6 +338,8 @@ namespace FreschOne.Controllers
                     Parent = reader["Parent"] != DBNull.Value && (bool)reader["Parent"],
                     FKColumn = reader["FKColumn"]?.ToString(),
                     TableDescription = reader["TableDescription"]?.ToString(),
+                    ColumnCalcs = reader["ColumnCalcs"]?.ToString(),
+
                     Active = reader["Active"] != DBNull.Value && (bool)reader["Active"]
                 });
             }
@@ -367,7 +434,54 @@ namespace FreschOne.Controllers
             }
         }
 
-     
+        [HttpGet]
+        public JsonResult GetFKColumns(string tableName)
+        {
+            var columns = new List<string>();
+            var ignoreList = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+
+                // Step 1: Get ignored columns
+                var ignoreCmd = new SqlCommand("SELECT ColumnName FROM foTableColumnsToIgnore", conn);
+                using (var reader = ignoreCmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        ignoreList.Add(reader["ColumnName"].ToString());
+                    }
+                }
+
+                var columnCmd = new SqlCommand(@"
+            SELECT c.COLUMN_NAME
+            FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+            JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE c ON tc.CONSTRAINT_NAME = c.CONSTRAINT_NAME
+            JOIN sys.foreign_keys fk ON fk.name = tc.CONSTRAINT_NAME
+            JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+            JOIN sys.tables t ON t.object_id = fkc.referenced_object_id
+            WHERE tc.TABLE_NAME = @TableName
+              AND tc.CONSTRAINT_TYPE = 'FOREIGN KEY'
+              AND t.name LIKE 'tbl_tran_%'", conn);
+
+                columnCmd.Parameters.AddWithValue("@TableName", tableName);
+
+                using (var reader = columnCmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var col = reader["COLUMN_NAME"].ToString();
+                        if (!string.Equals(col, "ID", StringComparison.OrdinalIgnoreCase) && !ignoreList.Contains(col))
+                        {
+                            columns.Add(col);
+                        }
+                    }
+                }
+            }
+
+            return Json(columns);
+        }
 
 
     }

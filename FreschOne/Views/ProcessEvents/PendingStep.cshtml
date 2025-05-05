@@ -11,6 +11,9 @@
     int stepId = ViewBag.stepId;
     int Eventid = ViewBag.Eventid;
 
+    string ReworkComment = ViewBag.ReworkComment;
+    string ReworkBy = ViewBag.ReworkBy;
+
     var foreignKeys = ViewBag.ForeignKeys as Dictionary<string, List<ForeignKeyInfo>>;
     var foreignKeyOptions = ViewBag.ForeignKeyOptions as Dictionary<string, List<SelectListItem>>;
     var columnTypes = ViewBag.ColumnTypes as Dictionary<string, Dictionary<string, string>>;
@@ -31,10 +34,10 @@
     </div>
 }
 
-@if (TempData["ReworkComment"] != null)
+@if (@ReworkComment != null)
 {
     <div class="alert alert-warning" style="position:relative;">
-        <strong>🔄 Rework Requested:</strong> @TempData["ReworkComment"]
+        <strong>🔄 Rework Requested by @ReworkBy:</strong> @ReworkComment
     </div>
 }
 
@@ -60,6 +63,7 @@
             var history = ViewBag.ProcessHistory as List<ProcessEventAuditViewModel> ?? new();
             var grouped = history.GroupBy(h => new
             {
+                h.ProcessEventID,
                 h.StepNo,
                 StepDescription = h.Data.GetValueOrDefault("StepDescription")?.ToString(),
                 IsApproval = h.Data.TryGetValue("StepType", out var t) && t?.ToString() == "Approval"
@@ -84,7 +88,6 @@
                             aria-controls="@collapseId">
                         <div>
                             @icon Step @stepGroup.Key.StepNo – @stepGroup.Key.StepDescription
-
                         </div>
                     </button>
                 </h2>
@@ -93,26 +96,42 @@
                      aria-labelledby="@headingId"
                      data-bs-parent="#historyAccordion">
                     <div class="accordion-bodbody">
-                        @foreach (var entry in stepGroup)
+                        @foreach (var eventGroup in stepGroup.GroupBy(e => new { e.ProcessEventID, e.CreatedDate, e.FullName }))
                         {
-                            var bgClass = stepGroup.Key.IsApproval ? "bg-warning-subtle border-warning" : "bg-info-subtle border-info";
+                            <div class="border rounded p-2 mb-3 @(stepGroup.Key.IsApproval ? "bg-warning-subtle border-warning" : "bg-info-subtle border-info")">
+                                <strong>Captured:</strong> @eventGroup.Key.CreatedDate.ToString("yyyy-MM-dd HH:mm") by @eventGroup.Key.FullName
 
-                            <div class="border rounded p-2 mb-3 @bgClass">
-                                <strong>Table:</strong> @entry.TableName<br />
-                                <strong>Captured:</strong> @entry.CreatedDate.ToString("yyyy-MM-dd HH:mm") by User @entry.CreatedUserID
+                                @foreach (var entry in eventGroup)
+                                {
+                                    <div class="mt-3">
+                                        <strong>Table:</strong> @entry.TableName<br />
 
-                                <ul class="mt-2">
-                                    @foreach (var field in entry.Data
-                                   .Where(kvp => kvp.Key != "StepDescription"
-                                   && kvp.Key != "TableDescription"
-                                   && kvp.Key != "interactionType"
-                                   && kvp.Key != "CreatedUserID"
-                                   && kvp.Key != "CreatedDate"
-                                   && kvp.Key != "StepType"))
-                                    {
-                                        <li><strong>@field.Key:</strong> @Html.Raw(field.Value?.ToString())</li>
-                                    }
-                                </ul>
+                                        <ul class="mt-1">
+                                            @foreach (var field in entry.Data
+                                           .Where(kvp => kvp.Key != "StepDescription" &&
+                                           kvp.Key != "TableDescription" &&
+                                           kvp.Key != "interactionType" &&
+                                           kvp.Key != "CreatedUserID" &&
+                                           kvp.Key != "CreatedDate" &&
+                                           kvp.Key != "StepType"))
+                                            {
+                                                var key = field.Key;
+                                                var value = field.Value?.ToString();
+
+                                                string prettyLabel = key;
+                                                if (prettyLabel.StartsWith("attachment_"))
+                                                    prettyLabel = prettyLabel.Replace("attachment_", "").Replace("_", " ");
+                                                else if (prettyLabel.EndsWith("ID"))
+                                                    prettyLabel = prettyLabel.Substring(0, prettyLabel.Length - 2);
+
+                                                prettyLabel = System.Text.RegularExpressions.Regex.Replace(prettyLabel.Replace("_", " "), "(?<=.)([A-Z])", " $1");
+
+                                                <li><strong>@prettyLabel:</strong> @Html.Raw(value)</li>
+                                            }
+                                        </ul>
+                                        @entry.DetailID
+                                                                            </div>
+                                }
                             </div>
                         }
                     </div>
@@ -120,19 +139,10 @@
             </div>
             i++;
         }
+
+
     </div>
 </div>
-
-
-<!-- ✅ Optional style tweaks -->
-<style>
-    .accordion-body .badge {
-        font-size: 0.9rem;
-        margin-bottom: 0.5rem;
-        display: inline-block;
-    }
-</style>
-
 
 <form method="post" asp-action="SavePendingStepData" asp-controller="ProcessEvents" enctype="multipart/form-data">
     <input type="hidden" name="userId" value="@userId" />
@@ -155,7 +165,7 @@
 
             var columns = row.Keys
             .Where(k => !k.Equals("ID", StringComparison.OrdinalIgnoreCase)
-            && !k.Equals("Active", StringComparison.OrdinalIgnoreCase)
+            && !k.Equals("Active", StringComparison.OrdinalIgnoreCase)  
             && !k.Equals("RecordID", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
@@ -216,6 +226,45 @@
                                 <tbody id="@($"{tableName}_rows")">
                                     @await Html.PartialAsync("_TableRows", model)
                                 </tbody>
+
+                                @if (ViewBag.CalculationConfig is Dictionary<string, List<(string Function, string Column)>> calcMap &&
+                               calcMap.TryGetValue(tableName, out var calcs) && calcs.Any())
+                                {
+                                    <tfoot>
+                                        <tr>
+                                            <td class="fw-bold text-end" colspan="1">Totals:</td>
+
+                                            @foreach (var column in columns)
+                                            {
+                                                var matchingCalc = calcs.FirstOrDefault(c => c.Column.Equals(column, StringComparison.OrdinalIgnoreCase));
+                                                var colLower = column.ToLower();
+                                                if (matchingCalc.Function?.ToLower() == "count")
+                                                {
+                                                    <td class="text-center text-primary fw-bold summary-count"
+                                                        data-table="@tableName"
+                                                        data-column="@colLower">
+                                                        0
+                                                    </td>
+                                                }
+                                                else if (matchingCalc.Function?.ToLower() == "sum")
+                                                {
+                                                    <td class="text-center text-success fw-bold summary-sum"
+                                                        data-table="@tableName"
+                                                        data-column="@colLower">
+                                                        0
+                                                    </td>
+                                                }
+                                                else
+                                                {
+                                                    <td></td>
+                                                }
+                                            }
+
+                                            <td></td> <!-- for delete column -->
+                                        </tr>
+                                    </tfoot>
+                                }
+
                             </table>
 
                             <input type="hidden" name="RowCount_@tableName" value="@rowCount" />
@@ -230,9 +279,11 @@
 
                         else if (table.FormType == "F")
                         {
-                            int columnCount = table.ColumnCount ?? 2;
+                            int columnCount = table.ColumnCount.GetValueOrDefault();
+                            if (columnCount <= 1) columnCount = 1; // Treat 0 and 1 the same
                             int colWidth = columnCount >= 1 && columnCount <= 12 ? 12 / columnCount : 6;
                             int columnRendered = 0;
+
 
                             var prefillData = ViewBag.PrefilledValues as Dictionary<string, object>;
 
@@ -334,6 +385,15 @@
         }
     </div>
 
+    @if (ViewBag.OriginalAdhocApprovers is List<string> originalApprovers && originalApprovers.Any())
+    {
+        <div class="alert alert-info mt-2">
+            <strong>🔐 Original Approvers Assigned:</strong>
+            @string.Join(", ", originalApprovers)
+        </div>
+    }
+
+
     <div id="saveButtonsSection" class="d-flex justify-content-between align-items-center mt-4">
         <div class="d-flex gap-3">
             <button type="submit" name="action" value="SaveLater" class="btn custom-button btn-gold" onclick="prepareNormalSave(); showLoading();">
@@ -341,7 +401,7 @@
             </button>
 
             <button type="submit" name="action" value="SaveContinue" class="btn custom-button btn-green" onclick="prepareNormalSave(); showLoading();">
-                Save & Proceed
+                Submit & Proceed
             </button>
         </div>
 
@@ -349,9 +409,6 @@
             Cancel Process
         </button>
     </div>
-
-
-
 
 
     <div id="cancelCommentSection" class="mt-4" style="display:none; position:relative;">
@@ -380,296 +437,238 @@
         </div>
     </div>
 
-
-
-
 </form>
 
-<style>
-    .accordion-button {
-        background-color: #e9ecef;
-        color: #212529;
-        font-weight: bold;
-        border: none;
-        box-shadow: none;
-    }
+@section Scripts {
 
-    .form-label {
-        font-weight: 500;
-    }
+    <script>
 
-    .input-short {
-        max-width: 180px;
-    }
+        function closeCancelComment() {
+            document.getElementById('cancelCommentSection').style.display = 'none';
+            document.getElementById('saveButtonsSection').style.display = 'flex';
 
-    .custom-hover-red:hover {
-        background-color: #dc3545; /* Bootstrap "danger" red */
-        color: white;
-        border-color: #dc3545;
-    }
-
-    .custom-hover-red {
-        transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    }
-
-</style>
-
-
-
-<style>
-
-
-    .accordion-button {
-        background-color: #e9ecef;
-        color: #212529;
-        font-weight: bold;
-        border: none;
-        box-shadow: none;
-    }
-
-    .form-label {
-        font-weight: 500;
-    }
-
-    .attachment-group {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 1rem;
-        align-items: end;
-    }
-
-    .input-short {
-        max-width: 180px;
-    }
-
-    /* Common button style */
-    .custom-button {
-        border: 2px solid;
-        font-weight: bold;
-        transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    }
-
-    /* Specific styles */
-    .btn-green {
-        color: #198754; /* Bootstrap green */
-        border-color: #198754;
-        background-color: transparent;
-    }
-
-        .btn-green:hover {
-            color: white;
-            background-color: #198754;
-            border-color: #198754;
+            const cancelReasonField = document.getElementById('cancelReason');
+            if (cancelReasonField) {
+                cancelReasonField.removeAttribute('required');
+                cancelReasonField.value = "";
+            }
         }
 
-    .btn-gold {
-        color: #ffc107; /* Bootstrap warning/yellow */
-        border-color: #ffc107;
-        background-color: transparent;
-    }
+        function showCancelComment() {
+            document.getElementById('cancelCommentSection').style.display = 'block';
+            document.getElementById('saveButtonsSection').style.display = 'none';
 
-        .btn-gold:hover {
-            color: black;
-            background-color: #ffc107;
-            border-color: #ffc107;
+            document.getElementById('cancelReason').setAttribute('required', 'required');
+
+            window.scrollTo(0, document.body.scrollHeight);
         }
 
-    .btn-red {
-        color: #dc3545; /* Bootstrap red */
-        border-color: #dc3545;
-        background-color: transparent;
-    }
-
-        .btn-red:hover {
-            color: white;
-            background-color: #dc3545;
-            border-color: #dc3545;
+        function prepareNormalSave() {
+            const cancelReasonField = document.getElementById('cancelReason');
+            if (cancelReasonField) {
+                cancelReasonField.removeAttribute('required');
+            }
         }
-</style>
-
-<script>
-
-    function closeCancelComment() {
-        document.getElementById('cancelCommentSection').style.display = 'none';
-        document.getElementById('saveButtonsSection').style.display = 'flex';
-
-        // ✅ Make sure we also clear the cancelReason required flag
-        const cancelReasonField = document.getElementById('cancelReason');
-        if (cancelReasonField) {
-            cancelReasonField.removeAttribute('required');
-            cancelReasonField.value = ""; // Clear any typed reason if you want
-        }
-    }
-
-    function showCancelComment() {
-        document.getElementById('cancelCommentSection').style.display = 'block';
-        document.getElementById('saveButtonsSection').style.display = 'none';
-
-        // ✅ Set cancelReason as required
-        document.getElementById('cancelReason').setAttribute('required', 'required');
-
-        window.scrollTo(0, document.body.scrollHeight);
-    }
-
-    function prepareNormalSave() {
-        // ✅ Remove required attribute from cancelReason when normal save
-        const cancelReasonField = document.getElementById('cancelReason');
-        if (cancelReasonField) {
-            cancelReasonField.removeAttribute('required');
-        }
-    }
 
         function validateCancelAndShowLoading() {
-        const cancelReason = document.getElementById('cancelReason')?.value.trim();
+            const cancelReason = document.getElementById('cancelReason')?.value.trim();
 
-        if (!cancelReason) {
-            alert("Please provide a reason before cancelling the process.");
-            return false; // ❌ prevent form submit
+            if (!cancelReason) {
+                alert("Please provide a reason before cancelling the process.");
+                return false;
+            }
+
+            showLoading();
+            return true;
         }
-
-        showLoading(); // ✅ only now show loading
-        return true; // ✅ allow form to submit
-    }
-
 
         function updateAttachmentField(fullKey) {
-        const descInput = document.getElementById('desc_' + fullKey);
-        const fileInput = document.getElementById('file_' + fullKey);
-        const hiddenInput = document.getElementById('hidden_' + fullKey);
+            const descInput = document.getElementById('desc_' + fullKey);
+            const fileInput = document.getElementById('file_' + fullKey);
+            const hiddenInput = document.getElementById('hidden_' + fullKey);
 
-        const description = descInput?.value?.trim() || "No Description";
-        const fileName = fileInput?.files?.[0]?.name || "";
+            const description = descInput?.value?.trim() || "No Description";
+            const fileName = fileInput?.files?.[0]?.name || "";
 
-        const parts = fullKey.split('_');
-        let tableName = parts[0];
-        if (parts.length >= 4) {
-            const attachmentIndex = parts.findIndex(p => p === 'attachment');
-            if (attachmentIndex > 0) {
-                tableName = parts.slice(0, attachmentIndex).join('_');
+            const parts = fullKey.split('_');
+            let tableName = parts[0];
+            if (parts.length >= 4) {
+                const attachmentIndex = parts.findIndex(p => p === 'attachment');
+                if (attachmentIndex > 0) {
+                    tableName = parts.slice(0, attachmentIndex).join('_');
+                }
             }
+
+            const virtualPath = fileName ? `Attachments/${tableName}/${fileName}` : "";
+            const combined = `${description};${virtualPath}`;
+            if (hiddenInput) hiddenInput.value = combined;
         }
 
-        const virtualPath = fileName ? `Attachments/${tableName}/${fileName}` : "";
-        const combined = `${description};${virtualPath}`;
-        if (hiddenInput) hiddenInput.value = combined;
-    }
-
-    // 🆕 Run update when file is selected
-    document.addEventListener("change", function (e) {
-        if (e.target && e.target.matches("input[type='file'][name^='file_']")) {
-            const fullKey = e.target.name.replace("file_", "");
-            updateAttachmentField(fullKey);
-        }
-    });
-
+        document.addEventListener("change", function (e) {
+            if (e.target && e.target.matches("input[type='file'][name^='file_']")) {
+                const fullKey = e.target.name.replace("file_", "");
+                updateAttachmentField(fullKey);
+            }
+        });
 
         function addRowAjax(tableName) {
-        const stepId = document.querySelector('input[name="stepId"]').value;
-        const userId = document.querySelector('input[name="userId"]').value;
-        const processIdInput = document.querySelector('input[name="processInstanceId"]');
-        const processId = processIdInput ? processIdInput.value : null;
+            const stepId = document.querySelector('input[name="stepId"]').value;
+            const userId = document.querySelector('input[name="userId"]').value;
+            const processId = document.querySelector('input[name="processInstanceId"]')?.value || null;
+            const rowContainer = document.querySelector(`#${tableName}_rows`);
+            const currentRowCount = rowContainer?.querySelectorAll("tr").length || 0;
 
-        // 🔥 Calculate current row count in DOM
-        const rowContainer = document.querySelector(`#${tableName}_rows`);
-        const currentRowCount = rowContainer ? rowContainer.querySelectorAll("tr").length : 0;
+            const data = { tableName, stepId, userId, processInstanceId: processId, currentRowCount };
 
-        const data = {
-            tableName,
-            stepId,
-            userId,
-            processInstanceId: processId,
-            currentRowCount: currentRowCount  // pass this to the controller
-        };
-
-        fetch(`/ProcessEvents/AddTableRowPartial`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-            },
-            body: JSON.stringify(data)
-        })
-        .then(res => res.text())
-        .then(html => {
-            const container = document.querySelector(`#${tableName}_rows`);
-            if (container) {
-                container.insertAdjacentHTML("beforeend", html); // ✅ append only
-            }
-        })
-        .catch(err => console.error("Add Row Error:", err));
-    }
-
-    function removeRow(button) {
-        const row = button.closest('tr');
-        const tbody = row.parentElement;
-        const rowCount = tbody.querySelectorAll('tr').length;
-        if (rowCount > 1) {
-            row.remove();
-            updateRowIndices(tbody);
+            fetch(`/ProcessEvents/AddTableRowPartial`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.text())
+            .then(html => {
+                rowContainer.insertAdjacentHTML("beforeend", html);
+                const lastRow = rowContainer.lastElementChild;
+                lastRow?.querySelectorAll(".summary-trigger").forEach(el => {
+                    el.addEventListener("input", () => recalculateSummaries(tableName));
+                    el.addEventListener("change", () => recalculateSummaries(tableName));
+                    el.addEventListener("blur", () => recalculateSummaries(tableName));
+                });
+                recalculateSummaries(tableName);
+            })
+            .catch(err => console.error("Add Row Error:", err));
         }
-    }
 
-    function updateRowIndices(tbody) {
-        const rows = tbody.querySelectorAll('tr');
-        rows.forEach((row, index) => {
-            row.setAttribute('data-row-index', index);
-            const rowNo = row.querySelector('.row-no');
-            if (rowNo) rowNo.innerText = index + 1;
+        function removeRow(button) {
+            const row = button.closest('tr');
+            const tbody = row.parentElement;
+            const tableName = tbody.id.replace("_rows", "");
+            if (tbody.querySelectorAll('tr').length > 1) {
+                row.remove();
+                updateRowIndices(tbody);
+                recalculateSummaries(tableName);
+            }
+        }
 
-            row.querySelectorAll('[name], [id], [for]').forEach(el => {
-                ['name', 'id', 'for'].forEach(attr => {
-                    const val = el.getAttribute(attr);
-                    if (val) {
-                        el.setAttribute(attr, val.replace(/_(\d+)$/, `_${index}`));
+        function updateRowIndices(tbody) {
+            tbody.querySelectorAll('tr').forEach((row, index) => {
+                row.setAttribute('data-row-index', index);
+                const rowNo = row.querySelector('.row-no');
+                if (rowNo) rowNo.innerText = index + 1;
+                row.querySelectorAll('[name], [id], [for]').forEach(el => {
+                    ['name', 'id', 'for'].forEach(attr => {
+                        const val = el.getAttribute(attr);
+                        if (val) el.setAttribute(attr, val.replace(/_(\d+)$/, `_${index}`));
+                    });
+                });
+            });
+        }
+
+        function recalculateSummaries(tableName) {
+            const rows = document.querySelectorAll(`#${tableName}_rows tr`);
+            const calcs = {};
+
+            rows.forEach(row => {
+                row.querySelectorAll(".summary-trigger").forEach(input => {
+                    const name = input.name;
+                    const prefix = `${tableName}_`;
+                    const suffixMatch = name.match(/_(\d+)$/);
+                    if (!suffixMatch || !name.startsWith(prefix)) return;
+
+                    const withoutPrefix = name.slice(prefix.length);
+                    const col = withoutPrefix.replace(/_\d+$/, "").toLowerCase();
+                    const val = input.value;
+                    const hasValue = val !== undefined && val !== null && val.toString().trim() !== "";
+
+                    if (!calcs[col]) calcs[col] = { sum: 0, count: 0 };
+
+                    if (!isNaN(parseFloat(val))) {
+                        calcs[col].sum += parseFloat(val);
+                        calcs[col].count++;
+                    } else if (hasValue) {
+                        calcs[col].count++;
                     }
                 });
             });
+
+            for (const [col, { sum, count }] of Object.entries(calcs)) {
+                const sumCell = document.querySelector(`.summary-sum[data-table='${tableName}'][data-column='${col}']`);
+                const countCell = document.querySelector(`.summary-count[data-table='${tableName}'][data-column='${col}']`);
+                if (sumCell) sumCell.textContent = sum.toFixed(2);
+                if (countCell) countCell.textContent = count;
+            }
+        }
+
+        function handleChangeOrBlur(e) {
+            const input = e.target;
+            const tbody = input.closest("tbody");
+            if (!input.name || !tbody) return;
+            const tableName = tbody.id.replace("_rows", "");
+            recalculateSummaries(tableName);
+        }
+
+        document.addEventListener("input", function (e) {
+            const input = e.target;
+            if (!input.name || !input.name.includes("_")) return;
+
+            const parts = input.name.split("_");
+            if (parts.length < 3) return;
+            const tableName = parts[0];
+            recalculateSummaries(tableName);
         });
-    }
 
-
-        
-    // ✅ Dynamically resize foreign key dropdowns for clean UI
-    function resizeDropdowns() {
-        document.querySelectorAll("select.form-select").forEach(select => {
-            const tempSpan = document.createElement("span");
-            tempSpan.style.visibility = "hidden";
-            tempSpan.style.position = "absolute";
-            tempSpan.style.whiteSpace = "nowrap";
-            tempSpan.style.font = getComputedStyle(select).font;
-
-            let maxText = "";
-            Array.from(select.options).forEach(opt => {
-                if (opt.text.length > maxText.length) {
-                    maxText = opt.text;
-                }
+        window.addEventListener("load", () => {
+            document.querySelectorAll("tbody[id$='_rows']").forEach(tb => {
+                const tableName = tb.id.replace("_rows", "");
+                recalculateSummaries(tableName);
             });
 
-            tempSpan.textContent = maxText;
-            document.body.appendChild(tempSpan);
+            setTimeout(resizeDropdowns, 100);
 
-            const width = tempSpan.offsetWidth + 50;
-            select.style.width = width + "px";
-
-            document.body.removeChild(tempSpan);
+            document.querySelectorAll('.summary-trigger').forEach(el => {
+                el.addEventListener('blur', handleChangeOrBlur);
+                el.addEventListener('change', handleChangeOrBlur);
+                el.addEventListener('input', handleChangeOrBlur);
+            });
         });
-    }
 
         function showLoading() {
-        const overlay = document.getElementById('loadingOverlay');
-        overlay.style.display = 'flex';
-        setTimeout(() => {
-            overlay.style.opacity = '1';
-        }, 10); // 🔥 little timeout to trigger the CSS animation
-    }
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+            }, 10);
+        }
 
+        function resizeDropdowns() {
+            document.querySelectorAll("select.form-select").forEach(select => {
+                const tempSpan = document.createElement("span");
+                tempSpan.style.visibility = "hidden";
+                tempSpan.style.position = "absolute";
+                tempSpan.style.whiteSpace = "nowrap";
+                tempSpan.style.font = getComputedStyle(select).font;
 
+                let maxText = "";
+                Array.from(select.options).forEach(opt => {
+                    if (opt.text.length > maxText.length) {
+                        maxText = opt.text;
+                    }
+                });
 
-    // ✅ Ensure dropdowns resize after load
-    window.addEventListener('load', () => {
-        setTimeout(resizeDropdowns, 100);
-    });
-</script>
+                tempSpan.textContent = maxText;
+                document.body.appendChild(tempSpan);
 
+                const width = tempSpan.offsetWidth + 50;
+                select.style.width = width + "px";
 
+                document.body.removeChild(tempSpan);
+            });
+        }
+
+    </script>
+
+}
 
