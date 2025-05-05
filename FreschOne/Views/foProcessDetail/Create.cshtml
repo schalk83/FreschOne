@@ -103,7 +103,7 @@
     <div class="mb-3" id="fkColumnGroup">
         <label asp-for="FKColumn" class="form-label">Foreign Key Column</label>
         <select asp-for="FKColumn" class="form-select" id="FKColumnSelect">
-            <option value="">-- Select FK Column --</option>
+            <option value=""></option>
         </select>
         <span asp-validation-for="FKColumn" class="text-danger"></span>
     </div>
@@ -113,6 +113,19 @@
         <input asp-for="TableDescription" class="form-control" />
         <span asp-validation-for="TableDescription" class="text-danger"></span>
     </div>
+
+    <div id="columnCalcsContainer" class="mb-3">
+        <label for="ColumnCalcs" class="form-label fw-bold">Column Calcs</label>
+        <input type="text" class="form-control" id="ColumnCalcs" name="ColumnCalcs" placeholder="e.g. Count(Field1), Sum(Field2)" />
+        <div id="columnCalcsHelp" class="form-text">
+            Use format: <code>Count(FieldName)</code>, <code>Sum(FieldName)</code>, separated by commas.
+        </div>
+        <div id="columnCalcsError" class="text-danger mt-1" style="display:none;">
+            Invalid format. Please use: Count(FieldName), Sum(FieldName)
+        </div>
+    </div>
+
+
 
     <div class="mb-3 form-check">
         @Html.CheckBoxFor(m => m.Active, new { @class = "form-check-input" })
@@ -143,10 +156,10 @@
         function loadFKColumns(tableName, selectedColumn = null) {
             const fkSelect = document.getElementById("FKColumnSelect");
             if (!tableName) return;
-            fetch(`/foReportTable/GetFKColumns?tableName=${encodeURIComponent(tableName)}`)
+            fetch(`/foProcessDetail/GetFKColumns?tableName=${encodeURIComponent(tableName)}`)
                 .then(res => res.json())
                 .then(data => {
-                    fkSelect.innerHTML = '<option value="">-- Select FK Column --</option>';
+                    fkSelect.innerHTML = '<option value=""></option>';
                     data.forEach(col => {
                         const opt = document.createElement("option");
                         opt.value = col;
@@ -183,12 +196,95 @@
                 });
         }
 
+        function handleFormTypeChange() {
+            const formType = document.getElementById("FormType").value;
+            const columnCountInput = document.getElementById("ColumnCount");
+
+            if (formType === "T") {
+                columnCountInput.value = 0;
+                columnCountInput.setAttribute("readonly", "readonly");
+            } else {
+                columnCountInput.removeAttribute("readonly");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("FormType").addEventListener("change", handleFormTypeChange);
+            handleFormTypeChange(); // run on load
+        });
+
+        function toggleFKDropdown() {
+            const isParent = document.querySelector('[name="Parent"]').value === "true";
+            const fkGroup = document.getElementById('fkColumnGroup');
+            const fkSelect = document.getElementById('FKColumnSelect');
+
+            fkGroup.style.display = isParent ? "none" : "block";
+
+            if (isParent) {
+                fkSelect.value = "";
+                fkSelect.removeAttribute("required");
+            } else {
+                fkSelect.setAttribute("required", "required");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelector('[name="Parent"]').addEventListener("change", toggleFKDropdown);
+            toggleFKDropdown(); // run on load
+        });
+
+
+        function handleFormTypeChange() {
+            const formType = document.getElementById("FormType").value;
+            const columnCalcsContainer = document.getElementById("columnCalcsContainer");
+
+            if (formType === "T") {
+                columnCalcsContainer.style.display = "block";
+            } else {
+                columnCalcsContainer.style.display = "none";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const formTypeEl = document.getElementById("FormType");
+            if (formTypeEl) {
+                formTypeEl.addEventListener("change", handleFormTypeChange);
+                handleFormTypeChange(); // run on load
+            }
+        });
+
+        function validateColumnCalcs() {
+            const input = document.getElementById("ColumnCalcs");
+            const error = document.getElementById("columnCalcsError");
+
+            const pattern = /^\s*(Count|Sum)\(\s*\w+\s*\)\s*(,\s*(Count|Sum)\(\s*\w+\s*\)\s*)*$/i;
+
+            if (!input.value.trim() || pattern.test(input.value.trim())) {
+                error.style.display = "none";
+                return true;
+            } else {
+                error.style.display = "block";
+                return false;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const input = document.getElementById("ColumnCalcs");
+            if (input) {
+                input.addEventListener("input", validateColumnCalcs);
+                validateColumnCalcs(); // Initial run
+            }
+        });
+
         function checkTestQueryVisibility() {
             const tableName = document.getElementById("TableNameInput").value.trim();
             const columnQuery = document.querySelector('[name="ColumnQuery"]').value.trim();
             const section = document.getElementById("testQuerySection");
             section.style.display = (tableName && columnQuery) ? "block" : "none";
         }
+
+
+
 
         document.addEventListener('DOMContentLoaded', function () {
             

@@ -1,0 +1,44 @@
+﻿@{
+    Layout = null;
+    string message = ViewBag.Message as string;
+    int userId = ViewBag.UserId ?? 0;
+    string action = ViewBag.action;
+
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submission Successful</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .modal-box {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            max-width: 500px;
+        }
+    </style>
+</head>
+<body>
+    <div class="modal-container">
+        <div class="modal-box text-center">
+            <h4>@action</h4>
+            <p>@Html.Raw(ViewBag.Message)</p>  <!-- ✅ This renders the HTML properly -->
+            <a href="@Url.Action("MergedPendingItems", "PendingItems", new { userId = userId })" class="btn btn-primary">OK</a>
+        </div>
+    </div>
+</body>
+</html>

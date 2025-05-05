@@ -8,6 +8,7 @@ using System.Data;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Drawing.Charts;
 
 
 namespace FreschOne.Controllers
@@ -17,12 +18,17 @@ namespace FreschOne.Controllers
         public ProcessEventsController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
         private SqlConnection GetConnection() => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
+
         public IActionResult CreateStep(int processId, int? stepId, int? processInstanceId, int userId)
         {
             SetUserAccess(userId);
 
             ViewBag.userid = userId;
             ViewBag.processInstanceId = processInstanceId;
+
+            var columnCalcsParsed = new Dictionary<string, List<(string Function, string Column)>>();
+
+
 
             if (stepId is null)
             {
@@ -78,7 +84,7 @@ namespace FreschOne.Controllers
 
                 var ignoredColumns = GetIgnoredColumns(conn);
 
-                var query = @"SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription
+                var query = @"SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription, ColumnCalcs
                       FROM foProcessDetail 
                       WHERE StepID = @StepID AND Active = 1
                       ORDER BY Parent DESC, ID";
@@ -98,14 +104,61 @@ namespace FreschOne.Controllers
                                 ColumnCount = reader["ColumnCount"] != DBNull.Value ? Convert.ToInt32(reader["ColumnCount"]) : (int?)null,
                                 Parent = reader["Parent"] != DBNull.Value && Convert.ToBoolean(reader["Parent"]),
                                 FKColumn = reader["FKColumn"].ToString(),
-                                TableDescription = reader["TableDescription"].ToString()
+                                TableDescription = reader["TableDescription"].ToString(),
+                                ColumnCalcs = reader["ColumnCalcs"].ToString(),
                             });
                         }
                     }
                 }
 
+                // Somewhere after loading `tables`
                 foreach (var table in tables)
                 {
+                    var calcs = new List<(string Function, string Column)>();
+
+                    if (!string.IsNullOrWhiteSpace(table.ColumnCalcs))
+                    {
+                        var expressions = table.ColumnCalcs.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+                        foreach (var expr in expressions)
+                        {
+                            var match = Regex.Match(expr.Trim(), @"(Count|Sum)\(([^)]+)\)", RegexOptions.IgnoreCase);
+                            if (match.Success)
+                            {
+                                var function = match.Groups[1].Value.Trim();
+                                var column = match.Groups[2].Value.Trim();
+                                calcs.Add((function, column));
+                            }
+                        }
+                    }
+
+                    columnCalcsParsed[table.TableName] = calcs;
+                }
+
+                ViewBag.CalculationConfig = columnCalcsParsed;
+
+
+                foreach (var table in tables)
+                {
+                    var calcs = new List<(string Function, string Column)>();
+
+                    if (!string.IsNullOrWhiteSpace(table.ColumnCalcs))
+                    {
+                        var expressions = table.ColumnCalcs.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+                        foreach (var expr in expressions)
+                        {
+                            var match = Regex.Match(expr.Trim(), @"(Count|Sum)\(([^)]+)\)", RegexOptions.IgnoreCase);
+                            if (match.Success)
+                            {
+                                var function = match.Groups[1].Value.Trim();
+                                var column = match.Groups[2].Value.Trim();
+                                calcs.Add((function, column));
+                            }
+                        }
+                    }
+
+                    columnCalcsParsed[table.TableName] = calcs;
                     if (!string.IsNullOrEmpty(table.FKColumn))
                         ignoredColumns.Add(table.FKColumn);
 
@@ -209,6 +262,8 @@ namespace FreschOne.Controllers
             ViewBag.Eventid = Eventid;
             ViewBag.processInstanceId = processInstanceId;
 
+            var columnCalcsParsed = new Dictionary<string, List<(string Function, string Column)>>();
+
             if (stepId is null)
             {
                 using (var conn = GetConnection())
@@ -264,7 +319,7 @@ namespace FreschOne.Controllers
                 var ignoredColumns = GetIgnoredColumns(conn);
 
                 var query = @"
-            SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription
+            SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription, ColumnCalcs
             FROM foProcessDetail 
             WHERE StepID = @StepID AND Active = 1
             ORDER BY Parent DESC, ID";
@@ -284,11 +339,38 @@ namespace FreschOne.Controllers
                                 ColumnCount = reader["ColumnCount"] != DBNull.Value ? Convert.ToInt32(reader["ColumnCount"]) : (int?)null,
                                 Parent = reader["Parent"] != DBNull.Value && Convert.ToBoolean(reader["Parent"]),
                                 FKColumn = reader["FKColumn"]?.ToString(),
-                                TableDescription = reader["TableDescription"].ToString()
+                                TableDescription = reader["TableDescription"].ToString(),
+                                ColumnCalcs = reader["ColumnCalcs"]?.ToString(),
+
                             });
                         }
                     }
                 }
+
+                foreach (var table in tables)
+                {
+                    var calcs = new List<(string Function, string Column)>();
+
+                    if (!string.IsNullOrWhiteSpace(table.ColumnCalcs))
+                    {
+                        var expressions = table.ColumnCalcs.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+                        foreach (var expr in expressions)
+                        {
+                            var match = Regex.Match(expr.Trim(), @"(Count|Sum)\(([^)]+)\)", RegexOptions.IgnoreCase);
+                            if (match.Success)
+                            {
+                                var function = match.Groups[1].Value.Trim();
+                                var column = match.Groups[2].Value.Trim();
+                                calcs.Add((function, column));
+                            }
+                        }
+                    }
+
+                    columnCalcsParsed[table.TableName] = calcs;
+                }
+
+                ViewBag.CalculationConfig = columnCalcsParsed;
 
                 foreach (var table in tables)
                 {
@@ -335,18 +417,12 @@ namespace FreschOne.Controllers
                     {
                         // 🟢 Freeform: Only latest record
                         var latestCmd = new SqlCommand(@"
-                    SELECT RecordID, DataSetUpdate 
-                    FROM foProcessEventsDetail 
+                    SELECT ProcessEventID, RecordID,DataSetUpdate
+                    FROM foProcessEventsDetail a
                     WHERE ProcessInstanceID = @InstanceID 
                       AND TableName = @TableName 
                       AND Active = 1
-                      AND ID = (
-                          SELECT MAX(ID) 
-                          FROM foProcessEventsDetail 
-                          WHERE ProcessInstanceID = @InstanceID 
-                            AND TableName = @TableName 
-                            AND Active = 1
-                      )", conn);
+                      ", conn);
 
                         latestCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
                         latestCmd.Parameters.AddWithValue("@TableName", table.TableName);
@@ -369,20 +445,13 @@ namespace FreschOne.Controllers
                     else if (table.FormType == "T")
                     {
                         var allRowsCmd = new SqlCommand(@"
-                        SELECT RecordID, DataSetUpdate 
-                        FROM foProcessEventsDetail 
+                         SELECT ProcessEventID, RecordID,DataSetUpdate
+                    FROM foProcessEventsDetail a
                         WHERE ProcessInstanceID = @InstanceID  
                           AND StepID = @StepID
                           AND TableName = @TableName
                           AND Active = 1 
-                          AND ProcessEventID IN (
-                              SELECT MAX(ProcessEventID) 
-                              FROM foProcessEventsDetail 
-                              WHERE ProcessInstanceID = @InstanceID 
-                                AND StepID = @StepID
-                                AND TableName = @TableName
-                                AND Active = 1
-                          )
+                          
                         ORDER BY ID", conn);
 
                         allRowsCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
@@ -422,6 +491,64 @@ namespace FreschOne.Controllers
                 PopulateProcessHistory(conn, null, processInstanceId);
             }
 
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+
+                var cmd = new SqlCommand(@"
+        SELECT TOP 1 d.DataSetUpdate, u.FirstName, u.LastName
+        FROM foApprovalEventsDetail d
+        INNER JOIN foUsers u ON d.CreatedUserID = u.ID
+        WHERE d.ProcessInstanceID = @InstanceID
+        ORDER BY d.ID DESC", conn);
+            
+
+                cmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(reader["DataSetUpdate"].ToString());
+                        if (data.ContainsKey("Comment") && data.ContainsKey("Decision") && data["Decision"].ToString() == "Rework")
+                        {
+                            ViewBag.ReworkComment = data["Comment"]?.ToString();
+                            ViewBag.ReworkBy = $"{reader["FirstName"]} {reader["LastName"]}";
+                        }
+                    }
+                }
+            }
+
+
+            // 🔍 Fetch original ad-hoc approvers (StepID = 0)
+            var originalAdhocApprovers = new List<string>();
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                var approverCmd = new SqlCommand(@"
+        SELECT DISTINCT u.FirstName, u.LastName
+        FROM foApprovalEvents e
+        INNER JOIN foUsers u ON e.UserID = u.ID
+        WHERE e.ProcessInstanceID = @InstanceID
+          AND e.StepID = 0
+          AND e.Active = 1", conn);
+
+                approverCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
+
+                using (var reader = approverCmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var fullName = $"{reader["FirstName"]} {reader["LastName"]}";
+                        originalAdhocApprovers.Add(fullName);
+                    }
+                }
+            }
+
+            ViewBag.OriginalAdhocApprovers = originalAdhocApprovers;
+
+
             ViewBag.ReportTables = tables;
             ViewBag.ReportData = tableData;
             ViewBag.TableDescriptions = tables.ToDictionary(t => t.TableName, t => CleanTableName(t.TableName, tablePrefixes));
@@ -436,12 +563,15 @@ namespace FreschOne.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult SaveNewStepData(IFormCollection form, int userId, int stepId, int? processInstanceId, string action,  bool SendForApproval = false, List<int> SelectedApproverIds = null)
+        public IActionResult SaveNewStepData(IFormCollection form, int userId, int stepId, int? processInstanceId, string action, bool SendForApproval = false, List<int> SelectedApproverIds = null)
         {
             var insertedIds = new Dictionary<string, int>();
             var rowErrors = new List<string>();
             var baseAttachmentFolder = Path.Combine(Directory.GetCurrentDirectory(), "Attachments");
             Directory.CreateDirectory(baseAttachmentFolder);
+
+            // Temp list to handle attachment saving AFTER insert
+            var attachmentsToProcess = new List<(string TableName, string ColName, string RowIndex, IFormFile File, string Desc)>();
 
             using (var conn = GetConnection())
             {
@@ -450,7 +580,7 @@ namespace FreschOne.Controllers
                 {
                     try
                     {
-                        // Load step's table definitions
+                        // Load table metadata
                         var tables = new List<foProcessDetail>();
                         var cmd = new SqlCommand(@"SELECT TableName, FormType, FKColumn, TableDescription 
                                            FROM foProcessDetail 
@@ -478,38 +608,25 @@ namespace FreschOne.Controllers
                             stepDescription = descCmd.ExecuteScalar()?.ToString();
                         }
 
-                        // Get or generate ProcessInstanceID
+                        // Generate ProcessInstanceID
                         if (!processInstanceId.HasValue || processInstanceId == 0)
                         {
                             int? maxProcessInstanceId = null;
-
-                            var tablesProcessInstanceID = new[]
+                            foreach (var table in new[] { "foProcessEvents", "foProcessEventsArchive" })
                             {
-                                "foProcessEvents",
-                                "foProcessEventsArchive",
-                            };
-
-                            foreach (var table in tablesProcessInstanceID)
-                            {
-                                using (var cmdProcessInstanceID = new SqlCommand($"SELECT MAX(ProcessInstanceID) FROM {table}", conn, transaction))
+                                using var maxCmd = new SqlCommand($"SELECT MAX(ProcessInstanceID) FROM {table}", conn, transaction);
+                                var result = maxCmd.ExecuteScalar();
+                                if (result != DBNull.Value && result != null)
                                 {
-                                    var result = cmdProcessInstanceID.ExecuteScalar();
-                                    if (result != DBNull.Value && result != null)
-                                    {
-                                        var id = Convert.ToInt32(result);
-                                        if (!maxProcessInstanceId.HasValue || id > maxProcessInstanceId.Value)
-                                        {
-                                            maxProcessInstanceId = id;
-                                        }
-                                    }
+                                    var id = Convert.ToInt32(result);
+                                    if (!maxProcessInstanceId.HasValue || id > maxProcessInstanceId.Value)
+                                        maxProcessInstanceId = id;
                                 }
                             }
-
                             processInstanceId = (maxProcessInstanceId ?? 0) + 1;
-
                         }
 
-                        // Insert initial event for this step
+                        // Insert initial process event
                         int firstEventId;
                         using (var insertEventCmd = new SqlCommand(@"
                     INSERT INTO foProcessEvents (ProcessInstanceID, StepID, PreviousEventID, UserID, DateAssigned, DateCompleted, Active)
@@ -522,7 +639,7 @@ namespace FreschOne.Controllers
                             firstEventId = Convert.ToInt32(insertEventCmd.ExecuteScalar());
                         }
 
-                        // Insert into all tables in order
+                        // Insert rows per table
                         foreach (var table in tables)
                         {
                             string tableName = table.TableName;
@@ -537,7 +654,6 @@ namespace FreschOne.Controllers
                             foreach (var rowGroup in rows)
                             {
                                 var rowIndex = rowGroup.Key;
-
                                 try
                                 {
                                     var fields = rowGroup.ToDictionary(k => k, k => form[k]);
@@ -555,19 +671,47 @@ namespace FreschOne.Controllers
 
                                         if (colName.StartsWith("attachment_"))
                                         {
-                                            string descKey = $"desc_{tableName}_{colName}_{rowIndex}";
-                                            string fileKey = $"file_{tableName}_{colName}_{rowIndex}";
-                                            string desc = form.TryGetValue(descKey, out var d) ? d.ToString() : "";
-                                            string file = form.Files.FirstOrDefault(f => f.Name == fileKey)?.FileName ?? "";
-                                            value = !string.IsNullOrWhiteSpace(file) ? $"{desc};Attachments/{tableName}/{file}" : null;
+                                            bool isTabular = table.FormType == "T";
+                                            string descKey = isTabular ? $"desc_{tableName}_{colName}_{rowIndex}" : $"desc_{tableName}_{colName}";
+                                            string fileKey = isTabular ? $"file_{tableName}_{colName}_{rowIndex}" : $"file_{tableName}_{colName}";
+                                            var file = form.Files.FirstOrDefault(f => f.Name == fileKey);
+                                            string desc = form.TryGetValue(descKey, out var d) ? d.ToString().Trim() : "";
+
+                                            if (file != null && !string.IsNullOrWhiteSpace(file.FileName))
+                                            {
+                                                var blockedExtensions = new[] { ".exe", ".bat", ".cmd", ".js", ".vbs", ".msi", ".dll" };
+                                                if (blockedExtensions.Contains(Path.GetExtension(file.FileName), StringComparer.OrdinalIgnoreCase))
+                                                {
+                                                    rowErrors.Add($"Blocked file type: '{file.FileName}' is not allowed for '{tableName}', row {rowIndex}");
+                                                    continue;
+                                                }
+
+                                                // Delay value assignment — we'll save file & update DB after insert
+                                                attachmentsToProcess.Add((tableName, colName, rowIndex, file, desc));
+                                                continue; // skip for now
+                                            }
+
+                                            // If editing or no new file
+                                            string hiddenKey = isTabular ? $"{tableName}_{colName}_{rowIndex}" : $"{tableName}_{colName}";
+                                            string existing = form.TryGetValue(hiddenKey, out var h) ? h.ToString() : "";
+
+                                            if (!string.IsNullOrWhiteSpace(existing))
+                                                value = $"{(string.IsNullOrWhiteSpace(desc) ? existing.Split(';')[0] : desc)};{existing.Split(';').ElementAtOrDefault(1)}";
+                                            else
+                                                value = null;
+
+                                            parameterValues[colName] = string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
+                                        }
+                                        else
+                                        {
+                                            parameterValues[colName] = string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
                                         }
 
-                                        parameterValues[colName] = string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
                                         columnsSqlList.Add(colName);
                                         parametersSqlList.Add("@" + colName);
                                     }
 
-                                    // FK resolution
+                                    // FK logic
                                     if (!string.IsNullOrEmpty(fkColumn))
                                     {
                                         var fkBase = fkColumn.Replace("ID", "", StringComparison.OrdinalIgnoreCase).ToLower();
@@ -594,34 +738,69 @@ namespace FreschOne.Controllers
                                     columnsSqlList.AddRange(new[] { "Active", "CreatedUserID", "CreatedDate" });
                                     parametersSqlList.AddRange(new[] { "@Active", "@CreatedUserID", "@CreatedDate" });
 
-                                    // Insert business record
+                                    // INSERT
                                     string insertSql = $"INSERT INTO {tableName} ({string.Join(", ", columnsSqlList)}) OUTPUT INSERTED.ID VALUES ({string.Join(", ", parametersSqlList)})";
                                     int newId;
                                     using (var insertCmd = new SqlCommand(insertSql, conn, transaction))
                                     {
                                         foreach (var col in columnsSqlList)
-                                        {
                                             insertCmd.Parameters.AddWithValue("@" + col, parameterValues[col] ?? DBNull.Value);
-                                        }
+
                                         newId = Convert.ToInt32(insertCmd.ExecuteScalar());
                                         insertedIds[$"{tableName}_{rowIndex}"] = newId;
                                     }
 
-                                    // Insert into foProcessEventsDetail
-                                    var rowSnapshot = parameterValues.ToDictionary(k => k.Key, k => k.Value);
-                                    rowSnapshot["StepDescription"] = stepDescription;
-                                    rowSnapshot["TableDescription"] = table.TableDescription;
-                                    rowSnapshot["interactionType"] = "Insert";
-                                    rowSnapshot["CreatedUserID"] = userId;
-                                    rowSnapshot["CreatedDate"] = DateTime.Now;
+                                    // Save attachments for this row
+                                    // 🗃️ Now process attachments that were deferred
+                                    foreach (var att in attachmentsToProcess.Where(a => a.TableName == tableName && a.RowIndex == rowIndex))
+                                    {
+                                        var file = att.File;
+                                        if (file != null && file.Length > 0)
+                                        {
+                                            var safeDesc = string.IsNullOrWhiteSpace(att.Desc) ? "No Description" : att.Desc;
+                                            var targetFolder = Path.Combine(baseAttachmentFolder, tableName, newId.ToString());
+                                            Directory.CreateDirectory(targetFolder);
 
+                                            var safeFileName = Path.GetFileName(file.FileName);
+                                            var fullPath = Path.Combine(targetFolder, safeFileName);
+                                            var virtualPath = Path.Combine("Attachments", tableName, newId.ToString(), safeFileName);
+
+                                            // 🧠 Save file
+                                            using (var fs = new FileStream(fullPath, FileMode.Create))
+                                            {
+                                                file.CopyTo(fs);
+                                            }
+
+                                            var finalValue = $"{safeDesc};{virtualPath.Replace("\\", "/")}";
+
+                                            // 📌 Update the actual DB record
+                                            using var updateCmd = new SqlCommand($"UPDATE {tableName} SET {att.ColName} = @value WHERE ID = @recordId", conn, transaction);
+                                            updateCmd.Parameters.AddWithValue("@value", finalValue);
+                                            updateCmd.Parameters.AddWithValue("@recordId", newId);
+                                            updateCmd.ExecuteNonQuery();
+
+                                            // 🔁 Sync value into snapshot so it's included in audit JSON
+                                            parameterValues[att.ColName] = finalValue;
+                                        }
+                                    }
+
+
+                                    // Audit
+                                    var rowSnapshot = new Dictionary<string, object>(parameterValues)
+                                    {
+                                        ["RecordID"] = newId,
+                                        ["StepDescription"] = stepDescription,
+                                        ["TableDescription"] = table.TableDescription,
+                                        ["interactionType"] = "Insert",
+                                        ["CreatedUserID"] = userId,
+                                        ["CreatedDate"] = DateTime.Now
+                                    };
                                     string json = JsonConvert.SerializeObject(rowSnapshot);
 
                                     using var auditCmd = new SqlCommand(@"
                                 INSERT INTO foProcessEventsDetail 
                                 (ProcessEventID, ProcessInstanceID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active)
                                 VALUES (@ProcessEventID, @ProcessInstanceID, @StepID, @TableName, @RecordID, @DataSetUpdate, GETDATE(), @CreatedUserID, 1)", conn, transaction);
-
                                     auditCmd.Parameters.AddWithValue("@ProcessEventID", firstEventId);
                                     auditCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
                                     auditCmd.Parameters.AddWithValue("@StepID", stepId);
@@ -633,7 +812,7 @@ namespace FreschOne.Controllers
                                 }
                                 catch (Exception ex)
                                 {
-                                    rowErrors.Add($"Error saving to table '{tableName}', row {rowIndex}: {ex.Message}");
+                                    rowErrors.Add($"Error saving to table '{table.TableName}', row {rowIndex}: {ex.Message}");
                                 }
                             }
                         }
@@ -645,20 +824,38 @@ namespace FreschOne.Controllers
                             return RedirectToAction("MergedPendingItems", "PendingItems", new { userId });
                         }
 
-                        // Handle next step or approval transition
-                        var transitionResult = HandleNextStep(conn, transaction, stepId, firstEventId, processInstanceId, userId, action, SendForApproval, SelectedApproverIds);
-                                             
+                        HandleNextStep(conn, transaction, stepId, firstEventId, processInstanceId, userId, action, SendForApproval, SelectedApproverIds);
 
+                        // ✅ Fetch next step assignment BEFORE committing the transaction
+                        string nextAssignmentMessage = GetNextStepAssignment(conn, transaction, firstEventId,action);
+
+                        // ✅ Now safe to commit
                         transaction.Commit();
 
-                        return RedirectToAction("MergedPendingItems", "PendingItems", new { userId });
+                        // Store message in TempData so it can survive redirect
+                        TempData["SuccessMessage"] = nextAssignmentMessage;
+                        TempData["UserId"] = userId;
+
+                        if (action == "SaveLater")
+                        {
+                            ViewBag.action = "Step Saved Successully";
+                        }
+                        else if (action == "CancelProcess")
+                        {
+                            ViewBag.action = "Process Cancelled Successully";
+                        }
+                        else if (action == "SaveContinue")
+                        {
+                            ViewBag.action = "Step Submitted Successully";
+                        }
+
+                        return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessage, userId, actionheader = ViewBag.action });
 
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        rowErrors.Add(ex.Message);
-                        TempData["RowErrors"] = rowErrors;
+                        TempData["RowErrors"] = new List<string> { ex.Message };
                         TempData["Error"] = "An error occurred while saving step data.";
                         return RedirectToAction("MergedPendingItems", "PendingItems", new { userId });
                     }
@@ -674,6 +871,9 @@ namespace FreschOne.Controllers
             var rowErrors = new List<string>();
             var baseAttachmentFolder = Path.Combine(Directory.GetCurrentDirectory(), "Attachments");
             Directory.CreateDirectory(baseAttachmentFolder);
+
+            var attachmentsToProcess = new List<(string TableName, string ColName, string RowIndex, IFormFile File, string Desc)>();
+
 
             using (var conn = GetConnection())
             {
@@ -764,9 +964,44 @@ namespace FreschOne.Controllers
                                     {
                                         var rawColName = field.Key.Substring(tableName.Length + 1);
                                         var colName = Regex.Replace(rawColName, "_\\d+$", "");
+                                        var value = field.Value.ToString();
+
                                         if (!columnDefs.Contains(colName, StringComparer.OrdinalIgnoreCase)) continue;
 
-                                        var value = field.Value.ToString();
+                                        if (colName.StartsWith("attachment_"))
+                                        {
+                                            bool isTabular = table.FormType == "T";
+                                            string descKey = isTabular ? $"desc_{tableName}_{colName}_{rowIndex}" : $"desc_{tableName}_{colName}";
+                                            string fileKey = isTabular ? $"file_{tableName}_{colName}_{rowIndex}" : $"file_{tableName}_{colName}";
+                                            string hiddenKey = isTabular ? $"{tableName}_{colName}_{rowIndex}" : $"{tableName}_{colName}";
+
+                                            string desc = form.TryGetValue(descKey, out var d) ? d.ToString().Trim() : "";
+                                            var file = form.Files.FirstOrDefault(f => f.Name == fileKey);
+                                            string existing = form.TryGetValue(hiddenKey, out var h) ? h.ToString() : "";
+
+                                            if (file != null && file.Length > 0)
+                                            {
+                                                var blocked = new[] { ".exe", ".bat", ".cmd", ".js", ".vbs", ".msi", ".dll" };
+                                                if (blocked.Contains(Path.GetExtension(file.FileName), StringComparer.OrdinalIgnoreCase))
+                                                {
+                                                    rowErrors.Add($"Blocked file type: '{file.FileName}' is not allowed for '{tableName}', row {rowIndex}");
+                                                    continue;
+                                                }
+
+                                                attachmentsToProcess.Add((tableName, colName, rowIndex, file, desc));
+                                                value = null; // Will set after insert/update
+                                            }
+                                            else if (!string.IsNullOrWhiteSpace(existing))
+                                            {
+                                                value = $"{(string.IsNullOrWhiteSpace(desc) ? existing.Split(';')[0] : desc)};{existing.Split(';').ElementAtOrDefault(1)}";
+                                            }
+                                            else
+                                            {
+                                                value = null;
+                                            }
+                                        }
+
+
                                         parameterValues[colName] = string.IsNullOrWhiteSpace(value) ? DBNull.Value : value;
                                         columnsSqlList.Add(colName);
                                         parametersSqlList.Add("@" + colName);
@@ -837,6 +1072,36 @@ namespace FreschOne.Controllers
                                         recordId = Convert.ToInt32(insertCmd.ExecuteScalar());
                                     }
 
+                                    foreach (var att in attachmentsToProcess.Where(a => a.TableName == tableName && a.RowIndex == rowIndex))
+                                    {
+                                        var file = att.File;
+                                        if (file != null && file.Length > 0)
+                                        {
+                                            var safeDesc = string.IsNullOrWhiteSpace(att.Desc) ? "No Description" : att.Desc;
+                                            var targetFolder = Path.Combine(baseAttachmentFolder, tableName, recordId.ToString());
+                                            Directory.CreateDirectory(targetFolder);
+
+                                            var safeFileName = Path.GetFileName(file.FileName);
+                                            var fullPath = Path.Combine(targetFolder, safeFileName);
+                                            var virtualPath = Path.Combine("Attachments", tableName, recordId.ToString(), safeFileName);
+
+                                            using (var fs = new FileStream(fullPath, FileMode.Create))
+                                            {
+                                                file.CopyTo(fs);
+                                            }
+
+                                            var finalValue = $"{safeDesc};{virtualPath.Replace("\\", "/")}";
+
+                                            using var updateCmd = new SqlCommand($"UPDATE {tableName} SET {att.ColName} = @value WHERE ID = @recordId", conn, transaction);
+                                            updateCmd.Parameters.AddWithValue("@value", finalValue);
+                                            updateCmd.Parameters.AddWithValue("@recordId", recordId);
+                                            updateCmd.ExecuteNonQuery();
+
+                                            // Sync back to audit
+                                            parameterValues[att.ColName] = finalValue;
+                                        }
+                                    }
+
 
                                     insertedIds[$"{tableName}_{rowIndex}"] = recordId;
 
@@ -878,19 +1143,97 @@ namespace FreschOne.Controllers
                             return RedirectToAction("ExecuteStep", new { stepId, processInstanceId, userId });
                         }
 
+                        int previousEventID;
+                        using (var getEventCmd = new SqlCommand(@"
+                        SELECT PreviousEventID FROM foProcessEVent d 
+                        WHERE ID = @EventID 
+                        ORDER BY d.ID DESC", conn, transaction))
+                        {
+                            getEventCmd.Parameters.AddWithValue("@EventID", id);
+                            previousEventID = Convert.ToInt32(getEventCmd.ExecuteScalar());
+                        }
+
+                        if ( previousEventID < 0 )
+                        {
+                            var getApproversCmd = new SqlCommand(@"
+    SELECT DISTINCT UserID 
+    FROM foApprovalEvents 
+    WHERE PreviousEventID = @EventID 
+      AND StepID = 0 
+      AND Active = 1", conn, transaction);
+                            getApproversCmd.Parameters.AddWithValue("@EventID", -id);
+
+                            using var reader = getApproversCmd.ExecuteReader();
+                            var approvers = new List<int>();
+                            while (reader.Read())
+                            {
+                                if (reader["UserID"] != DBNull.Value)
+                                    approvers.Add(Convert.ToInt32(reader["UserID"]));
+                            }
+                            reader.Close();
+
+                            // Reassign all previous ad-hoc approvers
+                            foreach (var approverId in approvers)
+                            {
+                                var insertCmd = new SqlCommand(@"
+        INSERT INTO foApprovalEvents 
+        (ProcessInstanceID, StepID, PreviousEventID, UserID, DateAssigned, Active)
+        VALUES (@ProcessInstanceID, 0, @PreviousEventID, @UserID, GETDATE(), 1)", conn, transaction);
+
+                                insertCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                                insertCmd.Parameters.AddWithValue("@PreviousEventID", -id);
+                                insertCmd.Parameters.AddWithValue("@UserID", approverId);
+                                insertCmd.ExecuteNonQuery();
+                            }
+
+                            using (var markDoneCmd = new SqlCommand(@"
+                            UPDATE foProcessEvents
+                            SET DateCompleted = GETDATE()
+                            WHERE ID = @EventID", conn, transaction))
+                                                {
+                                markDoneCmd.Parameters.AddWithValue("@EventID", id);
+                                markDoneCmd.ExecuteNonQuery();
+                            }
+
+                            transaction.Commit();
+                            ViewBag.action = "Reworked Step Submitted Successully";
+                            string message = "Your step has been resubmitted";
+
+                            return RedirectToAction("StepCompleted", "StepCompleted", new { message, userId, actionheader = ViewBag.action });
+
+                        }
+
+
                         // ✅ Always save data first above
                         // ✅ Now handle what happens after save
 
                         //var transitionResult = HandleNextStep(conn, transaction, stepId, processEventId, processInstanceId, userId, action, form["cancelReason"]);
                         var transitionResult = HandleNextStep(conn, transaction, stepId, processEventId, processInstanceId, userId, action, SendForApproval, SelectedApproverIds, form["cancelReason"]);
 
+                        // ✅ Fetch next step assignment BEFORE committing the transaction
+                        string nextAssignmentMessage = GetNextStepAssignment(conn, transaction, processEventId, action);
 
+                        // ✅ Now safe to commit
                         transaction.Commit();
 
-                        return RedirectToAction("MergedPendingItems", "PendingItems", new { userId });
+                        // Store message in TempData so it can survive redirect
+                        TempData["SuccessMessage"] = nextAssignmentMessage;
+                        TempData["UserId"] = userId;
 
+                        if ( action == "SaveLater")
+                        {
+                            ViewBag.action = "Step Saved Successully";
+                        }
+                        else if ( action == "CancelProcess")
+                        {
+                            ViewBag.action = "Process Cancelled Successully";
+                        }
+                        else if ( action == "SaveContinue")
+                        {
+                            ViewBag.action = "Step Submitted Successully";
+                        }
 
-
+                        return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessage, userId, actionheader = ViewBag.action });
 
                     }
                     catch (Exception ex)
@@ -907,7 +1250,7 @@ namespace FreschOne.Controllers
         {
             var result = new StepTransitionResult();
 
-            // 🔥 Handle cancellation first
+            // 🔥 1. Handle cancellation immediately
             if (action == "CancelProcess")
             {
                 using (var cancelCmd = new SqlCommand(@"
@@ -930,12 +1273,11 @@ namespace FreschOne.Controllers
                 }
 
                 ArchiveProcess(conn, transaction, processInstanceId);
-
                 result.Cancelled = true;
                 return result;
             }
 
-            // 🔥 Always mark current event completed first
+            // 🔥 2. Mark current step as complete
             using (var markDoneCmd = new SqlCommand(@"
         UPDATE foProcessEvents
         SET DateCompleted = GETDATE()
@@ -945,7 +1287,26 @@ namespace FreschOne.Controllers
                 markDoneCmd.ExecuteNonQuery();
             }
 
-            // 🔥 Try to find the next step
+            // 🔁 3. Handle SaveLater immediately
+            if (action == "SaveLater")
+            {
+                using (var insertSelfCmd = new SqlCommand(@"
+            INSERT INTO foProcessEvents
+            (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, Active)
+            VALUES (@ProcessInstanceID, @StepID, @PreviousEventID, NULL, @UserID, GETDATE(), 1)", conn, transaction))
+                {
+                    insertSelfCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                    insertSelfCmd.Parameters.AddWithValue("@StepID", currentStepId);
+                    insertSelfCmd.Parameters.AddWithValue("@PreviousEventID", currentEventId);
+                    insertSelfCmd.Parameters.AddWithValue("@UserID", userId);
+                    insertSelfCmd.ExecuteNonQuery();
+                }
+
+                result.NextStepExists = true;
+                return result;
+            }
+
+            // 🔄 4. Try get next step
             long? nextStepId = null;
             object nextGroupId = DBNull.Value, nextUserId = DBNull.Value;
 
@@ -970,28 +1331,16 @@ namespace FreschOne.Controllers
 
             if (nextStepId.HasValue)
             {
-                // 🔥 Move to next step
-                object assignedGroupId = nextGroupId;
-                object assignedUserId = nextUserId;
-                int stepToAssign = (int)nextStepId.Value;
-
-                if (action == "SaveLater")
-                {
-                    assignedGroupId = DBNull.Value;
-                    assignedUserId = userId;
-                    stepToAssign = currentStepId; // Stay on current step
-                }
-
                 using (var insertNextCmd = new SqlCommand(@"
             INSERT INTO foProcessEvents
             (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, Active)
             VALUES (@ProcessInstanceID, @StepID, @PreviousEventID, @GroupID, @UserID, GETDATE(), 1)", conn, transaction))
                 {
                     insertNextCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                    insertNextCmd.Parameters.AddWithValue("@StepID", stepToAssign);
+                    insertNextCmd.Parameters.AddWithValue("@StepID", (int)nextStepId.Value);
                     insertNextCmd.Parameters.AddWithValue("@PreviousEventID", currentEventId);
-                    insertNextCmd.Parameters.AddWithValue("@GroupID", assignedGroupId);
-                    insertNextCmd.Parameters.AddWithValue("@UserID", assignedUserId);
+                    insertNextCmd.Parameters.AddWithValue("@GroupID", nextGroupId);
+                    insertNextCmd.Parameters.AddWithValue("@UserID", nextUserId);
                     insertNextCmd.ExecuteNonQuery();
                 }
 
@@ -999,10 +1348,9 @@ namespace FreschOne.Controllers
             }
             else
             {
-                // 🔥 No next step — check approvals
+                // 🔍 5. No next step — check ad-hoc or predefined approvals
                 if (SendForApproval && SelectedApproverIds?.Any() == true)
                 {
-                    // ➡️ Insert ad-hoc approvals into foApprovalEvents
                     foreach (var approverId in SelectedApproverIds)
                     {
                         using (var insertApprovalCmd = new SqlCommand(@"
@@ -1011,7 +1359,7 @@ namespace FreschOne.Controllers
                     VALUES (@ProcessInstanceID, 0, @PreviousEventID, NULL, @UserID, GETDATE(), 1)", conn, transaction))
                         {
                             insertApprovalCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                            insertApprovalCmd.Parameters.AddWithValue("@PreviousEventID", -currentEventId); // 🧠 Negative for rework tracking
+                            insertApprovalCmd.Parameters.AddWithValue("@PreviousEventID", -currentEventId);
                             insertApprovalCmd.Parameters.AddWithValue("@UserID", approverId);
                             insertApprovalCmd.ExecuteNonQuery();
                         }
@@ -1021,12 +1369,8 @@ namespace FreschOne.Controllers
                 }
                 else
                 {
-                    // 🔥 No ad-hoc approvals — check if predefined approvals exist
                     int processId;
-                    using (var processIdCmd = new SqlCommand(@"
-                SELECT ProcessID
-                FROM foProcessSteps
-                WHERE ID = @CurrentStepID", conn, transaction))
+                    using (var processIdCmd = new SqlCommand("SELECT ProcessID FROM foProcessSteps WHERE ID = @CurrentStepID", conn, transaction))
                     {
                         processIdCmd.Parameters.AddWithValue("@CurrentStepID", currentStepId);
                         processId = Convert.ToInt32(processIdCmd.ExecuteScalar());
@@ -1080,7 +1424,6 @@ namespace FreschOne.Controllers
 
             return result;
         }
-
 
 
         private List<SelectListItem> GetForeignKeyOptions(string tableName)
@@ -1270,15 +1613,18 @@ namespace FreschOne.Controllers
 
         private void PopulateProcessHistory(SqlConnection conn, SqlTransaction transaction, int? processInstanceId)
         {
+            var ignoredColumns = GetIgnoredColumns(conn);
+
             if (!processInstanceId.HasValue) return;
 
             var history = new List<ProcessEventAuditViewModel>();
 
             var cmd = new SqlCommand(@"
-    SELECT ProcessEventID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, StepNo
-FROM foProcessEventsDetail a LEFT OUTER JOIN foProcessSteps b on a.StepID = b.ID
-WHERE ProcessInstanceID = @ProcessInstanceID
-ORDER BY CreatedDate", conn, transaction);
+        SELECT a.id AS DetailID, ProcessEventID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, StepNo, c.FirstName + ' '+ c.LastName AS FullName
+    FROM foProcessEventsDetail a LEFT OUTER JOIN foProcessSteps b on a.StepID = b.ID
+    LEFT JOIN foUsers c on c.ID = a.CreatedUserID
+    WHERE ProcessInstanceID = @ProcessInstanceID
+    ORDER BY CreatedDate", conn, transaction);
 
             cmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
 
@@ -1287,16 +1633,23 @@ ORDER BY CreatedDate", conn, transaction);
                 while (reader.Read())
                 {
                     var json = reader["DataSetUpdate"].ToString();
-                    var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                    var rawData = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                    // Filter ignored columns from the dictionary
+                    var data = rawData
+                        .Where(kvp => !ignoredColumns.Contains(kvp.Key))
+                        .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
                     history.Add(new ProcessEventAuditViewModel
                     {
+                        DetailID = Convert.ToInt32(reader["DetailID"]),
                         ProcessEventID = Convert.ToInt32(reader["ProcessEventID"]),
                         StepNo = Convert.ToDecimal(reader["StepNo"]),
                         TableName = reader["TableName"].ToString(),
                         RecordID = Convert.ToInt32(reader["RecordID"]),
                         CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
                         CreatedUserID = Convert.ToInt32(reader["CreatedUserID"]),
+                        FullName = reader["FullName"].ToString(),
                         Data = data
                     });
                 }
@@ -1304,8 +1657,9 @@ ORDER BY CreatedDate", conn, transaction);
 
             // 🔹 APPROVAL EVENTS
             var approvalCmd = new SqlCommand(@"
-        SELECT ApprovalEventID, StepID, 'foApproval' AS TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, StepNo
+        SELECT  a.id AS DetailID, ApprovalEventID, StepID, 'foApproval' AS TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, ISNULL ( StepNo,'1.00') AS StepNo, c.FirstName + ' '+ c.LastName AS FullName
 FROM foApprovalEventsDetail a LEFT OUTER JOIN foApprovalSteps b on a.StepID = b.ID
+LEFT JOIN foUsers c on c.ID = a.CreatedUserID
         WHERE ProcessInstanceID = @ProcessInstanceID
         ORDER BY CreatedDate", conn, transaction);
 
@@ -1317,17 +1671,25 @@ FROM foApprovalEventsDetail a LEFT OUTER JOIN foApprovalSteps b on a.StepID = b.
                 while (reader.Read())
                 {
                     var json = reader["DataSetUpdate"].ToString();
-                    var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                    var rawData = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                    // Filter ignored columns from the dictionary
+                    var data = rawData
+                        .Where(kvp => !ignoredColumns.Contains(kvp.Key))
+                        .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
                     data["StepType"] = "Approval";
 
                     approvalHistory.Add(new ProcessEventAuditViewModel
                     {
+                        DetailID = Convert.ToInt32(reader["DetailID"]),
                         ProcessEventID = Convert.ToInt32(reader["ApprovalEventID"]),
                         StepNo = Convert.ToDecimal(reader["StepNo"]),
                         TableName = reader["TableName"].ToString(),
                         RecordID = Convert.ToInt32(reader["RecordID"]),
                         CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
                         CreatedUserID = Convert.ToInt32(reader["CreatedUserID"]),
+                        FullName = reader["FullName"].ToString(),
+
                         Data = data
                     });
                 }
@@ -1546,7 +1908,7 @@ FROM foApprovalEventsDetail a LEFT OUTER JOIN foApprovalSteps b on a.StepID = b.
        
 
         [HttpPost]
-        public IActionResult ClaimStep(int id, int userId, int stepId, int processInstanceId, int processId)
+        public IActionResult ClaimStep(int EventID, int userId, int stepId, int processInstanceId, int processId)
         {
             using var conn = GetConnection();
             conn.Open();
@@ -1557,7 +1919,7 @@ FROM foApprovalEventsDetail a LEFT OUTER JOIN foApprovalSteps b on a.StepID = b.
         WHERE ID = @id AND UserID IS NULL", conn);
 
             cmd.Parameters.AddWithValue("@UserID", userId);
-            cmd.Parameters.AddWithValue("@id", id);
+            cmd.Parameters.AddWithValue("@id", EventID);
             cmd.ExecuteNonQuery();
 
             // Redirect straight to the step form after claiming
@@ -1594,7 +1956,112 @@ FROM foApprovalEventsDetail a LEFT OUTER JOIN foApprovalSteps b on a.StepID = b.
             return list;
         }
 
+        private string GetNextStepAssignment(SqlConnection conn, SqlTransaction transaction, int currentEventId, string action)
+        {
+            var assignees = new List<string>();
+            string stepDescription = null;
+            DateTime? dateCompleted = null;
 
+            // 🔍 Fetch timestamp from current event
+            using (var tsCmd = new SqlCommand(@"SELECT DateCompleted FROM foProcessEvents WHERE ID = @ID", conn, transaction))
+            {
+                tsCmd.Parameters.AddWithValue("@ID", currentEventId);
+                var result = tsCmd.ExecuteScalar();
+                if (result != DBNull.Value && result != null)
+                    dateCompleted = Convert.ToDateTime(result);
+            }
+
+            // 1️⃣ Process Steps
+            using (var processCmd = new SqlCommand(@"
+        SELECT pe.UserID, u.FirstName, u.LastName, 
+               pe.GroupID, g.Description AS GroupName, 
+               s.StepDescription,
+               pe.DateCompleted
+        FROM foProcessEvents pe
+        LEFT JOIN foUsers u ON pe.UserID = u.ID
+        LEFT JOIN foGroups g ON pe.GroupID = g.ID
+        LEFT JOIN foProcessSteps s ON s.ID = pe.StepID
+        WHERE pe.PreviousEventID = @EventID", conn, transaction))
+            {
+                processCmd.Parameters.AddWithValue("@EventID", currentEventId);
+                using var reader = processCmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    stepDescription ??= reader["StepDescription"]?.ToString() ?? "(Unnamed Step)";
+                    dateCompleted ??= reader["DateCompleted"] != DBNull.Value ? Convert.ToDateTime(reader["DateCompleted"]) : (DateTime?)null;
+
+                    if (reader["UserID"] != DBNull.Value)
+                        assignees.Add($"👤 {reader["FirstName"]} {reader["LastName"]}");
+                    else if (reader["GroupID"] != DBNull.Value)
+                        assignees.Add($"🧑‍🤝‍🧑 {reader["GroupName"]}");
+                }
+            }
+
+            // 2️⃣ Approval Steps
+            using (var approvalCmd = new SqlCommand(@"
+        SELECT ae.UserID, u.FirstName, u.LastName,
+               ae.GroupID, g.Description AS GroupName,
+               s.StepDescription,
+               ae.DateCompleted
+        FROM foApprovalEvents ae
+        LEFT JOIN foUsers u ON ae.UserID = u.ID
+        LEFT JOIN foGroups g ON ae.GroupID = g.ID
+        LEFT JOIN foApprovalSteps s ON s.ID = ae.StepID
+        WHERE ae.PreviousEventID = @EventID", conn, transaction))
+            {
+                approvalCmd.Parameters.AddWithValue("@EventID", -currentEventId);
+                using var reader = approvalCmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    stepDescription ??= reader["StepDescription"]?.ToString() ?? "(Unnamed Approval Step)";
+                    dateCompleted ??= reader["DateCompleted"] != DBNull.Value ? Convert.ToDateTime(reader["DateCompleted"]) : (DateTime?)null;
+
+                    if (reader["UserID"] != DBNull.Value)
+                        assignees.Add($"👤 {reader["FirstName"]} {reader["LastName"]}");
+                    else if (reader["GroupID"] != DBNull.Value)
+                        assignees.Add($"🧑‍🤝‍🧑 {reader["GroupName"]}");
+                }
+            }
+
+            // ✅ Final Footer with Timestamp + Event ID
+            string timestamp = dateCompleted.HasValue
+                ? $"<div><small class='text-muted'>Submitted on {dateCompleted.Value:yyyy-MM-dd HH:mm:ss}</small></div>"
+                : "";
+            string footer = $@"<hr>{timestamp}
+                       <div><small class='text-muted'>ID: {currentEventId}</small></div>";
+
+            string message = "";
+            if (action == "SaveLater")
+            {
+                message = "Your step has been saved";
+            }
+            else if (action == "CancelProcess")
+            {
+                message = "The process has been cancelled";
+            }
+            else if (action == "SaveContinue")
+            {
+                message = "Your step has been submitted";
+            }
+
+            // ✅ Final Message
+            if (assignees.Any())
+            {
+                string assigneeList = string.Join("<br>- ", assignees);
+                return $@"✅ {message}.<br>
+                  The next step is <strong>{stepDescription}</strong><br>
+                  Assigned to:<br> {assigneeList}
+                  {footer}";
+            }
+            else
+            {
+                return $@"✅ {message}.<br>
+                  Process has been completed.
+                  {footer}";
+            }
+        }
+
+       
 
     }
 

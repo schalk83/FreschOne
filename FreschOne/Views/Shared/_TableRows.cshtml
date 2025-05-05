@@ -22,7 +22,6 @@
     var values = tablePrefilledRows[i - Model.StartIndex];
 
     <tr data-row-index="@i">
-        <!-- 🔐 Hidden RecordID inside first <td> -->
         @{
             var recordIdKey = "RecordID";
             var recordId = values.ContainsKey(recordIdKey) ? values[recordIdKey]?.ToString() : "";
@@ -41,7 +40,7 @@
             var columnLength = Model.ColumnLengths.ContainsKey(column) ? Model.ColumnLengths[column] : 255;
             var value = values.ContainsKey(column) ? values[column]?.ToString() : "";
 
-            <td>
+            <td data-column="@column.ToLower()">
                 @if (column.StartsWith("attachment_"))
                 {
                     string[] parts = value?.Split(';') ?? new string[2];
@@ -59,11 +58,15 @@
                 }
                 else if (columnType is "varchar" && columnLength > 255)
                 {
-                    <textarea name="@fieldName" class="form-control">@value</textarea>
+                    <textarea name="@fieldName" class="form-control summary-trigger">@value</textarea>
                 }
                 else if (columnType is "int" or "bigint" or "decimal")
                 {
-                    <input type="number" name="@fieldName" value="@value" class="form-control input-short" />
+                    <input type="number"
+                           name="@fieldName"
+                           value="@value"
+                           class="form-control input-short summary-trigger"
+                           step="any" />
                 }
                 else if (columnType == "bit")
                 {
@@ -76,7 +79,7 @@
                 }
                 else
                 {
-                    <input type="text" name="@fieldName" value="@value" class="form-control" />
+                    <input type="text" name="@fieldName" value="@value" class="form-control summary-trigger" />
                 }
             </td>
         }
