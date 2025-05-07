@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{subject}}</title>
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .email-header {
+            background-color: #1f885a;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 22px;
+        }
+
+        .email-body {
+            padding: 30px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .email-footer {
+            background: #f1f1f1;
+            padding: 15px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            {{subject}}
+        </div>
+        <div class="email-body">
+            {{body}}
+        </div>
+        <div class="email-footer">
+            &copy; 2025 FreshOne Systems. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

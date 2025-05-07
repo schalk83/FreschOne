@@ -1,11 +1,13 @@
 ﻿
 using DinkToPdf;
+using FreschOne.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddHostedService<EmailProcessorService>();
 
 builder.Services.AddDistributedMemoryCache(); // Use a distributed cache
 builder.Services.AddSession(options =>

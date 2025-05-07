@@ -1,22 +1,38 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\",
+  "WorkspaceRootPath": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\controllers\\approvaleventscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\approvaleventscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\freedom.nxumalo\\source\\repos\\jumpman new\\freschone\\dataaccess\\sendemail.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\dataaccess\\sendemail.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\views\\processevents\\pendingstep.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\processevents\\pendingstep.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\freedom.nxumalo\\source\\repos\\jumpman new\\freschone\\dataaccess\\emailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\dataaccess\\emailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\controllers\\processeventscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\freedom.nxumalo\\source\\repos\\jumpman new\\freschone\\services\\emailprocessorservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\services\\emailprocessorservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\freedom.nxumalo\\source\\repos\\jumpman new\\freschone\\controllers\\processeventscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\processeventscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_deployment2025\\freschone\\freschone\\controllers\\pendingitemscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\pendingitemscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\freedom.nxumalo\\source\\repos\\jumpman new\\freschone\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\freedom.nxumalo\\source\\repos\\jumpman new\\freschone\\controllers\\foemailtemplatecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\foemailtemplatecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\freedom.nxumalo\\source\\repos\\jumpman new\\freschone\\views\\foemailtemplate\\create.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\foemailtemplate\\create.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\freedom.nxumalo\\source\\repos\\jumpman new\\freschone\\views\\foemailtemplate\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\foemailtemplate\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     }
   ],
   "DocumentGroupContainers": [
@@ -26,58 +42,110 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "SendEmail.cs",
+              "DocumentMoniker": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\DataAccess\\SendEmail.cs",
+              "RelativeDocumentMoniker": "FreschOne\\DataAccess\\SendEmail.cs",
+              "ToolTip": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\DataAccess\\SendEmail.cs*",
+              "RelativeToolTip": "FreschOne\\DataAccess\\SendEmail.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAuwA0AAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-05T12:49:11.199Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "PendingStep.cshtml",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
-              "RelativeDocumentMoniker": "FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
-              "RelativeToolTip": "FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
-              "ViewState": "AgIAAGwBAAAAAAAAAAAYwH4BAAAWAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-05-04T19:09:14.105Z",
+              "Title": "EmailService.cs",
+              "DocumentMoniker": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\DataAccess\\EmailService.cs",
+              "RelativeDocumentMoniker": "FreschOne\\DataAccess\\EmailService.cs",
+              "ToolTip": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\DataAccess\\EmailService.cs",
+              "RelativeToolTip": "FreschOne\\DataAccess\\EmailService.cs",
+              "ViewState": "AgIAADYAAAAAAAAAAAAUwEcAAAA1AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-05T10:02:07.093Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Program.cs",
+              "RelativeDocumentMoniker": "FreschOne\\Program.cs",
+              "ToolTip": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Program.cs",
+              "RelativeToolTip": "FreschOne\\Program.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAAkAAAA3AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-05T10:53:41.596Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
-              "Title": "ProcessEventsController.cs",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\ProcessEventsController.cs",
-              "RelativeDocumentMoniker": "FreschOne\\Controllers\\ProcessEventsController.cs",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\ProcessEventsController.cs",
-              "RelativeToolTip": "FreschOne\\Controllers\\ProcessEventsController.cs",
-              "ViewState": "AgIAAPUBAAAAAAAAAADwvxcCAAAAAAAAAAAAAA==",
+              "Title": "EmailProcessorService.cs",
+              "DocumentMoniker": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Services\\EmailProcessorService.cs",
+              "RelativeDocumentMoniker": "FreschOne\\Services\\EmailProcessorService.cs",
+              "ToolTip": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Services\\EmailProcessorService.cs",
+              "RelativeToolTip": "FreschOne\\Services\\EmailProcessorService.cs",
+              "ViewState": "AgIAABUAAAAAAAAAAAAIwCcAAAA1AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-04T15:28:08.618Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "ApprovalEventsController.cs",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\ApprovalEventsController.cs",
-              "RelativeDocumentMoniker": "FreschOne\\Controllers\\ApprovalEventsController.cs",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\ApprovalEventsController.cs",
-              "RelativeToolTip": "FreschOne\\Controllers\\ApprovalEventsController.cs",
-              "ViewState": "AgIAAAQCAAAAAAAAAAAAACQCAABRAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-04T15:23:18.967Z",
+              "WhenOpened": "2025-05-05T10:53:25.11Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 3,
-              "Title": "PendingItemsController.cs",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\PendingItemsController.cs",
-              "RelativeDocumentMoniker": "FreschOne\\Controllers\\PendingItemsController.cs",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_Deployment2025\\FreschOne\\FreschOne\\Controllers\\PendingItemsController.cs",
-              "RelativeToolTip": "FreschOne\\Controllers\\PendingItemsController.cs",
-              "ViewState": "AgIAAAoAAAAAAAAAAAAAACoAAAAAAAAAAAAAAA==",
+              "Title": "ProcessEventsController.cs",
+              "DocumentMoniker": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Controllers\\ProcessEventsController.cs",
+              "RelativeDocumentMoniker": "FreschOne\\Controllers\\ProcessEventsController.cs",
+              "ToolTip": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Controllers\\ProcessEventsController.cs",
+              "RelativeToolTip": "FreschOne\\Controllers\\ProcessEventsController.cs",
+              "ViewState": "AgIAAHoAAAAAAAAAAAAgwAMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-04T15:20:16.645Z",
+              "WhenOpened": "2025-05-05T09:59:16.948Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Create.cshtml",
+              "DocumentMoniker": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Views\\foEmailTemplate\\Create.cshtml",
+              "RelativeDocumentMoniker": "FreschOne\\Views\\foEmailTemplate\\Create.cshtml",
+              "ToolTip": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Views\\foEmailTemplate\\Create.cshtml",
+              "RelativeToolTip": "FreschOne\\Views\\foEmailTemplate\\Create.cshtml",
+              "ViewState": "AgIAABUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-05T09:55:06.495Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Views\\foEmailTemplate\\Index.cshtml",
+              "RelativeDocumentMoniker": "FreschOne\\Views\\foEmailTemplate\\Index.cshtml",
+              "ToolTip": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Views\\foEmailTemplate\\Index.cshtml",
+              "RelativeToolTip": "FreschOne\\Views\\foEmailTemplate\\Index.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-05T09:53:20.234Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "foEmailTemplateController.cs",
+              "DocumentMoniker": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Controllers\\foEmailTemplateController.cs",
+              "RelativeDocumentMoniker": "FreschOne\\Controllers\\foEmailTemplateController.cs",
+              "ToolTip": "C:\\Users\\freedom.nxumalo\\source\\repos\\Jumpman new\\FreschOne\\Controllers\\foEmailTemplateController.cs",
+              "RelativeToolTip": "FreschOne\\Controllers\\foEmailTemplateController.cs",
+              "ViewState": "AgIAACUAAAAAAAAAAAAAwDkAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-05T09:49:18.686Z",
               "EditorCaption": ""
             }
           ]

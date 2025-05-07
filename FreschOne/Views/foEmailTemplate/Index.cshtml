@@ -1,0 +1,45 @@
+﻿@model List<FreschOne.Models.foEmailTemplate>
+@{
+    ViewData["Title"] = "Email Templates";
+    var userid = ViewBag.userid;
+}
+<partial name="_Sidebar" />
+<h2>Email Templates</h2>
+
+<a class="btn btn-primary mb-3" asp-action="Create" asp-route-userid="@userid">Add New Template</a>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<table class="table table-bordered table-hover">
+    <thead class="thead-light">
+        <tr>
+            <th>Template Type</th>
+            <th>Subject</th>
+            <th>Active</th>
+            <th style="width:180px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.TemplateType</td>
+                <td>@item.EmailSubject</td>
+                <td>@item.Active</td>
+                <td>
+                    <a class="btn btn-sm btn-dark" asp-action="Edit" asp-route-id="@item.ID" asp-route-userid="@userid">Edit</a>
+                    <form asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this template?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Drawing.Charts;
+using FreschOne.DataAccess;
 
 
 namespace FreschOne.Controllers
@@ -17,6 +18,8 @@ namespace FreschOne.Controllers
     {
         public ProcessEventsController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
         private SqlConnection GetConnection() => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
+        EmailService emailService= new EmailService();
 
 
         public IActionResult CreateStep(int processId, int? stepId, int? processInstanceId, int userId)
@@ -1142,10 +1145,10 @@ namespace FreschOne.Controllers
                             TempData["RowErrors"] = rowErrors;
                             return RedirectToAction("ExecuteStep", new { stepId, processInstanceId, userId });
                         }
-
+                        //Freedom
                         int previousEventID;
                         using (var getEventCmd = new SqlCommand(@"
-                        SELECT PreviousEventID FROM foProcessEVent d 
+                        SELECT PreviousEventID FROM foProcessEvents d 
                         WHERE ID = @EventID 
                         ORDER BY d.ID DESC", conn, transaction))
                         {
@@ -1363,9 +1366,20 @@ namespace FreschOne.Controllers
                             insertApprovalCmd.Parameters.AddWithValue("@UserID", approverId);
                             insertApprovalCmd.ExecuteNonQuery();
                         }
+                        try
+                        {
+                            emailService.QueueEmailNotification(conn, transaction,(long)processInstanceId, currentEventId, 0,approverId,"New");
+                        }
+                        catch (Exception)
+                        {
+
+
+                        }
                     }
 
                     result.ApprovalStarted = true;
+                   
+                  //Freedom
                 }
                 else
                 {
@@ -1411,7 +1425,15 @@ namespace FreschOne.Controllers
                             insertApprovalEventCmd.Parameters.AddWithValue("@UserID", userIdApproval);
                             insertApprovalEventCmd.ExecuteNonQuery();
                         }
+                        try
+                        {
+                            emailService.QueueEmailNotification(conn, transaction, (long)processInstanceId, currentEventId, (long)groupId, 0, "New");
+                        }
+                        catch (Exception)
+                        {
 
+
+                        }
                         result.ApprovalStarted = true;
                     }
                     else
