@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Wordprocessing;
 
 
 namespace FreschOne.Controllers
@@ -865,7 +866,7 @@ namespace FreschOne.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult SavePendingStepData(IFormCollection form, int userId, int id, int stepId, int processInstanceId, string action, bool SendForApproval = false, List<int> SelectedApproverIds = null)
+        public IActionResult SavePendingStepData(IFormCollection form, int userId, int EventID, int stepId, int processInstanceId, string action, bool SendForApproval = false, List<int> SelectedApproverIds = null)
         {
             var insertedIds = new Dictionary<string, int>();
             var rowErrors = new List<string>();
@@ -1145,63 +1146,95 @@ namespace FreschOne.Controllers
 
                         int previousEventID;
                         using (var getEventCmd = new SqlCommand(@"
-                        SELECT PreviousEventID FROM foProcessEVent d 
+                        SELECT PreviousEventID FROM foProcessEvents d 
                         WHERE ID = @EventID 
                         ORDER BY d.ID DESC", conn, transaction))
                         {
-                            getEventCmd.Parameters.AddWithValue("@EventID", id);
+                            getEventCmd.Parameters.AddWithValue("@EventID", EventID);
                             previousEventID = Convert.ToInt32(getEventCmd.ExecuteScalar());
                         }
 
-                        if ( previousEventID < 0 )
+                        if (previousEventID < 0)
                         {
-                            var getApproversCmd = new SqlCommand(@"
-    SELECT DISTINCT UserID 
-    FROM foApprovalEvents 
-    WHERE PreviousEventID = @EventID 
-      AND StepID = 0 
-      AND Active = 1", conn, transaction);
-                            getApproversCmd.Parameters.AddWithValue("@EventID", -id);
-
-                            using var reader = getApproversCmd.ExecuteReader();
                             var approvers = new List<int>();
-                            while (reader.Read())
-                            {
-                                if (reader["UserID"] != DBNull.Value)
-                                    approvers.Add(Convert.ToInt32(reader["UserID"]));
-                            }
-                            reader.Close();
+                            var assignees = new List<string>();
 
-                            // Reassign all previous ad-hoc approvers
+                            // 🔍 Step 1: Get distinct UserIDs
+                            var getApproversCmd = new SqlCommand(@"
+        SELECT DISTINCT ae.UserID
+        FROM foApprovalEvents ae
+        WHERE ae.PreviousEventID IN (
+            SELECT ae2.PreviousEventID
+            FROM foApprovalEvents ae2
+            WHERE ae2.ID IN (
+                SELECT -pe.PreviousEventID
+                FROM foProcessEvents pe
+                WHERE pe.ID = @EventID AND pe.Active = 1
+            )
+            AND ae2.StepID = 0
+        )", conn, transaction);
+                            getApproversCmd.Parameters.AddWithValue("@EventID", EventID);
+
+                            using (var reader = getApproversCmd.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    if (reader["UserID"] != DBNull.Value)
+                                        approvers.Add(Convert.ToInt32(reader["UserID"]));
+                                }
+                            }
+
+                            // 🔁 Step 2: Reinsert approvers and build assignee list
                             foreach (var approverId in approvers)
                             {
                                 var insertCmd = new SqlCommand(@"
-        INSERT INTO foApprovalEvents 
-        (ProcessInstanceID, StepID, PreviousEventID, UserID, DateAssigned, Active)
-        VALUES (@ProcessInstanceID, 0, @PreviousEventID, @UserID, GETDATE(), 1)", conn, transaction);
+            INSERT INTO foApprovalEvents 
+            (ProcessInstanceID, StepID, PreviousEventID, UserID, DateAssigned, Active)
+            VALUES (@ProcessInstanceID, 0, @PreviousEventID, @UserID, GETDATE(), 1)", conn, transaction);
 
                                 insertCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-                                insertCmd.Parameters.AddWithValue("@PreviousEventID", -id);
+                                insertCmd.Parameters.AddWithValue("@PreviousEventID", -EventID);
                                 insertCmd.Parameters.AddWithValue("@UserID", approverId);
                                 insertCmd.ExecuteNonQuery();
+
+                                // 🔍 Step 3: Get user name
+                                var userCmd = new SqlCommand("SELECT FirstName, LastName FROM foUsers WHERE ID = @UserID", conn, transaction);
+                                userCmd.Parameters.AddWithValue("@UserID", approverId);
+                                using var userReader = userCmd.ExecuteReader();
+                                if (userReader.Read())
+                                {
+                                    var name = $"👤 {userReader["FirstName"]} {userReader["LastName"]}";
+                                    assignees.Add(name);
+                                }
                             }
 
-                            using (var markDoneCmd = new SqlCommand(@"
+                            // ✅ Mark the process event as done
+                            var markDoneCmd = new SqlCommand(@"
                             UPDATE foProcessEvents
                             SET DateCompleted = GETDATE()
-                            WHERE ID = @EventID", conn, transaction))
-                                                {
-                                markDoneCmd.Parameters.AddWithValue("@EventID", id);
-                                markDoneCmd.ExecuteNonQuery();
-                            }
+                            WHERE ID = @EventID", conn, transaction);
+                            markDoneCmd.Parameters.AddWithValue("@EventID", EventID);
+                            markDoneCmd.ExecuteNonQuery();
 
                             transaction.Commit();
-                            ViewBag.action = "Reworked Step Submitted Successully";
+
+                            // ✅ Compose final message
+                            ViewBag.action = "Step resubmitted successfully";
                             string message = "Your step has been resubmitted";
 
-                            return RedirectToAction("StepCompleted", "StepCompleted", new { message, userId, actionheader = ViewBag.action });
+                            if (assignees.Any())
+                            {
+                                message += "<br>Reassigned to:<br> - " + string.Join("<br>- ", assignees);
+                            }
 
+                            return RedirectToAction("StepCompleted", "StepCompleted", new
+                            {
+                                message,
+                                userId,
+                                actionheader = ViewBag.action
+                            });
                         }
+
 
 
                         // ✅ Always save data first above
@@ -1232,6 +1265,9 @@ namespace FreschOne.Controllers
                         {
                             ViewBag.action = "Step Submitted Successully";
                         }
+
+
+                     
 
                         return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessage, userId, actionheader = ViewBag.action });
 
@@ -1580,7 +1616,6 @@ namespace FreschOne.Controllers
         SELECT ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active, Cancelled
         FROM foProcessEvents
         WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
-
             archiveEventsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
             archiveEventsCmd.ExecuteNonQuery();
 
@@ -1590,25 +1625,46 @@ namespace FreschOne.Controllers
         SELECT ProcessEventID, ProcessInstanceID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active
         FROM foProcessEventsDetail
         WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
-
             archiveDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
             archiveDetailsCmd.ExecuteNonQuery();
 
-            // 🔥 Deactivate or delete original process events
-            var deactivateCmd = new SqlCommand(@"
-        DELETE FROM  foProcessEvents
+            // 🟰 Copy Approval Events into Archive
+            var archiveApprovalCmd = new SqlCommand(@"
+        INSERT INTO foApprovalEventsArchive (ProcessInstanceID, StepID, GroupID, UserID, DateAssigned, DateCompleted, Active)
+        SELECT ProcessInstanceID, StepID, GroupID, UserID, DateAssigned, DateCompleted, Active
+        FROM foApprovalEvents
         WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            archiveApprovalCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            archiveApprovalCmd.ExecuteNonQuery();
 
-            deactivateCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-            deactivateCmd.ExecuteNonQuery();
-
-            var deactivateDetailsCmd = new SqlCommand(@"
-        DELETE FROM foProcessEventsDetail
+            // 🟰 Copy Approval Event Details into Archive
+            var archiveApprovalDetailsCmd = new SqlCommand(@"
+        INSERT INTO foApprovalEventsDetailArchive (ApprovalEventID, ProcessInstanceID, StepID, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active)
+        SELECT ApprovalEventID, ProcessInstanceID, StepID, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active
+        FROM foApprovalEventsDetail
         WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            archiveApprovalDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            archiveApprovalDetailsCmd.ExecuteNonQuery();
 
-            deactivateDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-            deactivateDetailsCmd.ExecuteNonQuery();
+            // 🔥 Delete or deactivate process events
+            var deleteProcEventsCmd = new SqlCommand("DELETE FROM foProcessEvents WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            deleteProcEventsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            deleteProcEventsCmd.ExecuteNonQuery();
+
+            var deleteProcDetailsCmd = new SqlCommand("DELETE FROM foProcessEventsDetail WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            deleteProcDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            deleteProcDetailsCmd.ExecuteNonQuery();
+
+            // 🔥 Delete or deactivate approval events
+            var deleteApprovalCmd = new SqlCommand("DELETE FROM foApprovalEvents WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            deleteApprovalCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            deleteApprovalCmd.ExecuteNonQuery();
+
+            var deleteApprovalDetailsCmd = new SqlCommand("DELETE FROM foApprovalEventsDetail WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            deleteApprovalDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            deleteApprovalDetailsCmd.ExecuteNonQuery();
         }
+
 
 
         private void PopulateProcessHistory(SqlConnection conn, SqlTransaction transaction, int? processInstanceId)

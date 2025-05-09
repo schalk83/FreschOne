@@ -1,0 +1,54 @@
+﻿@model FreschOne.Models.foTableColumns
+
+@{
+    ViewData["Title"] = "Edit Column";
+    int userid = ViewBag.userid;
+    long tableId = ViewBag.TableID;
+}
+
+<partial name="_Sidebar" />
+
+<h2 class="mb-4">✏️ Edit Column</h2>
+
+<form asp-action="Edit" method="post" asp-route-userid="@userid">
+    <input type="hidden" asp-for="ID" />
+    <input type="hidden" asp-for="TableID" />
+
+    <div class="mb-3">
+        <label asp-for="ColumnName" class="form-label"></label>
+        <input asp-for="ColumnName" class="form-control" />
+        <span asp-validation-for="ColumnName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ColumnOrder" class="form-label"></label>
+        <input asp-for="ColumnOrder" class="form-control" type="number" />
+        <span asp-validation-for="ColumnOrder" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ColumnMaxLength" class="form-label"></label>
+        <input asp-for="ColumnMaxLength" class="form-control" type="number" />
+        <span asp-validation-for="ColumnMaxLength" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ColumnPrecision" class="form-label"></label>
+        <input asp-for="ColumnPrecision" class="form-control" type="number" />
+        <span asp-validation-for="ColumnPrecision" class="text-danger"></span>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="ColumnIsNullable" class="form-check-input" type="checkbox" />
+        <label asp-for="ColumnIsNullable" class="form-check-label"></label>
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <a asp-action="Index" asp-route-userid="@userid" asp-route-tableId="@tableId" class="btn btn-secondary">⬅ Back</a>
+        <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

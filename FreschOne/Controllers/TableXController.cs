@@ -763,79 +763,73 @@ namespace FreschOne.Controllers
             return View(viewModel);
         }
 
-
         [HttpPost]
         public IActionResult Create(int userid, string tablename, Dictionary<string, string> formData, string[] AttachmentDescriptions, List<IFormFile> Attachments)
         {
-
-            // Prepare the data for insertion into the table
-            var columns = GetTableColumns(tablename);
-            var tableColumns = new List<string>();
-            var values = new List<object>();
-
-            // Prepare placeholders and parameters for the insert query
-            var valuePlaceholders = new List<string>();
-            var parameters = new Dictionary<string, object>();
-
-            foreach (var column in columns)
-            {
-                if (formData.ContainsKey(column))
-                {
-                    tableColumns.Add(column);
-                    values.Add(formData[column]);
-
-                    // Use column name as parameter name
-                    string parameterName = $"@{column}";
-                    valuePlaceholders.Add(parameterName);
-                    parameters.Add(parameterName, formData[column]);
-                }
-            }
-
-            // Add standard columns
-            tableColumns.Add("Active");
-            valuePlaceholders.Add("@Active");
-            parameters["@Active"] = "1";
-
-            tableColumns.Add("CreateUserID");
-            valuePlaceholders.Add("@CreateUserID");
-            parameters["@CreateUserID"] = userid;
-            tableColumns.Add("CreateDate");
-            valuePlaceholders.Add("GETDATE()");
-
-            // Construct the SQL insert statement dynamically
-            var columnNames = string.Join(", ", tableColumns);
-            var valuePlaceholdersString = string.Join(", ", valuePlaceholders);
-
-            string query = $"INSERT INTO {tablename} ({columnNames}) OUTPUT INSERTED.ID VALUES ({valuePlaceholdersString})"; // Output the newly created ID
-
             long newPKID;
 
-            // Execute the insert query and get the newly generated ID
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using var command = new SqlCommand(query, connection);
-                // Add parameters to the SQL command
-                foreach (var parameter in parameters)
+
+                var columns = GetTableColumns(tablename);
+                var ignoredColumns = GetIgnoredColumns(connection);
+
+                var tableColumns = new List<string>();
+                var valuePlaceholders = new List<string>();
+                var parameters = new Dictionary<string, object>();
+
+                foreach (var column in columns)
                 {
-                    command.Parameters.AddWithValue(parameter.Key, parameter.Value ?? DBNull.Value);
+                    if (formData.ContainsKey(column))
+                    {
+                        tableColumns.Add(column);
+                        string paramName = $"@{column}";
+                        valuePlaceholders.Add(paramName);
+                        parameters[paramName] = formData[column];
+                    }
                 }
 
-                // Execute query and retrieve the newly generated ID
-                newPKID = (long)command.ExecuteScalar();
+                // ✅ Dynamically add metadata fields only if both present in table and ignore list
+                if (columns.Contains("Active", StringComparer.OrdinalIgnoreCase) && ignoredColumns.Contains("Active", StringComparer.OrdinalIgnoreCase))
+                {
+                    tableColumns.Add("Active");
+                    valuePlaceholders.Add("@Active");
+                    parameters["@Active"] = 1;
+                }
+
+                if (columns.Contains("CreateUserID", StringComparer.OrdinalIgnoreCase) && ignoredColumns.Contains("CreateUserID", StringComparer.OrdinalIgnoreCase))
+                {
+                    tableColumns.Add("CreateUserID");
+                    valuePlaceholders.Add("@CreateUserID");
+                    parameters["@CreateUserID"] = userid;
+                }
+
+                if (columns.Contains("CreateDate", StringComparer.OrdinalIgnoreCase) && ignoredColumns.Contains("CreateDate", StringComparer.OrdinalIgnoreCase))
+                {
+                    tableColumns.Add("CreateDate");
+                    valuePlaceholders.Add("GETDATE()");
+                }
+
+                string columnNames = string.Join(", ", tableColumns);
+                string valueClause = string.Join(", ", valuePlaceholders);
+                string insertSql = $"INSERT INTO {tablename} ({columnNames}) OUTPUT INSERTED.ID VALUES ({valueClause})";
+
+                using var cmd = new SqlCommand(insertSql, connection);
+                foreach (var param in parameters)
+                {
+                    cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+                }
+
+                newPKID = (long)cmd.ExecuteScalar();
             }
 
-            // If attachments exist, insert them into foTableAttachments
+            // ✅ Handle attachments
             if (Attachments != null && Attachments.Any())
             {
                 var rootPath = Directory.GetCurrentDirectory();
                 var attachmentsFolder = Path.Combine(rootPath, "Attachments");
-
-                // Ensure the directory exists
-                if (!Directory.Exists(attachmentsFolder))
-                {
-                    Directory.CreateDirectory(attachmentsFolder);
-                }
+                Directory.CreateDirectory(attachmentsFolder);
 
                 for (int i = 0; i < Attachments.Count; i++)
                 {
@@ -845,39 +839,32 @@ namespace FreschOne.Controllers
                     if (attachment.Length > 0)
                     {
                         var filePath = Path.Combine(attachmentsFolder, Guid.NewGuid() + Path.GetExtension(attachment.FileName));
-
-                        // Save the file
                         using (var stream = new FileStream(filePath, FileMode.Create))
                         {
                             attachment.CopyTo(stream);
                         }
 
-                        // Insert attachment details into foTableAttachments
-                        string attachmentQuery = @"
-                INSERT INTO foTableAttachments (tablename, PKID, AttachmentDescription, Attachment, UserID, DateAdded) 
-                VALUES (@tablename, @PKID, @AttachmentDescription, @Attachment, @userid, @Dateadded)";
-
-                        using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-                        {
-                            connection.Open();
-                            using (var command = new SqlCommand(attachmentQuery, connection))
-                            {
-                                command.Parameters.AddWithValue("@tablename", tablename);
-                                command.Parameters.AddWithValue("@PKID", newPKID);
-                                command.Parameters.AddWithValue("@AttachmentDescription", description);
-                                command.Parameters.AddWithValue("@Attachment", filePath);
-                                command.Parameters.AddWithValue("@userid", userid);
-                                command.Parameters.AddWithValue("@Dateadded", DateTime.Now);
-
-                                command.ExecuteNonQuery();
-                            }
-                        }
+                        using var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+                        connection.Open();
+                        string attachmentSql = @"
+                    INSERT INTO foTableAttachments (tablename, PKID, AttachmentDescription, Attachment, UserID, DateAdded) 
+                    VALUES (@tablename, @PKID, @AttachmentDescription, @Attachment, @userid, @DateAdded)";
+                        using var cmd = new SqlCommand(attachmentSql, connection);
+                        cmd.Parameters.AddWithValue("@tablename", tablename);
+                        cmd.Parameters.AddWithValue("@PKID", newPKID);
+                        cmd.Parameters.AddWithValue("@AttachmentDescription", description);
+                        cmd.Parameters.AddWithValue("@Attachment", filePath);
+                        cmd.Parameters.AddWithValue("@userid", userid);
+                        cmd.Parameters.AddWithValue("@DateAdded", DateTime.Now);
+                        cmd.ExecuteNonQuery();
                     }
                 }
             }
 
             return RedirectToAction("Index", new { userid, tablename });
         }
+
+
 
         private List<SelectListItem> GetForeignKeyDropdownData(string referencedTableName)
         {
@@ -928,26 +915,59 @@ namespace FreschOne.Controllers
             return columns;
         }
 
+            private List<string> GetIgnoredColumns(SqlConnection conn)
+            {
+                var ignoredColumns = new List<string>();
+                string query = "SELECT ColumnName FROM foTableColumnsToIgnore";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            ignoredColumns.Add(reader["ColumnName"].ToString());
+                        }
+                    }
+                }
+
+                return ignoredColumns;
+            }
+
+        private List<string> GetIgnoredColumns()
+{
+    var ignoredColumns = new List<string>();
+    using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+    {
+        conn.Open();
+        using var cmd = new SqlCommand("SELECT ColumnName FROM foTableColumnsToIgnore", conn);
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            ignoredColumns.Add(reader["ColumnName"].ToString());
+        }
+    }
+    return ignoredColumns;
+}
+
+
         private List<Dictionary<string, object>> GetTableData(string tableName)
         {
             var tableData = new List<Dictionary<string, object>>();
-            var excludedColumns = new HashSet<string>
-    {
-        "Active", "CreateUserID", "CreateDate",
-        "ModifiedUserID", "ModifiedDate", "DeletedUserID", "DeletedDate"
-    };
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
 
-                // Get only required column names (excluding the audit fields)
-                string columnQuery = $@"
+                // 🔹 Get ignored columns from foTableColumnsToIgnore
+                var ignoredColumns = GetIgnoredColumns(connection);
+                var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
+
+                // 🔹 Get all column names for the specified table
+                string columnQuery = @"
             SELECT COLUMN_NAME 
             FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_NAME = @tableName 
-            AND COLUMN_NAME NOT IN ('Active', 'CreateUserID', 'CreateDate', 
-                                    'ModifiedUserID', 'ModifiedDate', 'DeletedUserID', 'DeletedDate')";
+            WHERE TABLE_NAME = @tableName";
 
                 var columns = new List<string>();
                 using (var columnCmd = new SqlCommand(columnQuery, connection))
@@ -956,7 +976,11 @@ namespace FreschOne.Controllers
                     using var reader = columnCmd.ExecuteReader();
                     while (reader.Read())
                     {
-                        columns.Add(reader["COLUMN_NAME"].ToString());
+                        string column = reader["COLUMN_NAME"].ToString();
+                        if (!ignoredSet.Contains(column))
+                        {
+                            columns.Add(column);
+                        }
                     }
                 }
 
@@ -965,7 +989,7 @@ namespace FreschOne.Controllers
                     return tableData; // No data to fetch
                 }
 
-                // Construct the final SELECT query with only the required columns
+                // 🔹 Build SELECT query using remaining columns
                 string query = $"SELECT {string.Join(", ", columns)} FROM {tableName} WHERE Active = 1";
 
                 using (var command = new SqlCommand(query, connection))
@@ -984,8 +1008,10 @@ namespace FreschOne.Controllers
                     }
                 }
             }
+
             return tableData;
         }
+
 
 
         private string GetPrimaryKeyColumn(string tablename)

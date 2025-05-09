@@ -1,0 +1,130 @@
+﻿@model List<FreschOne.Models.foTable>
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Tables";
+    int userid = ViewBag.userid;
+    var columnMap = ViewBag.ColumnMap as Dictionary<long, List<FreschOne.Models.foTableColumns>> ?? new();
+}
+
+<partial name="_Sidebar" />
+
+<h2 class="mb-4">foTable Management</h2>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<div class="mb-3 text-end">
+    <a asp-action="Create" asp-route-userid="@userid" class="btn btn-primary">
+        ➕ Add New Table
+    </a>
+</div>
+
+<div class="accordion" id="tableAccordion">
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-info">No active tables found.</div>
+    }
+    else
+    {
+        foreach (var table in Model)
+        {
+            var allColumns = columnMap.ContainsKey(table.ID) ? columnMap[table.ID] : new List<FreschOne.Models.foTableColumns>();
+            var userColumns = allColumns.Where(c => !c.IsSystemColumn).ToList();
+            var collapseId = $"collapseTable{table.ID}";
+            var headingId = $"headingTable{table.ID}";
+
+            <div class="accordion-item mb-2 border rounded shadow-sm">
+                <h2 class="accordion-header" id="@headingId">
+                    <button class="accordion-button collapsed bg-primary bg-opacity-10 fw-bold text-primary"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#@collapseId"
+                            aria-expanded="false"
+                            aria-controls="@collapseId">
+                        @($"{table.SchemaName}.{table.TableName} ({userColumns.Count} columns)")
+                    </button>
+                </h2>
+
+                <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#tableAccordion">
+                    <div class="accordion-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="d-flex gap-2">
+                                <a asp-action="Edit" asp-route-id="@table.ID" asp-route-userid="@userid" class="btn btn-sm btn-outline-primary">
+                                    ✏️ Edit Table
+                                </a>
+
+                                <form asp-action="Delete" method="post" asp-route-id="@table.ID" asp-route-userid="@userid" class="d-inline"
+                                      onsubmit="return confirm('Are you sure you want to delete this table?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">🗑️ Delete Table</button>
+                                </form>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <a asp-controller="foTableColumns" asp-action="BulkEdit" asp-route-tableId="@table.ID" asp-route-userid="@userid"
+                                   class="btn btn-sm btn-info text-white">
+                                    🧩 Manage Columns
+                                </a>
+                                <a asp-controller="foTableColumns" asp-action="Create" asp-route-tableId="@table.ID" asp-route-userid="@userid"
+                                   class="btn btn-sm btn-success text-white">
+                                    ➕ Create Column
+                                </a>
+                            </div>
+                        </div>
+
+                        @if (userColumns.Any())
+                        {
+                            <table class="table table-sm table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Column Name</th>
+                                        <th class="text-center">PK</th>
+                                        <th class="text-center">FK</th>
+                                        <th class="text-end">Order</th>
+                                        <th class="text-end">Max Length</th>
+                                        <th class="text-end">Precision</th>
+                                        <th>Nullable</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var col in userColumns.OrderBy(c => c.ColumnOrder))
+                                    {
+                                        <tr style="cursor:pointer;" onclick="location.href='@Url.Action("Edit", "foTableColumns", new { id = col.ID, userid = userid })'">
+                                            <td>@col.ColumnName</td>
+                                            <td class="text-center">
+                                                @if (col.IsPrimaryKey)
+                                                {
+                                                    <span class="badge bg-warning text-dark" title="Primary Key">PK</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (col.IsForeignKey)
+                                                {
+                                                    <span class="badge bg-info text-dark" title="Foreign Key">FK</span>
+                                                }
+                                            </td>
+                                            <td class="text-end">@col.ColumnOrder</td>
+                                            <td class="text-end">@col.ColumnMaxLength</td>
+                                            <td class="text-end">@col.ColumnPrecision</td>
+                                            <td>@(col.ColumnIsNullable ? "Yes" : "No")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No user-defined columns found for this table.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>

@@ -1,0 +1,33 @@
+﻿@model FreschOne.Models.foTable
+
+@{
+    ViewData["Title"] = "Create Table";
+    int userid = ViewBag.userid;
+}
+
+<partial name="_Sidebar" />
+
+<h2 class="mb-4">➕ Create New Table</h2>
+
+<form asp-action="Create" method="post" asp-route-userid="@userid">
+    <div class="mb-3">
+        <label asp-for="SchemaName" class="form-label"></label>
+        <input asp-for="SchemaName" class="form-control" />
+        <span asp-validation-for="SchemaName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="TableName" class="form-label"></label>
+        <input asp-for="TableName" class="form-control" />
+        <span asp-validation-for="TableName" class="text-danger"></span>
+    </div>
+
+    <div class="d-flex justify-content-between mt-4">
+        <a asp-action="Index" asp-route-userid="@userid" class="btn btn-secondary">⬅ Back</a>
+        <button type="submit" class="btn btn-primary">💾 Save Table</button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
