@@ -1,0 +1,121 @@
+﻿@model FreschOne.Models.foTableColumns
+
+@{
+    ViewData["Title"] = "Add Column";
+    int userid = ViewBag.userid;
+    long tableId = ViewBag.TableID;
+    var fkTableList = ViewBag.ForeignKeyTableDropdown as List<SelectListItem> ?? new();
+}
+
+<partial name="_Sidebar" />
+
+<h2 class="mb-4">➕ Add Column</h2>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" asp-for="ID" />
+    <input type="hidden" asp-for="TableID" value="@tableId" />
+    <input type="hidden" name="userid" value="@userid" />
+    <input type="hidden" asp-for="ColumnActualName" />  <!-- Hidden actual name -->
+
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="ColumnName" class="form-label"></label>
+        <input asp-for="ColumnName" class="form-control" />
+        <span asp-validation-for="ColumnName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ColumnDataType" class="form-label"></label>
+        <select asp-for="ColumnDataType" class="form-select" onchange="recalculateActualName()">
+            <option value="">-- Select Data Type --</option>
+            <option value="varchar">varchar</option>
+            <option value="nvarchar">nvarchar</option>
+            <option value="int">int</option>
+            <option value="decimal">decimal</option>
+            <option value="bit">bit</option>
+            <option value="date">date</option>
+            <option value="datetime">datetime</option>
+            <option value="attachment">attachment</option>
+        </select>
+        <span asp-validation-for="ColumnDataType" class="text-danger"></span>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label asp-for="ColumnOrder" class="form-label"></label>
+            <input asp-for="ColumnOrder" class="form-control" type="number" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="ColumnMaxLength" class="form-label"></label>
+            <input asp-for="ColumnMaxLength" class="form-control" type="number" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="ColumnPrecision" class="form-label"></label>
+            <input asp-for="ColumnPrecision" class="form-control" type="number" />
+        </div>
+    </div>
+
+    <div class="form-check mb-2">
+        <input asp-for="ColumnIsNullable" class="form-check-input" />
+        <label asp-for="ColumnIsNullable" class="form-check-label"></label>
+    </div>
+
+    <div class="form-check mb-2">
+        <input asp-for="IsPrimaryKey" class="form-check-input" />
+        <label asp-for="IsPrimaryKey" class="form-check-label">Primary Key 🔑</label>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="IsForeignKey" class="form-check-input" id="IsForeignKey" onchange="toggleForeignKeyDropdown(); recalculateActualName();" />
+        <label class="form-check-label" for="IsForeignKey">Is Foreign Key 🔗</label>
+    </div>
+
+    <div class="mb-3" id="fkDropdown" style="display:@(Model.IsForeignKey ? "block" : "none")">
+        <label asp-for="ForeignKeyTableName" class="form-label"></label>
+        @Html.DropDownListFor(model => model.ForeignKeyTableName, fkTableList, "-- Select FK Table --", new { @class = "form-select", onchange = "recalculateActualName()" })
+        <span asp-validation-for="ForeignKeyTableName" class="text-danger"></span>
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <a asp-controller="foTable" asp-action="Index" asp-route-userid="@userid" class="btn btn-outline-secondary">
+            ⬅ Back
+        </a>
+        <button type="submit" class="btn btn-success">💾 Save Column</button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleForeignKeyDropdown() {
+            var show = document.getElementById("IsForeignKey").checked;
+            document.getElementById("fkDropdown").style.display = show ? "block" : "none";
+        }
+
+        function recalculateActualName() {
+            const columnName = document.getElementById("ColumnName").value.trim();
+            const dataType = document.getElementById("ColumnDataType").value;
+            const isFK = document.getElementById("IsForeignKey").checked;
+            const actualNameField = document.getElementById("ColumnActualName");
+
+            if (!columnName) return;
+
+            if (dataType === "attachment") {
+                actualNameField.value = "attachment_" + columnName;
+            } else if (isFK) {
+                actualNameField.value = columnName + "ID";
+            } else {
+                actualNameField.value = columnName;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            toggleForeignKeyDropdown();
+            recalculateActualName();
+            document.getElementById("ColumnName").addEventListener("input", recalculateActualName);
+        });
+    </script>
+}

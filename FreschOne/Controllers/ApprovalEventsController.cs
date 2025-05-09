@@ -212,7 +212,7 @@ namespace FreschOne.Controllers
 
                             if (pendingCount == 0)
                             {
-                                ArchiveApproval(processInstanceId, conn, transaction);
+                                ArchiveApprovalAndProcess(processInstanceId, conn, transaction);
                             }
 
                         }
@@ -243,14 +243,14 @@ namespace FreschOne.Controllers
                             }
                             else
                             {
-                                ArchiveApproval(processInstanceId, conn, transaction);
+                                ArchiveApprovalAndProcess(processInstanceId, conn, transaction);
                             }
 
                         }
                     }
                     else if (decision == "Decline")
                     {
-                        ArchiveApproval(processInstanceId, conn, transaction);
+                        ArchiveApprovalAndProcess(processInstanceId, conn, transaction);
                     }
                     else if (decision == "Rework")
                     {
@@ -382,30 +382,61 @@ namespace FreschOne.Controllers
             }
         }
 
-
-        private void ArchiveApproval(int processInstanceId, SqlConnection conn, SqlTransaction transaction)
+        private void ArchiveApprovalAndProcess(int processInstanceId,SqlConnection conn, SqlTransaction transaction)
         {
-            var archiveEvents = new SqlCommand(@"
-        INSERT INTO foApprovalEventsArchive (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active)
-        SELECT ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active
-        FROM foApprovalEvents WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
-            archiveEvents.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-            archiveEvents.ExecuteNonQuery();
+            // 🟰 Copy Process Events into Archive
+            var archiveEventsCmd = new SqlCommand(@"
+        INSERT INTO foProcessEventsArchive (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active, Cancelled)
+        SELECT ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active, Cancelled
+        FROM foProcessEvents
+        WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            archiveEventsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            archiveEventsCmd.ExecuteNonQuery();
 
-            var archiveDetails = new SqlCommand(@"
+            // 🟰 Copy Process Event Details into Archive
+            var archiveDetailsCmd = new SqlCommand(@"
+        INSERT INTO foProcessEventsDetailArchive (ProcessEventID, ProcessInstanceID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active)
+        SELECT ProcessEventID, ProcessInstanceID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active
+        FROM foProcessEventsDetail
+        WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            archiveDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            archiveDetailsCmd.ExecuteNonQuery();
+
+            // 🟰 Copy Approval Events into Archive
+            var archiveApprovalCmd = new SqlCommand(@"
+        INSERT INTO foApprovalEventsArchive (ProcessInstanceID, StepID, GroupID, UserID, DateAssigned, DateCompleted, Active)
+        SELECT ProcessInstanceID, StepID, GroupID, UserID, DateAssigned, DateCompleted, Active
+        FROM foApprovalEvents
+        WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            archiveApprovalCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            archiveApprovalCmd.ExecuteNonQuery();
+
+            // 🟰 Copy Approval Event Details into Archive
+            var archiveApprovalDetailsCmd = new SqlCommand(@"
         INSERT INTO foApprovalEventsDetailArchive (ApprovalEventID, ProcessInstanceID, StepID, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active)
         SELECT ApprovalEventID, ProcessInstanceID, StepID, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, Active
-        FROM foApprovalEventsDetail WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
-            archiveDetails.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-            archiveDetails.ExecuteNonQuery();
+        FROM foApprovalEventsDetail
+        WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            archiveApprovalDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            archiveApprovalDetailsCmd.ExecuteNonQuery();
 
-            var deleteEvents = new SqlCommand("DELETE FROM foApprovalEvents WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
-            deleteEvents.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-            deleteEvents.ExecuteNonQuery();
+            // 🔥 Delete or deactivate process events
+            var deleteProcEventsCmd = new SqlCommand("DELETE FROM foProcessEvents WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            deleteProcEventsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            deleteProcEventsCmd.ExecuteNonQuery();
 
-            var deleteDetails = new SqlCommand("DELETE FROM foApprovalEventsDetail WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
-            deleteDetails.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-            deleteDetails.ExecuteNonQuery();
+            var deleteProcDetailsCmd = new SqlCommand("DELETE FROM foProcessEventsDetail WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            deleteProcDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            deleteProcDetailsCmd.ExecuteNonQuery();
+
+            // 🔥 Delete or deactivate approval events
+            var deleteApprovalCmd = new SqlCommand("DELETE FROM foApprovalEvents WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            deleteApprovalCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            deleteApprovalCmd.ExecuteNonQuery();
+
+            var deleteApprovalDetailsCmd = new SqlCommand("DELETE FROM foApprovalEventsDetail WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
+            deleteApprovalDetailsCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+            deleteApprovalDetailsCmd.ExecuteNonQuery();
         }
 
         private int GetProcessIdForStep(int stepId, SqlConnection conn, SqlTransaction tx)
