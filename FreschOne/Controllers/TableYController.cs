@@ -787,10 +787,10 @@ namespace FreschOne.Controllers
             parameters["@Active"] = "1";
 
             // Add standard columns
-            tableColumns.Add("CreateUserID");
-            valuePlaceholders.Add("@CreateUserID");
-            parameters["@CreateUserID"] = userid;
-            tableColumns.Add("CreateDate");
+            tableColumns.Add("CreatedUserID");  
+            valuePlaceholders.Add("@CreatedUserID");
+            parameters["@CreatedUserID"] = userid;
+            tableColumns.Add("CreatedDate");
             valuePlaceholders.Add("GETDATE()");
 
             // Construct the SQL insert statement dynamically
@@ -894,71 +894,96 @@ namespace FreschOne.Controllers
         private List<string> GetTableColumns(string tablename)
         {
             var columns = new List<string>();
-            string query = $@"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName 
-                                    AND COLUMN_NAME NOT IN('Active', 'CreateUserID', 'CreateDate', 
-                                    'ModifiedUserID', 'ModifiedDate', 'DeletedUserID', 'DeletedDate')";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(query, connection))
+
+                // 🔹 Step 1: Get ignored column names from foTableColumnsToIgnore
+                var ignoredColumns = GetIgnoredColumns(connection);
+                var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
+
+                // 🔹 Step 2: Get all columns from INFORMATION_SCHEMA.COLUMNS
+                string query = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
+                using var command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@TableName", tablename);
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
                 {
-                    command.Parameters.AddWithValue("@TableName", tablename);
-                    using (var reader = command.ExecuteReader())
+                    string columnName = reader["COLUMN_NAME"].ToString();
+                    if (!ignoredSet.Contains(columnName))
                     {
-                        while (reader.Read())
-                        {
-                            columns.Add(reader.GetString(0));
-                        }
+                        columns.Add(columnName);
                     }
                 }
             }
+
             return columns;
         }
 
-        
+        private List<string> GetIgnoredColumns(SqlConnection conn)
+        {
+            var ignoredColumns = new List<string>();
+            string query = "SELECT ColumnName FROM foTableColumnsToIgnore";
+
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        ignoredColumns.Add(reader["ColumnName"].ToString());
+                    }
+                }
+            }
+
+            return ignoredColumns;
+        }
+
+
         private List<Dictionary<string, object>> GetTableData(int PKID, string PKColumn, string tablename)
         {
             var tableData = new List<Dictionary<string, object>>();
-            var excludedColumns = new HashSet<string>
-    {
-        "Active", "CreateUserID", "CreateDate",
-        "ModifiedUserID", "ModifiedDate", "DeletedUserID", "DeletedDate"
-    };
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
 
-                // Get only required column names (excluding the audit fields)
-                string columnQuery = $@"
-            SELECT COLUMN_NAME 
-            FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_NAME = @tableName 
-            AND COLUMN_NAME NOT IN ('Active', 'CreateUserID', 'CreateDate', 
-                                    'ModifiedUserID', 'ModifiedDate', 'DeletedUserID', 'DeletedDate')";
+                // 🔹 Get ignored columns from foTableColumnsToIgnore
+                var ignoredColumns = GetIgnoredColumns(connection);
+                var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
 
+                // 🔹 Get all column names from the table, excluding the ignored ones
                 var columns = new List<string>();
+                string columnQuery = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tableName";
+
                 using (var columnCmd = new SqlCommand(columnQuery, connection))
                 {
                     columnCmd.Parameters.AddWithValue("@tableName", tablename);
                     using var reader = columnCmd.ExecuteReader();
                     while (reader.Read())
                     {
-                        columns.Add(reader["COLUMN_NAME"].ToString());
+                        string columnName = reader["COLUMN_NAME"].ToString();
+                        if (!ignoredSet.Contains(columnName))
+                        {
+                            columns.Add(columnName);
+                        }
                     }
                 }
 
                 if (columns.Count == 0)
-                {
-                    return tableData; // No data to fetch
-                }
+                    return tableData; // No columns to select
 
-                // Construct the final SELECT query with only the required columns
-                string query = $"SELECT {string.Join(", ", columns)} FROM {tablename} where {PKColumn} = {PKID} AND Active = 1";
+                // 🔹 Build final SELECT statement
+                string selectQuery = $@"
+            SELECT {string.Join(", ", columns)} 
+            FROM {tablename} 
+            WHERE {PKColumn} = @PKID AND Active = 1";
 
-                using (var command = new SqlCommand(query, connection))
+                using (var command = new SqlCommand(selectQuery, connection))
                 {
+                    command.Parameters.AddWithValue("@PKID", PKID);
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -973,9 +998,11 @@ namespace FreschOne.Controllers
                     }
                 }
             }
+
             return tableData;
         }
-        
+
+
         private string GetPrimaryKeyColumn(string tablename)
         {
             string primaryKeyColumn = string.Empty;
@@ -1061,5 +1088,148 @@ namespace FreschOne.Controllers
 
             return RedirectToAction("Edit", new { id = PKID, tablename,  userid });
         }
+
+        public IActionResult SelectParent(string tablename, int userid, int pageNumber = 1, string searchText = "")
+        {
+            SetUserAccess(userid);
+
+            // Look up the parent table + FK column
+            var mapping = GetForeignKeyParentMapping(tablename); // e.g. { ParentTable = "tbl_tran_Student", FKColumn = "StudentID" }
+            var parentTable = mapping.ParentTable;
+
+            ViewBag.userid = userid;
+            ViewBag.ChildTable = tablename;
+            ViewBag.ParentTable = parentTable;
+            ViewBag.FKColumn = mapping.FKColumn;
+
+            // Get full data
+            var fullData = GetParentTableData(parentTable);
+
+            // 🔍 Apply search
+            if (!string.IsNullOrEmpty(searchText))
+            {
+                fullData = fullData
+                    .Where(row => row.Values.Any(v => v != null && v.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+            }
+
+            // 📄 Apply pagination
+            int pageSize = 20;
+            var pagedData = fullData.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+            int totalPages = (int)Math.Ceiling((double)fullData.Count / pageSize);
+
+            ViewBag.pageNumber = pageNumber;
+            ViewBag.totalPages = totalPages;
+            ViewBag.searchText = searchText;
+
+            var columns = GetTableColumns(parentTable);
+
+            return View("SelectParent", new TableViewModel
+            {
+                TableName = parentTable,
+                UserId = userid,
+                Columns = columns,
+                TableData = pagedData
+            });
+        }
+
+
+        public class ForeignKeyParentMapping
+        {
+            public string ParentTable { get; set; } = "";
+            public string FKColumn { get; set; } = "";
+        }
+
+        private ForeignKeyParentMapping GetForeignKeyParentMapping(string childTable)
+        {
+            var mapping = new ForeignKeyParentMapping();
+
+            using var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            connection.Open();
+
+            var query = @"
+        SELECT TOP 1
+            tr.name AS ParentTable,
+            cp.name AS FKColumn
+        FROM sys.foreign_keys AS fk
+        INNER JOIN sys.foreign_key_columns AS fkc ON fk.object_id = fkc.constraint_object_id
+        INNER JOIN sys.tables AS tp ON fkc.parent_object_id = tp.object_id
+        INNER JOIN sys.columns AS cp ON fkc.parent_object_id = cp.object_id AND fkc.parent_column_id = cp.column_id
+        INNER JOIN sys.tables AS tr ON fkc.referenced_object_id = tr.object_id
+        WHERE tp.name = @ChildTable";
+
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@ChildTable", childTable);
+
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                mapping.ParentTable = reader["ParentTable"].ToString() ?? "";
+                mapping.FKColumn = reader["FKColumn"].ToString() ?? "";
+            }
+            else
+            {
+                throw new Exception($"❌ Could not determine parent table for '{childTable}'. Check if it has a foreign key.");
+            }
+
+            return mapping;
+        }
+
+        private List<Dictionary<string, object>> GetParentTableData(string tablename)
+        {
+            var tableData = new List<Dictionary<string, object>>();
+
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+
+                var ignoredColumns = GetIgnoredColumns(connection);
+                var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
+
+                var columns = new List<string>();
+                string columnQuery = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tableName";
+
+                using (var columnCmd = new SqlCommand(columnQuery, connection))
+                {
+                    columnCmd.Parameters.AddWithValue("@tableName", tablename);
+                    using var reader = columnCmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        string columnName = reader["COLUMN_NAME"].ToString();
+                        if (!ignoredSet.Contains(columnName))
+                        {
+                            columns.Add(columnName);
+                        }
+                    }
+                }
+
+                if (columns.Count == 0)
+                    return tableData;
+
+                string selectQuery = $@"
+            SELECT {string.Join(", ", columns)} 
+            FROM {tablename} 
+            WHERE Active = 1";
+
+                using (var command = new SqlCommand(selectQuery, connection))
+                {
+                    using var reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        var row = new Dictionary<string, object>();
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            row[reader.GetName(i)] = reader[i];
+                        }
+                        tableData.Add(row);
+                    }
+                }
+            }
+
+            return tableData;
+        }
+
+
+
     }
 }

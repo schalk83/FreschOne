@@ -26,8 +26,21 @@
         <tr>
             @foreach (var column in Model.Columns)
             {
-                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
-                if (column.StartsWith("attachment_")) { formattedColumn = column.Replace("attachment_", ""); }
+                string formattedColumn;
+
+                if (column == "ID")
+                {
+                    formattedColumn = "ID";
+                }
+                else if (column.StartsWith("attachment_"))
+                {
+                    var stripped = column.Replace("attachment_", "");
+                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
+                }
+                else
+                {
+                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+                }
 
                 <th class="fixed-width" data-column="@column">@formattedColumn</th>
             }
@@ -88,30 +101,47 @@
                         }
                     </td>
                 }
-                <td class="text-center align-middle">
-                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                <td class="text-center align-middle actions-column">
+                    <div class="action-buttons">
                         @if (readwriteaccess == "RW")
                         {
-                            <a href="@Url.Action("Edit", new { id = row["ID"], tablename, userid, pageNumber = ViewBag.pageNumber })"
-                               class="custom-button btn-gold">
-                                <i class="bi bi-pencil-fill"></i> Edit
-                            </a>
-                            <button type="button" class="custom-button btn-red" onclick="confirmDelete(@row["ID"], '@tablename')">
-                                <i class="bi bi-trash-fill"></i> Delete
+                            <form method="get" asp-action="Edit" class="m-0 p-0">
+                                <input type="hidden" name="id" value="@row["ID"]" />
+                                <input type="hidden" name="tablename" value="@tablename" />
+                                <input type="hidden" name="userid" value="@userid" />
+                                <input type="hidden" name="pageNumber" value="@ViewBag.pageNumber" />
+                                <button type="submit" class="custom-button btn-gold btn-sm d-flex align-items-center">
+                                    <i class="bi bi-pencil-fill me-1"></i> Edit
+                                </button>
+                            </form>
+
+                            <button type="button" class="custom-button btn-red btn-sm d-flex align-items-center"
+                                    onclick="confirmDelete(@row["ID"], '@tablename')">
+                                <i class="bi bi-trash-fill"></i>
                             </button>
                         }
+
                         @if (readwriteaccess == "R")
                         {
-                            <a href="@Url.Action("Edit", new { id = row["ID"], tablename, userid, pageNumber = ViewBag.pageNumber })"
-                               class="custom-button btn-gold">
-                                <i class="bi bi-eye-fill"></i> View
-                            </a>
+                            <form method="get" asp-action="Edit" class="m-0 p-0">
+                                <input type="hidden" name="id" value="@row["ID"]" />
+                                <input type="hidden" name="tablename" value="@tablename" />
+                                <input type="hidden" name="userid" value="@userid" />
+                                <input type="hidden" name="pageNumber" value="@ViewBag.pageNumber" />
+                                <button type="submit" class="custom-button btn-gold btn-sm d-flex align-items-center">
+                                    <i class="bi bi-eye-fill me-1"></i> View
+                                </button>
+                            </form>
                         }
-                        <button class="custom-button btn-green" onclick="showPopup(event, '@tablename', '@row["ID"]')">
-                            <i class="bi bi-link-45deg"></i> More
+
+                        <button type="button" class="custom-button btn-green btn-sm d-flex align-items-center"
+                                onclick="showPopup(event, '@tablename', '@row["ID"]')">
+                            <i class="bi bi-link-45deg me-1"></i> More
                         </button>
                     </div>
                 </td>
+
+
 
             </tr>
         }

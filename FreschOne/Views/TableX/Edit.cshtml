@@ -45,16 +45,16 @@
             @if (column.StartsWith("attachment_"))
             {
                 <br />
-                string columnLabel = formattedColumn.Replace("attachment_", "").Replace("_", " "); // Remove "attachment_" and replace "_" with spaces
-                <label>@columnLabel</label>
+                string columnLabel = formattedColumn.Replace("attachment_", "").Replace("_", " ");
+                <label class="fw-bold">@columnLabel</label>
             }
             else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
             {
-                <label for="@column">@column.Replace("ID", "")</label>
+                <label class="fw-bold" for="@column">@column.Replace("ID", "")</label>
             }
             else
             {
-                <label for="@formattedColumn">@formattedColumn</label>
+                <label class="fw-bold" for="@formattedColumn">@formattedColumn</label>
             }
 
             @if (editable)
@@ -65,20 +65,28 @@
                     string attachmentDescription = attachmentParts.Length > 0 ? attachmentParts[0] : "";
                     string attachmentFilePath = attachmentParts.Length > 1 ? attachmentParts[1] : "";
 
-                    <div class="row">
+                    <div class="row mb-2">
                         <div class="col-md-6">
-                            <label>Description</label>
-                            <input type="text" id="desc_@column" value="@attachmentDescription" class="form-control" />
+                            <input type="text"
+                                   id="desc_@column"
+                                   value="@attachmentDescription"
+                                   placeholder="Attachment Description"
+                                   class="form-control" />
                         </div>
 
                         <div class="col-md-6">
-                            <label>Upload @formattedColumn.Replace("attachment_", "").Replace("_", " ")</label>
-                            <input type="file" name="file_@column" id="file_@column" class="form-control" onchange="updateAttachmentField('@column')" />
+                            <input type="file"
+                                   name="file_@column"
+                                   id="file_@column"
+                                   class="form-control"
+                                   onchange="updateAttachmentField('@column')" />
                         </div>
                     </div>
 
-                    <!-- ✅ This hidden input ensures only ONE field (attachment_StudentPass) is sent -->
-                    <input type="hidden" name="@column" id="hidden_@column" value="@attachmentDescription;@attachmentFilePath" />
+                    <input type="hidden"
+                           name="@column"
+                           id="hidden_@column"
+                           value="@attachmentDescription;@attachmentFilePath" />
 
                     @if (!string.IsNullOrEmpty(attachmentFilePath))
                     {
@@ -86,9 +94,12 @@
                         ? Url.Content("~/" + attachmentFilePath)
                         : Url.Content("~/Attachments/" + attachmentFilePath);
 
-                        <p>Current File: <a href="@fileUrl" target="_blank">@System.IO.Path.GetFileName(attachmentFilePath)</a></p>
+                        <p class="mt-1 small text-muted">
+                            Current File: <a href="@fileUrl" target="_blank">@System.IO.Path.GetFileName(attachmentFilePath)</a>
+                        </p>
                     }
                 }
+
                 <!-- Editable rendering with onchange event handler -->
                 @if (columnType == "varchar" && columnLength <= 255)
                 {
@@ -235,7 +246,6 @@
     }
 
     <br />
-    <hr />
     @if (ViewBag.DataManagementBreadcrumbX != null)
     {
         <a href="@Url.Action("Index", new {
@@ -253,82 +263,86 @@
     }
 
     <br />
-    <hr />
 </form>
 
+<!-- 🗂 Existing Attachments -->
+<div class="attachment-section p-3 mb-4 rounded">
+    <h4 class="d-flex justify-content-between align-items-center">
+        Existing Attachments
+        <button type="button" id="toggleExistingAttachments" class="btn btn-link" style="font-size: 1.2em;">
+            <i class="fas fa-chevron-down" id="existingIcon"></i>
+        </button>
+    </h4>
 
-<!-- Existing Attachments -->
-<h4>
-    Existing Attachments
-    <button type="button" id="toggleExistingAttachments" class="btn btn-link" style="font-size: 1.2em;">
-        <i class="fas fa-chevron-down" id="existingIcon"></i>
-    </button>
-</h4>
-
-<!-- Display existing attachments -->
-<div id="existingAttachments" style="margin-bottom: 20px; display: none;">
-    <ul class="list-group">
-        @foreach (var attachment in attachments)
-        {
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>
-                    <a href="@attachment["Attachment"]" target="_blank" class="ml-3">@attachment["AttachmentDescription"]</a>
-                </span>
-                <label>@attachment["DateAdded"]</label>
-                <label>@attachment["UserAdded"]</label>
-                <form asp-action="DeleteAttachment" method="post" class="d-inline" onsubmit="return confirmDelete();">
-                    <input type="hidden" name="attachmentId" value="@attachment["ID"]" />
-                    <input type="hidden" name="tablename" value="@ViewBag.tablename" />
-                    <input type="hidden" name="PKID" value="@ViewBag.id" />
-                    <input type="hidden" name="userid" value="@ViewBag.userid" />
-                    <button type="submit" class="btn btn-link text-danger" title="Delete Attachment">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </form>
-            </li>
-        }
-    </ul>
+    <div id="existingAttachments" style="margin-bottom: 10px; display: none;">
+        <ul class="list-group">
+            @foreach (var attachment in attachments)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                        <a href="@attachment["Attachment"]" target="_blank">@attachment["AttachmentDescription"]</a>
+                    </span>
+                    <label>@attachment["DateAdded"]</label>
+                    <label>@attachment["UserAdded"]</label>
+                    <form asp-action="DeleteAttachment" method="post" class="d-inline" onsubmit="return confirmDelete();">
+                        <input type="hidden" name="attachmentId" value="@attachment["ID"]" />
+                        <input type="hidden" name="tablename" value="@ViewBag.tablename" />
+                        <input type="hidden" name="PKID" value="@ViewBag.id" />
+                        <input type="hidden" name="userid" value="@ViewBag.userid" />
+                        <button type="submit" class="btn btn-link text-danger" title="Delete Attachment">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </form>
+                </li>
+            }
+        </ul>
+    </div>
 </div>
 
-<h4>
-    Add New Attachments
-    <button type="button" id="toggleAttachmentForm" class="btn btn-link" style="font-size: 1.2em;">
-        <i class="fas fa-chevron-down" id="toggleIcon"></i>
-    </button>
-</h4>
+<!-- 🆕 Add New Attachments -->
+<div class="attachment-section p-3 mb-4 rounded">
+    <h4 class="d-flex justify-content-between align-items-center">
+        Add New Attachments
+        <button type="button" id="toggleAttachmentForm" class="btn btn-link" style="font-size: 1.2em;">
+            <i class="fas fa-chevron-down" id="toggleIcon"></i>
+        </button>
+    </h4>
 
-<!-- Form for adding new attachments -->
-<form asp-action="AddAttachments" method="post" enctype="multipart/form-data" id="attachmentForm" style="display: none;">
-    <input type="hidden" name="tablename" value="@ViewBag.tablename" />
-    <input type="hidden" name="PKID" value="@Model.Record["ID"]" />
-    <input type="hidden" name="userid" value="@userid" />
+    <form asp-action="AddAttachments" method="post" enctype="multipart/form-data" id="attachmentForm" style="display: none;">
+        <input type="hidden" name="tablename" value="@ViewBag.tablename" />
+        <input type="hidden" name="PKID" value="@Model.Record["ID"]" />
+        <input type="hidden" name="userid" value="@userid" />
 
-    <div id="attachmentContainer">
-        <div class="attachment-group d-flex align-items-center">
-            <div style="flex-grow: 1;">
-                <div class="form-group">
-                    <label for="AttachmentDescription">Attachment Description</label>
-                    <input type="text" name="AttachmentDescriptions" class="form-control" required />
+        <div id="attachmentContainer">
+            <div class="attachment-group d-flex align-items-center">
+                <div style="flex-grow: 1;">
+                    <div class="form-group">
+                        <label for="AttachmentDescription">Attachment Description</label>
+                        <input type="text" name="AttachmentDescriptions" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="Attachment">Upload Attachment</label>
+                        <input type="file" name="Attachments" class="form-control" required />
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="Attachment">Upload Attachment</label>
-                    <input type="file" name="Attachments" class="form-control" required />
+                <div class="trash-container d-flex align-items-center ps-3">
+                    <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </div>
-            </div>
-            <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
-                <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
             </div>
         </div>
-    </div>
 
-    <button type="button" id="addAttachmentButton" class="btn btn-success" style="font-size: 1.5em; padding: 10px 20px; margin-top: 10px;">
-        <i class="fas fa-plus"></i>
-    </button>
-    <br /><br />
-    <button type="submit" class="btn btn-primary">Upload Attachments</button>
-</form>
+        <button type="button" id="addAttachmentButton" class="btn btn-success mt-2" style="font-size: 1.5em; padding: 10px 20px;">
+            <i class="fas fa-plus"></i>
+        </button>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary">Upload Attachments</button>
+        </div>
+    </form>
+</div>
+
 
 <!-- Include Font Awesome -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
