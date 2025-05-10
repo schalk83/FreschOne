@@ -31,6 +31,8 @@ namespace FreschOne.Controllers
             var user = _dbHelper.AuthenticateUser(username, password);
             if (user != null)
             {
+                HttpContext.Session.SetInt32("UserID", (int)user.ID);  // 👈 Store login
+
                 _dbHelper.LogUserLogin(user.ID);
                 return RedirectToAction("Index", "Home", new { userId });
             }

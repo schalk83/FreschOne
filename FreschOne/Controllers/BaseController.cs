@@ -15,6 +15,7 @@ namespace FreschOne.Controllers
             _configuration = configuration;
         }
 
+
         protected void SetUserAccess(long userId)
         {
             bool isAdmin = _dbHelper.IsUserAdmin(userId);

@@ -798,16 +798,16 @@ namespace FreschOne.Controllers
                     parameters["@Active"] = 1;
                 }
 
-                if (columns.Contains("CreateUserID", StringComparer.OrdinalIgnoreCase) && ignoredColumns.Contains("CreateUserID", StringComparer.OrdinalIgnoreCase))
+                if (columns.Contains("CreatedUserID", StringComparer.OrdinalIgnoreCase) && ignoredColumns.Contains("CreatedUserID", StringComparer.OrdinalIgnoreCase))
                 {
-                    tableColumns.Add("CreateUserID");
-                    valuePlaceholders.Add("@CreateUserID");
-                    parameters["@CreateUserID"] = userid;
+                    tableColumns.Add("CreatedUserID");
+                    valuePlaceholders.Add("@CreatedUserID");
+                    parameters["@CreatedUserID"] = userid;
                 }
 
-                if (columns.Contains("CreateDate", StringComparer.OrdinalIgnoreCase) && ignoredColumns.Contains("CreateDate", StringComparer.OrdinalIgnoreCase))
+                if (columns.Contains("CreatedDate", StringComparer.OrdinalIgnoreCase) && ignoredColumns.Contains("CreatedDate", StringComparer.OrdinalIgnoreCase))
                 {
-                    tableColumns.Add("CreateDate");
+                    tableColumns.Add("CreatedDate");
                     valuePlaceholders.Add("GETDATE()");
                 }
 
@@ -897,58 +897,67 @@ namespace FreschOne.Controllers
         private List<string> GetTableColumns(string tablename)
         {
             var columns = new List<string>();
-            string query = $@"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName 
-                                    AND COLUMN_NAME NOT IN('Active', 'CreateUserID', 'CreateDate', 
-                                    'ModifiedUserID', 'ModifiedDate', 'DeletedUserID', 'DeletedDate')";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
+
+                // 🔹 Step 1: Get ignored column names from foTableColumnsToIgnore
+                var ignoredColumns = GetIgnoredColumns(connection);
+                var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
+
+                // 🔹 Step 2: Get all columns from INFORMATION_SCHEMA.COLUMNS
+                string query = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
                 using var command = new SqlCommand(query, connection);
                 command.Parameters.AddWithValue("@TableName", tablename);
                 using var reader = command.ExecuteReader();
                 while (reader.Read())
                 {
-                    columns.Add(reader.GetString(0));
-                }            
+                    string columnName = reader["COLUMN_NAME"].ToString();
+                    if (!ignoredSet.Contains(columnName))
+                    {
+                        columns.Add(columnName);
+                    }
+                }
             }
+
             return columns;
         }
 
-            private List<string> GetIgnoredColumns(SqlConnection conn)
-            {
-                var ignoredColumns = new List<string>();
-                string query = "SELECT ColumnName FROM foTableColumnsToIgnore";
+        private List<string> GetIgnoredColumns(SqlConnection conn)
+        {
+            var ignoredColumns = new List<string>();
+            string query = "SELECT ColumnName FROM foTableColumnsToIgnore";
 
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
-                        {
-                            ignoredColumns.Add(reader["ColumnName"].ToString());
-                        }
+                        ignoredColumns.Add(reader["ColumnName"].ToString());
                     }
                 }
-
-                return ignoredColumns;
             }
 
-        private List<string> GetIgnoredColumns()
-{
-    var ignoredColumns = new List<string>();
-    using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-    {
-        conn.Open();
-        using var cmd = new SqlCommand("SELECT ColumnName FROM foTableColumnsToIgnore", conn);
-        using var reader = cmd.ExecuteReader();
-        while (reader.Read())
-        {
-            ignoredColumns.Add(reader["ColumnName"].ToString());
+            return ignoredColumns;
         }
-    }
-    return ignoredColumns;
-}
+
+        private List<string> GetIgnoredColumns()
+        {
+            var ignoredColumns = new List<string>();
+            using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                conn.Open();
+                using var cmd = new SqlCommand("SELECT ColumnName FROM foTableColumnsToIgnore", conn);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    ignoredColumns.Add(reader["ColumnName"].ToString());
+                }
+            }
+        return ignoredColumns;
+        }
 
 
         private List<Dictionary<string, object>> GetTableData(string tableName)
@@ -1109,6 +1118,8 @@ namespace FreschOne.Controllers
 
             return RedirectToAction("Edit", new { id = PKID, tablename = tablename, userid = userid });
         }
+
+
 
     }
 }
