@@ -3,8 +3,8 @@
     var userid = ViewBag.userid;
     var readwriteaccess = ViewBag.readwriteaccess;
     var tablename = ViewBag.tablename;
-    var columnTypes = ViewBag.ColumnTypes; // Get column types from ViewBag
-    var columnLengths = ViewBag.ColumnLengths; // Get column lengths from ViewBag
+    var columnTypes = ViewBag.ColumnTypes;
+    var columnLengths = ViewBag.ColumnLengths;
     var PKID = ViewBag.PKID;
     var PKColumn = ViewBag.PKColumn;
     var editable = readwriteaccess == "RW";
@@ -12,10 +12,10 @@
     var relatedTables = (List<Dictionary<string, object>>)ViewBag.RelatedTables;
     var attachments = ViewBag.Attachments as List<Dictionary<string, object>>;
     var pageNumber = ViewBag.pageNumber;
-    var tablenameX = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"];
-    var descriptionX = ViewBag.DataManagementBreadcrumbX.Parameters["description"];
+    var breadcrumbParams = ViewBag.DataManagementBreadcrumbX?.Parameters as IDictionary<string, object>;
+    var tablenameX = breadcrumbParams != null && breadcrumbParams.ContainsKey("tablename") ? breadcrumbParams["tablename"] : null;
+    var descriptionX = breadcrumbParams != null && breadcrumbParams.ContainsKey("description") ? breadcrumbParams["description"] : null;
     var returnURL = ViewBag.ReturnURL;
-
 }
 
 <partial name="_Sidebar" />
