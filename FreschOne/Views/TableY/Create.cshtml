@@ -9,11 +9,14 @@
     var PKID = ViewBag.PKID;
     var PKColumn = ViewBag.PKColumn;
     var tableDescription = ViewBag.tableDescription;
-    var tablenameX = ViewBag.DataManagementBreadcrumbX.Parameters["tablename"];
-    var descriptionX = ViewBag.DataManagementBreadcrumbX.Parameters["description"];
-    var returnURL = ViewBag.ReturnURL; 
 
+    var breadcrumbParams = ViewBag.DataManagementBreadcrumbX?.Parameters as IDictionary<string, object>;
+    var tablenameX = breadcrumbParams != null && breadcrumbParams.ContainsKey("tablename") ? breadcrumbParams["tablename"] : null;
+    var descriptionX = breadcrumbParams != null && breadcrumbParams.ContainsKey("description") ? breadcrumbParams["description"] : null;
+
+    var returnURL = ViewBag.ReturnURL;
 }
+
 
 <partial name="_Sidebar" />
 
