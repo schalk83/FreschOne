@@ -1,7 +1,8 @@
 ﻿@{
-    ViewData["Title"] = "Dynamic Report Generator";
+    ViewData["Title"] = ViewBag.ReportName;
     var userID = ViewBag.UserID;
     var reportName = ViewBag.ReportName;
+    var tableDescriptions = ViewBag.TableDescriptions as Dictionary<string, string>;
 }
 <partial name="_Sidebar" />
 
@@ -14,43 +15,49 @@
 
 @if (ViewBag.SearchResult != null)
 {
-    var tables = ViewBag.ReportTables as List<foReportTable>;
+    var tables = ViewBag.ReportTables as List<object>;
     var reportData = ViewBag.ReportData as Dictionary<string, Queue<System.Data.DataTable>>;
 
     <div class="accordion" id="reportAccordion">
         @for (int i = 0; i < tables.Count; i++)
         {
-            var table = tables[i];
-            var tableNameToShow = table.TableDescription;
-            var tableId = table.TableName;
+            string key = "";
+            string formType = "";
+            int? columnCount = null;
+
+            if (tables[i] is FreschOne.Models.foReportTable t)
+            {
+                key = t.TableName;
+                formType = t.FormType;
+                columnCount = t.ColumnCount;
+            }
+            else if (tables[i] is FreschOne.Models.foReportTableQuery q)
+            {
+                key = "Q_" + q.ID;
+                formType = q.FormType;
+                columnCount = q.ColumnCount;
+            }
+
+            string tableNameToShow = tableDescriptions.ContainsKey(key) ? tableDescriptions[key] : key;
             var headingId = $"heading_{i}";
             var collapseId = $"collapse_{i}";
 
             <div class="accordion-item">
-                
-                @* <h2 class="accordion-header" id="@headingId">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="@(i == 0 ? "true" : "false")" aria-controls="@collapseId">
-                        @tableNameToShow
-                    </button>
-                </h2> *@
-
                 <h2 class="accordion-header" id="@headingId">
                     <button class="accordion-button collapsed fw-bold fs-5" type="button" data-bs-toggle="collapse"
                             data-bs-target="#@collapseId" aria-expanded="@(i == 0 ? "true" : "false")" aria-controls="@collapseId">
                         @tableNameToShow
                     </button>
                 </h2>
-
-
                 <div id="@collapseId" class="accordion-collapse collapse show" aria-labelledby="@headingId" data-bs-parent="#reportAccordion">
                     <div class="accordion-body">
-                        @if (reportData != null && reportData.ContainsKey(table.TableName) && reportData[table.TableName].Count > 0)
+                        @if (reportData != null && reportData.ContainsKey(key) && reportData[key].Count > 0)
                         {
-                            var matchingDataset = reportData[table.TableName].Dequeue();
+                            var matchingDataset = reportData[key].Dequeue();
 
                             if (matchingDataset.Rows.Count > 0)
                             {
-                                if (table.FormType == "T")
+                                if (formType == "T")
                                 {
                                     <table class="table sortable">
                                         <thead>
@@ -70,10 +77,6 @@
                                             @foreach (System.Data.DataRow row in matchingDataset.Rows)
                                             {
                                                 <tr>
-                                                    @* @foreach (var item in row.ItemArray)
-                                                    {
-                                                        <td>@item</td>
-                                                    } *@
                                                     @for (int colIndex = 0; colIndex < matchingDataset.Columns.Count; colIndex++)
                                                     {
                                                         var col = matchingDataset.Columns[colIndex];
@@ -102,13 +105,12 @@
                                                             <td>@strVal</td>
                                                         }
                                                     }
-
                                                 </tr>
                                             }
                                         </tbody>
                                     </table>
                                 }
-                                else if (table.FormType == "F")
+                                else if (formType == "F")
                                 {
                                     foreach (System.Data.DataRow row in matchingDataset.Rows)
                                     {
@@ -117,17 +119,17 @@
                                         .ToList();
 
                                         int totalColumns = validColumns.Count;
-                                        int columnCount = table.ColumnCount ?? 2;
-                                        int rowsRequired = (int)Math.Ceiling((double)totalColumns / columnCount);
+                                        int colCount = columnCount ?? 2;
+                                        int rowsRequired = (int)Math.Ceiling((double)totalColumns / colCount);
 
                                         <table class="table freeform-table">
                                             <tbody>
                                                 @for (int rowIdx = 0; rowIdx < rowsRequired; rowIdx++)
                                                 {
                                                     <tr>
-                                                        @for (int colIdx = 0; colIdx < columnCount; colIdx++)
+                                                        @for (int colIdx = 0; colIdx < colCount; colIdx++)
                                                         {
-                                                            int dataIndex = (rowIdx * columnCount) + colIdx;
+                                                            int dataIndex = (rowIdx * colCount) + colIdx;
 
                                                             if (dataIndex < totalColumns)
                                                             {
@@ -191,8 +193,6 @@
     </div>
 }
 
-
-
 <script>
     function expandAll() {
         document.querySelectorAll('.accordion-collapse').forEach(section => section.classList.add('show'));
@@ -223,10 +223,4 @@
 
         rows.forEach(row => tbody.appendChild(row));
     }
-
-   
-
-
-
 </script>
-

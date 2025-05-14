@@ -1,0 +1,99 @@
+﻿@model FreschOne.Models.foReportTableQuery
+
+@{
+    ViewData["Title"] = "Edit Table Entry";
+    var userid = ViewBag.userid;
+    var reportid = ViewBag.ReportID;
+    var hasParentStep = ViewBag.HasParentStep == true;
+    var isFirstStep = ViewBag.IsFirstStep == true;
+
+    var tablePrefixes = ViewBag.TablePrefixes as List<(string Prefix, string Description)>;
+    var tableOptions = ViewBag.ValidTables as List<SelectListItem>;
+}
+
+<partial name="_Sidebar" />
+
+<h2>Edit Table Entry</h2>
+
+<form asp-action="Edit" asp-route-userid="@userid" method="post">
+    <input type="hidden" asp-for="ID" />
+    <input type="hidden" asp-for="ReportsID" />
+
+    
+    <div class="mb-3">
+        <label asp-for="Query" class="form-label">Query</label>
+        <textarea asp-for="Query" class="form-control" rows="5"></textarea>
+        <span asp-validation-for="Query" class="text-danger"></span>
+    </div>
+    <div id="testQuerySection" style="display: none;">
+        <button type="button" class="btn btn-outline-info mb-2" onclick="testQuery()">Test Query</button>
+        <div id="queryResult" class="mt-2"></div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="FormType" class="form-label">Form Type</label>
+        <select asp-for="FormType" asp-items="ViewBag.FormTypes" class="form-select"></select>
+        <span asp-validation-for="FormType" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ColumnCount" class="form-label">Column Count</label>
+        <input asp-for="ColumnCount" type="number" class="form-control" />
+        <span asp-validation-for="ColumnCount" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="TableDescription" class="form-label">Description</label>
+        <input asp-for="TableDescription" class="form-control" />
+        <span asp-validation-for="TableDescription" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a href="@Url.Action("Index", new { reportid = reportid, userid = userid })" class="btn btn-secondary">Cancel</a>
+</form>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function checkTestQueryVisibility() {
+            const queryInput = document.querySelector('[name="Query"]');
+            const section = document.getElementById("testQuerySection");
+
+            if (queryInput.value.trim()) {
+                section.style.display = "block";
+            } else {
+                section.style.display = "none";
+            }
+        }
+
+        function testQuery() {
+            const Query = document.querySelector('[name="Query"]').value;
+
+            fetch('/foReportTableQuery/TestQuery', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Query })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const resultDiv = document.getElementById("queryResult");
+                    if (data.success) {
+                        resultDiv.innerHTML = "<span class='text-success'>✅ Query is valid!</span>";
+                    } else {
+                        resultDiv.innerHTML = `<span class='text-danger'>❌ ${data.message}</span>`;
+                    }
+                })
+                .catch(err => {
+                    document.getElementById("queryResult").innerHTML =
+                        `<span class='text-danger'>❌ Error: ${err.message}</span>`;
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const queryInput = document.querySelector('[name="Query"]');
+            queryInput.addEventListener("input", checkTestQueryVisibility);
+            checkTestQueryVisibility();
+        });
+    </script>
+}

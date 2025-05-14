@@ -7,32 +7,47 @@
 <partial name="_Sidebar" />
 
 <h1>Available Reports</h1>
-    <div class="accordion" id="reportsAccordion">
-        @if (Model.Any())
-        {
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="heading_reports">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#collapse_reports" aria-expanded="true"
-                            aria-controls="collapse_reports">
-                        Reports List
-                    </button>
-                </h2>
-                <div id="collapse_reports" class="accordion-collapse collapse show"
-                     aria-labelledby="heading_reports" data-bs-parent="#reportsAccordion">
-                    <div class="accordion-body">
-                        <ul class="list-unstyled">
-                            @foreach (var report in Model)
+<div class="accordion" id="reportsAccordion">
+    @if (Model.Any())
+    {
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading_reports">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                data-bs-target="#collapse_reports" aria-expanded="true"
+                aria-controls="collapse_reports">
+                    Reports List
+                </button>
+            </h2>
+            <div id="collapse_reports" class="accordion-collapse collapse show"
+            aria-labelledby="heading_reports" data-bs-parent="#reportsAccordion">
+                <div class="accordion-body">
+                    <ul class="list-unstyled">
+                        @foreach (var report in Model)
+                        {
+                            if (report.Source == "Table")
                             {
                                 <li>
                                     <div class="report-item p-2 border rounded text-primary"
                                          style="cursor: pointer;"
-                                     onclick="window.location.href='@Url.Action("preIndex", "TableXReport", new { userid = userid, reportid = report.ID })'">
+                                         onclick="window.location.href='@Url.Action("preIndex", "TableXReport", new { userid = userid, reportid = report.ID })'">
                                         <span class="fw-bold">@report.ReportName</span>
                                     </div>
-                                <span style="margin-left: 2rem;">@report.ReportDescription</span>
+                                    <span style="margin-left: 2rem;">@report.ReportDescription</span>
                                 </li>
                             }
+                            else if (report.Source == "Query")
+                            {
+                                <li>
+                                    <div class="report-item p-2 border rounded text-primary"
+                                         style="cursor: pointer;"
+                                         onclick="window.location.href='@Url.Action("GenerateReport", "DynamicReport", new { userid = userid, reportid = report.ID })'">
+                                        <span class="fw-bold">@report.ReportName</span>
+                                    </div>
+                                    <span style="margin-left: 2rem;">@report.ReportDescription</span>
+                                </li>
+                            }
+                        }
+
                         </ul>
                     </div>
                 </div>

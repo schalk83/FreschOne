@@ -252,6 +252,4 @@ public FoUser AuthenticateUser(string username, string password)
             }
         }
     }
-
-
 }

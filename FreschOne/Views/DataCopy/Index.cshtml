@@ -1,0 +1,34 @@
+﻿@{
+    ViewData["Title"] = "📤 Copy Tables";
+    var tableInfo = ViewBag.TableInfo as List<(string TableName, int SourceCount, int TargetCount)>;
+}
+
+<h2>@ViewData["Title"]</h2>
+<p>Select a table below to copy data from source to destination.</p>
+
+<table class="table table-bordered table-sm align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Table</th>
+            <th>Source Rows</th>
+            <th>Target Rows</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var (table, sourceCount, targetCount) in tableInfo)
+        {
+                <tr>
+                    <td>@table</td>
+                    <td>@(sourceCount >= 0 ? sourceCount.ToString("N0") : "⚠️")</td>
+                    <td>@(targetCount >= 0 ? targetCount.ToString("N0") : "⚠️")</td>
+                    <td>
+                        <form asp-action="CopyTable" method="get" target="_blank">
+                            <input type="hidden" name="table" value="@table" />
+                            <button type="submit" class="btn btn-sm btn-primary">Copy</button>
+                        </form>
+                    </td>
+                </tr>
+        }
+    </tbody>
+</table>

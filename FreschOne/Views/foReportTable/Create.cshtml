@@ -6,6 +6,9 @@
     var reportid = ViewBag.ReportID;
     var hasParentStep = ViewBag.HasParentStep == true;
     var isFirstStep = ViewBag.IsFirstStep == true;
+
+    var tablePrefixes = ViewBag.TablePrefixes as List<(string Prefix, string Description)>;
+    var tableOptions = ViewBag.ValidTables as List<SelectListItem>;
 }
 
 <partial name="_Sidebar" />
@@ -16,8 +19,35 @@
     <input type="hidden" asp-for="ReportsID" />
 
     <div class="mb-3">
+        <label class="form-label d-block">Filter by Prefix</label>
+
+        <div class="form-check form-check-inline">
+            <input class="form-check-input prefix-filter" type="radio" name="prefixFilter" id="prefix_all" value="ALL" checked />
+            <label class="form-check-label" for="prefix_all">All</label>
+        </div>
+
+        @foreach (var prefix in tablePrefixes)
+        {
+            var id = $"prefix_{prefix.Prefix}";
+            <div class="form-check form-check-inline">
+                <input class="form-check-input prefix-filter" type="radio" name="prefixFilter" id="@id" value="@prefix.Prefix" />
+                <label class="form-check-label" for="@id">@prefix.Description</label>
+            </div>
+        }
+    </div>
+
+
+    <div class="mb-3">
         <label asp-for="TableName" class="form-label">Table Name</label>
-        <input asp-for="TableName" class="form-control" id="TableNameInput" />
+        <select asp-for="TableName" class="form-select" id="TableNameDropdown">
+            <option value=""></option>
+            @foreach (var item in tableOptions)
+            {
+                var prefix = item.Group?.Name ?? "";
+                <option value="@item.Value" data-prefix="@prefix">@item.Text</option>
+            }
+        </select>
+
         <span asp-validation-for="TableName" class="text-danger"></span>
     </div>
 
@@ -122,32 +152,10 @@
                 });
         }
 
-        function testQuery() {
-            const tableName = document.getElementById("TableNameInput").value;
-            const columnQuery = document.querySelector('[name="ColumnQuery"]').value;
-
-            fetch('/foReportTable/TestQuery', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tableName, columnQuery })
-            })
-            .then(res => res.json())
-            .then(data => {
-                const resultDiv = document.getElementById("queryResult");
-                if (data.success) {
-                    resultDiv.innerHTML = "<span class='text-success'>✅ Query is valid!</span>";
-                } else {
-                    resultDiv.innerHTML = `<span class='text-danger'>❌ ${data.message}</span>`;
-                }
-            })
-            .catch(err => {
-                document.getElementById("queryResult").innerHTML =
-                    `<span class='text-danger'>❌ Error: ${err.message}</span>`;
-            });
-        }
+       
 
         function checkTestQueryVisibility() {
-            const tableName = document.getElementById("TableNameInput").value.trim();
+            const tableName = document.getElementById("TableNameDropdown").value.trim();
             const columnQuery = document.querySelector('[name="ColumnQuery"]').value.trim();
             const section = document.getElementById("testQuerySection");
 
@@ -159,24 +167,70 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            toggleFKDropdown();
-
-            const tableInput = document.getElementById("TableNameInput");
+            const tableDropdown = document.getElementById("TableNameDropdown");
             const columnInput = document.querySelector('[name="ColumnQuery"]');
             const currentValue = "@Model.FKColumn";
 
-            tableInput.addEventListener("blur", () => {
-                loadFKColumns(tableInput.value);
+            tableDropdown.addEventListener("change", () => {
+                loadFKColumns(tableDropdown.value);
+                checkTestQueryVisibility();
             });
 
-            tableInput.addEventListener("input", checkTestQueryVisibility);
             columnInput.addEventListener("input", checkTestQueryVisibility);
 
-            if (tableInput.value) {
-                loadFKColumns(tableInput.value, currentValue);
+            if (tableDropdown.value) {
+                loadFKColumns(tableDropdown.value, currentValue);
             }
 
             checkTestQueryVisibility();
         });
+
+
+            document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll(".prefix-filter").forEach(radio => {
+                radio.addEventListener("change", function () {
+                    const selectedPrefix = this.value;
+                    const dropdown = document.getElementById("TableNameDropdown");
+                    const options = dropdown.querySelectorAll("option");
+
+                    options.forEach(option => {
+                        if (!option.value) return; // Skip empty option
+                        const optionPrefix = option.getAttribute("data-prefix");
+
+                        // Show all or only matching prefix
+                        option.hidden = (selectedPrefix !== "ALL" && optionPrefix !== selectedPrefix);
+                    });
+
+                    // Reset selection
+                    dropdown.value = "";
+                });
+            });
+        });
+
+         function testQuery() {
+            const tableName = document.getElementById("TableNameDropdown").value;
+            const columnQuery = document.querySelector('[name="ColumnQuery"]').value;
+
+            fetch('/foReportTable/TestQuery', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tableName, columnQuery })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const resultDiv = document.getElementById("queryResult");
+                    if (data.success) {
+                        resultDiv.innerHTML = "<span class='text-success'>✅ Query is valid!</span>";
+                    } else {
+                        resultDiv.innerHTML = `<span class='text-danger'>❌ ${data.message}</span>`;
+                    }
+                })
+                .catch(err => {
+                    document.getElementById("queryResult").innerHTML =
+                        `<span class='text-danger'>❌ Error: ${err.message}</span>`;
+                });
+        }
+
+
     </script>
 }
