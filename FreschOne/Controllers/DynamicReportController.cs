@@ -34,9 +34,26 @@ namespace FreschOne.Controllers
             if (!userReports.Any()) return new List<foReports>();
 
             var reportIds = string.Join(",", userReports.Select(ur => ur.ReportID));
-            var query = $"SELECT * FROM dbo.foReports WHERE ID IN ({reportIds}) AND Active = 1";
-            return _dbHelper.ExecuteQuery<foReports>(query);
+
+            var combinedQuery = $@"
+        SELECT ID, ReportName, ReportDescription, Active, 'Table' AS Source
+        FROM dbo.foReports
+        WHERE ID IN ({reportIds})
+          AND Active = 1
+          AND ID IN (SELECT ReportsID FROM foReportTable WHERE Active = 1)
+
+        UNION ALL
+
+        SELECT ID, ReportName, ReportDescription, Active, 'Query' AS Source
+        FROM dbo.foReports
+        WHERE ID IN ({reportIds})
+          AND Active = 1
+          AND ID IN (SELECT ReportsID FROM foReportTableQuery WHERE Active = 1)
+    ";
+
+            return _dbHelper.ExecuteQuery<foReports>(combinedQuery);
         }
+
 
         public IActionResult Index(int userid)
         {
@@ -47,175 +64,314 @@ namespace FreschOne.Controllers
             return View(reports);
         }
 
-        public IActionResult GenerateReport(int reportid, int PKID, int userId)
-        {
-
-            SetUserAccess(userId);
-            string ReportName = GetReportName(reportid);
-            ViewBag.ReportName = ReportName;
-            ViewBag.ReportId = reportid;
-
-            ViewBag.PKID = PKID;
-
-            var connectionString = _configuration.GetConnectionString("DefaultConnection");
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+        /*    public IActionResult GenerateReport(int reportid, int PKID, int userId)
             {
-                conn.Open();
 
-                // ✅ Fetch all relevant tables for the report, including FKColumn
-                string reportQuery = @"
-            SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription
-            FROM foReportTable 
-            WHERE Active = 1 
-            AND reportsid = " + reportid + 
-            "ORDER BY Parent desc, ID "; // Parent comes first
+                SetUserAccess(userId);
+                string ReportName = GetReportName(reportid);
+                ViewBag.ReportName = ReportName;
+                ViewBag.ReportId = reportid;
 
-                var tables = new List<foReportTable>();
+                ViewBag.PKID = PKID;
 
-                using (SqlCommand cmd = new SqlCommand(reportQuery, conn))
+                var connectionString = _configuration.GetConnectionString("DefaultConnection");
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    conn.Open();
+
+                    // ✅ Fetch all relevant tables for the report, including FKColumn
+                    string reportQuery = @"
+                SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription
+                FROM foReportTable 
+                WHERE Active = 1 
+                AND reportsid = " + reportid + 
+                "ORDER BY Parent desc, ID "; // Parent comes first
+
+                    var tables = new List<foReportTable>();
+
+                    using (SqlCommand cmd = new SqlCommand(reportQuery, conn))
                     {
-                        while (reader.Read())
+                        using (SqlDataReader reader = cmd.ExecuteReader())
                         {
-                            tables.Add(new foReportTable
+                            while (reader.Read())
                             {
-                                TableName = reader["TableName"].ToString(),
-                                ColumnQuery = reader["ColumnQuery"].ToString(),
-                                FormType = reader["FormType"].ToString(),
-                                ColumnCount = reader["ColumnCount"] != DBNull.Value ? Convert.ToInt32(reader["ColumnCount"]) : (int?)null,
-                                Parent = reader["Parent"] != DBNull.Value && Convert.ToBoolean(reader["Parent"]),
-                                FKColumn = reader["FKColumn"]?.ToString(),
-                                TableDescription = reader["TableDescription"]?.ToString()
-                            });
+                                tables.Add(new foReportTable
+                                {
+                                    TableName = reader["TableName"].ToString(),
+                                    ColumnQuery = reader["ColumnQuery"].ToString(),
+                                    FormType = reader["FormType"].ToString(),
+                                    ColumnCount = reader["ColumnCount"] != DBNull.Value ? Convert.ToInt32(reader["ColumnCount"]) : (int?)null,
+                                    Parent = reader["Parent"] != DBNull.Value && Convert.ToBoolean(reader["Parent"]),
+                                    FKColumn = reader["FKColumn"]?.ToString(),
+                                    TableDescription = reader["TableDescription"]?.ToString()
+                                });
+                            }
                         }
                     }
-                }
 
-                // ✅ Fetch Table Prefixes for Cleaning Names
-                var tablePrefixes = GetTablePrefixes();
-                var tableDescriptions = new Dictionary<string, string>();
+                    // ✅ Fetch Table Prefixes for Cleaning Names
+                    var tablePrefixes = GetTablePrefixes();
+                    var tableDescriptions = new Dictionary<string, string>();
 
-                foreach (var table in tables)
-                {
-                    string originalTableName = table.TableName;
-                    string cleanedTableName = CleanTableName(originalTableName, tablePrefixes); // ✅ Clean table name
-                    tableDescriptions[originalTableName] = cleanedTableName; // ✅ Store cleaned name
-                }
-
-                // ✅ Fetch Ignored Columns (Including FKColumn)
-                var ignoredColumns = GetIgnoredColumns(conn);
-                foreach (var table in tables)
-                {
-                    if (!string.IsNullOrEmpty(table.FKColumn))
+                    foreach (var table in tables)
                     {
-                        ignoredColumns.Add(table.FKColumn); // ✅ Ensure FKColumn is excluded
-                    }
-                }
-
-                // ✅ Fetch Foreign Keys for Lookup Tables Only
-                var foreignKeys = new Dictionary<string, List<ForeignKeyInfo>>();
-                foreach (var table in tables)
-                {
-                    foreignKeys[table.TableName] = GetForeignKeyColumns(table.TableName)
-                        .Where(fk => fk.TableName.Contains("_md_")) // ✅ Only lookup tables (e.g., `tbl_md_*`)
-                        .ToList();
-                }
-
-                // ✅ Fetch data for each table
-                Dictionary<string, Queue<DataTable>> reportData = new Dictionary<string, Queue<DataTable>>();
-
-                foreach (var table in tables)
-                {
-                    // ✅ Step 1: Get filtered columns
-                    string filteredColumns = table.ColumnQuery.Trim() == "*"
-                        ? GetAllColumnsExceptIgnored(table.TableName, ignoredColumns, conn)
-                        : FilterIgnoredColumns(table.ColumnQuery, ignoredColumns);
-
-                    // ✅ Step 2: Build NOT (col1 IS NULL AND col2 IS NULL ...) clause
-                    var columnsForNullCheck = filteredColumns
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(col => col.Trim())
-                        .Where(col =>
-                            !string.Equals(col, "ID", StringComparison.OrdinalIgnoreCase) &&
-                            !string.Equals(col, "Active", StringComparison.OrdinalIgnoreCase))
-                        .ToList();
-
-                    string notAllNullClause = columnsForNullCheck.Count > 0
-                        ? $"NOT ({string.Join(" AND ", columnsForNullCheck.Select(col => $"{col} IS NULL"))})"
-                        : ""; // No clause if no valid columns
-
-                    // ✅ Step 3: Build base WHERE clause
-                    string foreignKeyColumn = table.FKColumn;
-                    string baseWhereClause = (table.Parent == true)
-                        ? $"ID = @PKID AND Active = 1"
-                        : $"{foreignKeyColumn} = @PKID AND Active = 1";
-
-                    // ✅ Step 4: Combine with NOT ALL NULL clause
-                    if (!string.IsNullOrWhiteSpace(notAllNullClause))
-                    {
-                        baseWhereClause += $" AND {notAllNullClause}";
+                        string originalTableName = table.TableName;
+                        string cleanedTableName = CleanTableName(originalTableName, tablePrefixes); // ✅ Clean table name
+                        tableDescriptions[originalTableName] = cleanedTableName; // ✅ Store cleaned name
                     }
 
-                    // ✅ Step 5: Final query
-                    string selectQuery = $"SELECT {filteredColumns} FROM {table.TableName} WHERE {baseWhereClause} ORDER BY ID";
-
-                    using (SqlCommand cmd = new SqlCommand(selectQuery, conn))
+                    // ✅ Fetch Ignored Columns (Including FKColumn)
+                    var ignoredColumns = GetIgnoredColumns(conn);
+                    foreach (var table in tables)
                     {
-                        cmd.Parameters.AddWithValue("@PKID", PKID);
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
+                        if (!string.IsNullOrEmpty(table.FKColumn))
                         {
-                            DataTable dt = new DataTable();
-                            adapter.Fill(dt);
+                            ignoredColumns.Add(table.FKColumn); // ✅ Ensure FKColumn is excluded
+                        }
+                    }
 
-                            // ✅ Convert DataTable into List of Dictionaries
-                            var tableData = dt.Rows.Cast<DataRow>()
-                                .Select(row => dt.Columns.Cast<DataColumn>()
-                                    .ToDictionary(col => col.ColumnName, col => row[col])
-                                ).ToList();
+                    // ✅ Fetch Foreign Keys for Lookup Tables Only
+                    var foreignKeys = new Dictionary<string, List<ForeignKeyInfo>>();
+                    foreach (var table in tables)
+                    {
+                        foreignKeys[table.TableName] = GetForeignKeyColumns(table.TableName)
+                            .Where(fk => fk.TableName.Contains("_md_")) // ✅ Only lookup tables (e.g., `tbl_md_*`)
+                            .ToList();
+                    }
 
-                            // ✅ Replace Foreign Key IDs with Descriptions **Only for Lookup Tables**
-                            foreach (var rowDict in tableData)
+                    // ✅ Fetch data for each table
+                    Dictionary<string, Queue<DataTable>> reportData = new Dictionary<string, Queue<DataTable>>();
+
+                    foreach (var table in tables)
+                    {
+                        // ✅ Step 1: Get filtered columns
+                        string filteredColumns = table.ColumnQuery.Trim() == "*"
+                            ? GetAllColumnsExceptIgnored(table.TableName, ignoredColumns, conn)
+                            : FilterIgnoredColumns(table.ColumnQuery, ignoredColumns);
+
+                        // ✅ Step 2: Build NOT (col1 IS NULL AND col2 IS NULL ...) clause
+                        var columnsForNullCheck = filteredColumns
+                            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(col => col.Trim())
+                            .Where(col =>
+                                !string.Equals(col, "ID", StringComparison.OrdinalIgnoreCase) &&
+                                !string.Equals(col, "Active", StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+
+                        string notAllNullClause = columnsForNullCheck.Count > 0
+                            ? $"NOT ({string.Join(" AND ", columnsForNullCheck.Select(col => $"{col} IS NULL"))})"
+                            : ""; // No clause if no valid columns
+
+                        // ✅ Step 3: Build base WHERE clause
+                        string foreignKeyColumn = table.FKColumn;
+                        string baseWhereClause = (table.Parent == true)
+                            ? $"ID = @PKID AND Active = 1"
+                            : $"{foreignKeyColumn} = @PKID AND Active = 1";
+
+                        // ✅ Step 4: Combine with NOT ALL NULL clause
+                        if (!string.IsNullOrWhiteSpace(notAllNullClause))
+                        {
+                            baseWhereClause += $" AND {notAllNullClause}";
+                        }
+
+                        // ✅ Step 5: Final query
+                        string selectQuery = $"SELECT {filteredColumns} FROM {table.TableName} WHERE {baseWhereClause} ORDER BY ID";
+
+                        using (SqlCommand cmd = new SqlCommand(selectQuery, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@PKID", PKID);
+                            using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
                             {
-                                foreach (var foreignKey in foreignKeys[table.TableName])
-                                {
-                                    if (rowDict.ContainsKey(foreignKey.ColumnName))
-                                    {
-                                        var fkValue = rowDict[foreignKey.ColumnName];
+                                DataTable dt = new DataTable();
+                                adapter.Fill(dt);
 
-                                        if (fkValue != DBNull.Value)
+                                // ✅ Convert DataTable into List of Dictionaries
+                                var tableData = dt.Rows.Cast<DataRow>()
+                                    .Select(row => dt.Columns.Cast<DataColumn>()
+                                        .ToDictionary(col => col.ColumnName, col => row[col])
+                                    ).ToList();
+
+                                // ✅ Replace Foreign Key IDs with Descriptions **Only for Lookup Tables**
+                                foreach (var rowDict in tableData)
+                                {
+                                    foreach (var foreignKey in foreignKeys[table.TableName])
+                                    {
+                                        if (rowDict.ContainsKey(foreignKey.ColumnName))
                                         {
-                                            rowDict[foreignKey.ColumnName] = GetForeignKeyDescription(foreignKey.TableName, fkValue);
+                                            var fkValue = rowDict[foreignKey.ColumnName];
+
+                                            if (fkValue != DBNull.Value)
+                                            {
+                                                rowDict[foreignKey.ColumnName] = GetForeignKeyDescription(foreignKey.TableName, fkValue);
+                                            }
                                         }
                                     }
                                 }
+
+                                // ✅ Convert List<Dictionary<string, object>> back to DataTable
+                                DataTable updatedTable = ConvertToDataTable(tableData);
+
+                                if (!reportData.ContainsKey(table.TableName))
+                                {
+                                    reportData[table.TableName] = new Queue<DataTable>();
+                                }
+
+                                reportData[table.TableName].Enqueue(updatedTable);
                             }
-
-                            // ✅ Convert List<Dictionary<string, object>> back to DataTable
-                            DataTable updatedTable = ConvertToDataTable(tableData);
-
-                            if (!reportData.ContainsKey(table.TableName))
-                            {
-                                reportData[table.TableName] = new Queue<DataTable>();
-                            }
-
-                            reportData[table.TableName].Enqueue(updatedTable);
                         }
                     }
+
+                    // ✅ Store Results in ViewBag
+                    ViewBag.ReportTables = tables;
+                    ViewBag.ReportData = reportData;
+                    ViewBag.TableDescriptions = tableDescriptions;
+                    ViewBag.SearchResult = true;
                 }
 
-                // ✅ Store Results in ViewBag
-                ViewBag.ReportTables = tables;
-                ViewBag.ReportData = reportData;
-                ViewBag.TableDescriptions = tableDescriptions;
-                ViewBag.SearchResult = true;
+                return View("GenerateReportIndex");
             }
+        */
+
+        public IActionResult GenerateReport(int reportid, int? PKID, int userId)
+        {
+            SetUserAccess(userId);
+            ViewBag.ReportName = GetReportName(reportid);
+            ViewBag.ReportId = reportid;
+            ViewBag.PKID = PKID;
+
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            var reportData = new Dictionary<string, Queue<DataTable>>();
+            var allTables = new List<object>();
+            var tableDescriptions = new Dictionary<string, string>();
+
+            using var conn = new SqlConnection(connectionString);
+            conn.Open();
+
+            var ignoredColumns = GetIgnoredColumns(conn);
+            var tablePrefixes = GetTablePrefixes();
+
+            // 🔷 Load foReportTable (structured)
+            var foTables = new List<foReportTable>();
+            using (var cmd = new SqlCommand(@"
+        SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription
+        FROM foReportTable 
+        WHERE Active = 1 AND ReportsID = @ReportID
+        ORDER BY Parent DESC, ID", conn))
+            {
+                cmd.Parameters.AddWithValue("@ReportID", reportid);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    var table = new foReportTable
+                    {
+                        TableName = reader["TableName"].ToString(),
+                        ColumnQuery = reader["ColumnQuery"].ToString(),
+                        FormType = reader["FormType"].ToString(),
+                        ColumnCount = reader["ColumnCount"] as int?,
+                        Parent = Convert.ToBoolean(reader["Parent"]),
+                        FKColumn = reader["FKColumn"]?.ToString(),
+                        TableDescription = reader["TableDescription"]?.ToString()
+                    };
+                    foTables.Add(table);
+                    allTables.Add(table);
+                    tableDescriptions[table.TableName] = CleanTableName(table.TableName, tablePrefixes);
+                }
+            }
+
+            // 🔷 Load foReportTableQuery metadata only (no data yet)
+            var foQueryTables = new List<foReportTableQuery>();
+            using (var cmd = new SqlCommand(@"
+        SELECT ID, Query, FormType, ColumnCount, TableDescription
+        FROM foReportTableQuery
+        WHERE Active = 1 AND ReportsID = @ReportID
+        ORDER BY ID", conn))
+            {
+                cmd.Parameters.AddWithValue("@ReportID", reportid);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    var qtable = new foReportTableQuery
+                    {
+                        ID = (long)reader["ID"],
+                        Query = reader["Query"].ToString(),
+                        FormType = reader["FormType"].ToString(),
+                        ColumnCount = reader["ColumnCount"] as int?,
+                        TableDescription = reader["TableDescription"]?.ToString()
+                    };
+                    string tempKey = "Q_" + qtable.ID;
+                    foQueryTables.Add(qtable);
+                    allTables.Add(qtable);
+                    tableDescriptions[tempKey] = $"🧪 {qtable.TableDescription ?? "Custom Query"}";
+                }
+            }
+
+            // 🔷 Execute each foReportTableQuery separately
+            foreach (var qtable in foQueryTables)
+            {
+                try
+                {
+                    using var customCmd = new SqlCommand(qtable.Query, conn);
+                    if (qtable.Query.Contains("@PKID") && PKID.HasValue)
+                        customCmd.Parameters.AddWithValue("@PKID", PKID.Value);
+
+                    using var adapter = new SqlDataAdapter(customCmd);
+                    var dt = new DataTable();
+                    adapter.Fill(dt);
+
+                    string key = "Q_" + qtable.ID;
+                    reportData[key] = new Queue<DataTable>(new[] { dt });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Query {qtable.ID} failed: {ex.Message}");
+                }
+            }
+
+            // 🔷 Load data for structured tables
+            foreach (var table in foTables)
+            {
+                string filteredColumns = table.ColumnQuery.Trim() == "*"
+                    ? GetAllColumnsExceptIgnored(table.TableName, ignoredColumns, conn)
+                    : FilterIgnoredColumns(table.ColumnQuery, ignoredColumns);
+
+                var notNullCheck = string.Join(" AND ", filteredColumns.Split(',')
+                    .Select(c => c.Trim())
+                    .Where(c => c != "ID" && c != "Active")
+                    .Select(c => $"{c} IS NULL"));
+
+                string baseWhere = table.Parent
+                    ? $"ID = @PKID AND Active = 1"
+                    : $"{table.FKColumn} = @PKID AND Active = 1";
+
+                if (!string.IsNullOrWhiteSpace(notNullCheck))
+                    baseWhere += $" AND NOT ({notNullCheck})";
+
+                string selectQuery = $"SELECT {filteredColumns} FROM {table.TableName} WHERE {baseWhere} ORDER BY ID";
+
+                using var cmd = new SqlCommand(selectQuery, conn);
+                cmd.Parameters.AddWithValue("@PKID", PKID ?? 0);
+                using var adapter = new SqlDataAdapter(cmd);
+                var dt = new DataTable();
+                adapter.Fill(dt);
+
+                if (!reportData.ContainsKey(table.TableName))
+                    reportData[table.TableName] = new Queue<DataTable>();
+                reportData[table.TableName].Enqueue(dt);
+            }
+
+            // 🔷 Send to view
+            ViewBag.ReportTables = allTables;
+            ViewBag.ReportData = reportData;
+            ViewBag.TableDescriptions = tableDescriptions;
+            ViewBag.SearchResult = true;
 
             return View("GenerateReportIndex");
         }
 
-       
+
+
+
         private DataTable ConvertToDataTable(List<Dictionary<string, object>> data)
         {
             DataTable table = new DataTable();
@@ -430,20 +586,6 @@ namespace FreschOne.Controllers
             return cleanedName.Replace("_", " "); // ✅ Replace underscores with spaces
         }
 
-
-        //private string CleanTableName(string tableName, List<string> tablePrefixes)
-        //{
-        //    foreach (var prefix in tablePrefixes)
-        //    {
-        //        if (tableName.StartsWith(prefix))
-        //        {
-        //            return tableName.Replace(prefix, "").Replace("_", " "); // ✅ Remove prefix & format name
-        //        }
-        //    }
-        //    return tableName.Replace("_", " "); // ✅ Default cleanup
-        //}
-
-
         // Helper method to get the second column of a table
         private string GetSecondColumnName(string tableName, SqlConnection conn)
         {
@@ -466,17 +608,5 @@ namespace FreschOne.Controllers
 
     }
 
-    //public class foReportTable
-    //{
-    //    public string TableName { get; set; }
-    //    public string TableDescription { get; set; }
-    //    public string ColumnQuery { get; set; }
-    //    public string FormType { get; set; } // "T" for Table, "F" for Freeform
-    //    public int? ColumnCount { get; set; }
-    //    public int? Parent { get; set; }
-    //    public string FKColumn { get; set; }
-    //    public List<ForeignKeyInfo> ForeignKeys { get; set; }  // List of foreign key columns (for dropdowns)
-    //    public Dictionary<string, List<SelectListItem>> ForeignKeyOptions { get; set; }  // Options for foreign key dropdowns
-
-    //}
+ 
 }

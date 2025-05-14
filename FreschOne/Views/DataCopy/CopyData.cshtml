@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "📤 Copy Tables from Source to Target";
+    var tables = ViewBag.Tables as List<string>;
+}
+
+<h2>@ViewData["Title"]</h2>
+<p>Click a table name to copy its data from the source to the target database.</p>
+
+<div class="table-list">
+    @foreach (var table in tables)
+    {
+        <form asp-action="CopyTable" method="get" class="mb-2">
+            <input type="hidden" name="table" value="@table" />
+            <button type="submit" class="btn btn-primary">
+                Copy @table
+            </button>
+        </form>
+    }
+</div>

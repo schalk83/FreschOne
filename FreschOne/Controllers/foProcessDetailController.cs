@@ -48,6 +48,8 @@ namespace FreschOne.Controllers
             bool isFirstDetail = !stepDetails.Any();
             ViewBag.IsFirstDetail = isFirstDetail;
 
+            ViewBag.ValidTables = GetPrefixedTableNames();
+            ViewBag.TablePrefixes = GetTablePrefixes(); // For the radio buttons
 
 
             return View(new foProcessDetail
@@ -188,6 +190,11 @@ namespace FreschOne.Controllers
                     processId = (long)reader["ProcessID"];
                 }
             }
+
+
+            ViewBag.ValidTables = GetPrefixedTableNames();
+            ViewBag.TablePrefixes = GetTablePrefixes(); // For the radio buttons
+
 
             ViewBag.StepId = detail.StepID;
             ViewBag.ProcessId = processId;
@@ -482,6 +489,68 @@ namespace FreschOne.Controllers
 
             return Json(columns);
         }
+
+        private List<SelectListItem> GetPrefixedTableNames()
+        {
+            var list = new List<SelectListItem>();
+
+            using var conn = GetConnection();
+            conn.Open();
+
+            // Step 1: Get active prefixes
+            var prefixes = new List<string>();
+            using (var cmd = new SqlCommand("SELECT Prefix FROM foTablePrefixes WHERE Active = 1", conn))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                    prefixes.Add(reader["Prefix"].ToString());
+            }
+
+            // Step 2: Build WHERE clause and get matching table names
+            if (prefixes.Any())
+            {
+                var conditions = string.Join(" OR ", prefixes.Select((p, i) => $"name LIKE @p{i}"));
+                var tableCmd = new SqlCommand($"SELECT name FROM sys.tables WHERE {conditions} ORDER BY name", conn);
+
+                for (int i = 0; i < prefixes.Count; i++)
+                    tableCmd.Parameters.AddWithValue($"@p{i}", prefixes[i] + "%");
+
+                using (var reader = tableCmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var name = reader["name"].ToString();
+                        var matchedPrefix = prefixes.FirstOrDefault(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+                        list.Add(new SelectListItem
+                        {
+                            Text = name,
+                            Value = name,
+                            // Store prefix explicitly in Text OR as Value + use JS later
+                            // We'll use this prefix in the view
+                            Group = new SelectListGroup { Name = matchedPrefix } // optional: for optgroup use
+                        });
+                    }
+                }
+            }
+
+            return list;
+        }
+
+
+        private List<(string Prefix, string Description)> GetTablePrefixes()
+        {
+            var list = new List<(string, string)>();
+            using var conn = GetConnection();
+            var cmd = new SqlCommand("SELECT Prefix, Description FROM foTablePrefixes WHERE Active = 1", conn);
+            conn.Open();
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                list.Add((reader["Prefix"].ToString(), reader["Description"].ToString()));
+            }
+            return list;
+        }
+
 
 
     }

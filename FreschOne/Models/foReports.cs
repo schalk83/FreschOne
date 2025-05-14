@@ -6,7 +6,12 @@
         public string ReportName { get; set; }
 
         public string ReportDescription { get; set; }
+        
+        public string Source { get; set; }
+        
         public bool Active { get; set; }
+
+
     }
 
 }
