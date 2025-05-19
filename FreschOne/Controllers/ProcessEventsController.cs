@@ -11,14 +11,14 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.Wordprocessing;
 
-
 namespace FreschOne.Controllers
 {
     public class ProcessEventsController : BaseController
     {
         public ProcessEventsController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
-        private SqlConnection GetConnection() => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
+
+        private SqlConnection GetConnection() => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
         public IActionResult CreateStep(int processId, int? stepId, int? processInstanceId, int userId)
         {
@@ -255,7 +255,7 @@ namespace FreschOne.Controllers
 
             return View();
         }
-
+       
         public IActionResult PendingStep(int Eventid, int processId, int? stepId, int? processInstanceId, int userId)
         {
             SetUserAccess(userId);
@@ -446,14 +446,19 @@ namespace FreschOne.Controllers
                     else if (table.FormType == "T")
                     {
                         var allRowsCmd = new SqlCommand(@"
-                         SELECT ProcessEventID, RecordID,DataSetUpdate
-                    FROM foProcessEventsDetail a
-                        WHERE ProcessInstanceID = @InstanceID  
-                          AND StepID = @StepID
-                          AND TableName = @TableName
-                          AND Active = 1 
-                          
-                        ORDER BY ID", conn);
+                        SELECT a.ProcessEventID, a.RecordID, a.DataSetUpdate
+                        FROM foProcessEventsDetail a
+                        INNER JOIN (
+                            SELECT MAX(ID) AS MaxID
+                            FROM foProcessEventsDetail
+                            WHERE ProcessInstanceID = @InstanceID
+                              AND StepID = @StepID
+                              AND TableName = @TableName
+                              AND Active = 1
+                            GROUP BY RecordID
+                        ) b ON a.ID = b.MaxID
+                        ORDER BY a.ID", conn);
+
 
                         allRowsCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
                         allRowsCmd.Parameters.AddWithValue("@StepID", stepId);
@@ -486,6 +491,7 @@ namespace FreschOne.Controllers
 
                     tableData[table.TableName] = rows;
                     prefilledValues[table.TableName] = rows;
+
                 }
 
                 ViewBag.PrefilledValues = prefilledValues;
@@ -1461,7 +1467,6 @@ namespace FreschOne.Controllers
             return result;
         }
 
-
         private List<SelectListItem> GetForeignKeyOptions(string tableName)
         {
             var options = new List<SelectListItem>();
@@ -1519,7 +1524,6 @@ namespace FreschOne.Controllers
             return allColumns;
         }
 
-
         private List<string> GetIgnoredColumns(SqlConnection conn)
         {
             var ignoredColumns = new List<string>();
@@ -1538,7 +1542,6 @@ namespace FreschOne.Controllers
 
             return ignoredColumns;
         }
-
         private List<ForeignKeyInfo> GetForeignKeyColumns(string tablename)
         {
             var foreignKeys = new List<ForeignKeyInfo>();
@@ -1581,7 +1584,6 @@ namespace FreschOne.Controllers
             }
             return foreignKeys;
         }
-
         private List<foTablePrefix> GetTablePrefixes()
         {
             var query = "SELECT * FROM dbo.foTablePrefixes WHERE Active = 1";
@@ -1599,15 +1601,12 @@ namespace FreschOne.Controllers
             }
             return tableName.Replace("_", " ");
         }
-
-
         public class StepTransitionResult
         {
             public bool NextStepExists { get; set; }
             public bool ApprovalStarted { get; set; }
             public bool Cancelled { get; set; }
         }
-
         private void ArchiveProcess(SqlConnection conn, SqlTransaction transaction, int? processInstanceId)
         {
             // 🟰 Copy Process Events into Archive
