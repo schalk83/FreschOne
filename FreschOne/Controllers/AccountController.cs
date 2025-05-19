@@ -1,4 +1,5 @@
 ﻿using FreschOne.Controllers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FreschOne.Controllers
@@ -32,6 +33,7 @@ namespace FreschOne.Controllers
             if (user != null)
             {
                 HttpContext.Session.SetInt32("UserID", (int)user.ID);  // 👈 Store login
+                HttpContext.Session.SetString("IsLoggedIn", "true");
 
                 _dbHelper.LogUserLogin(user.ID);
                 return RedirectToAction("Index", "Home", new { userId });
@@ -55,5 +57,7 @@ namespace FreschOne.Controllers
             _dbHelper.UpdateUserPassword(userId, newPassword);
             return RedirectToAction("Login");
         }
+
+
     }
 }
