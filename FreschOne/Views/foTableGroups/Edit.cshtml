@@ -1,0 +1,27 @@
+﻿@model FreschOne.Models.foTableGroups
+
+@{
+    ViewData["Title"] = "Edit Report";
+    var userid = ViewBag.userid;
+}
+
+<partial name="_Sidebar" />
+
+<h2>Edit Report</h2>
+
+<form asp-action="Edit" asp-route-userid="@userid" method="post">
+    <input type="hidden" asp-for="ID" />
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">Description</label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a href="@Url.Action("Index", new { userid })" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

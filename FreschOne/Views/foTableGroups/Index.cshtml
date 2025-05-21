@@ -1,7 +1,9 @@
-﻿@model List<FreschOne.Models.foReports>
+﻿@model List<FreschOne.Models.foTableGroups>
+
 @{
     var userid = ViewBag.userid;
 }
+
 <partial name="_Sidebar" />
 
 @if (TempData["ErrorMessage"] != null)
@@ -16,11 +18,9 @@
 <h1>Reports</h1>
 <a class="btn btn-primary mb-2" href="@Url.Action("Create", new { userid = @userid })">Create New</a>
 
-
 <table class="table table-bordered sortable">
     <thead>
         <tr>
-            <th onclick="sortTable(this)" style="cursor:pointer;">Name</th>
             <th onclick="sortTable(this)" style="cursor:pointer;">Description</th>
             <th></th>
         </tr>
@@ -29,8 +29,7 @@
         @foreach (var report in Model)
         {
             <tr>
-                <td>@report.ReportName</td>
-                <td>@report.ReportDescription</td>
+                <td>@report.Description</td>
                 <td>
                     <a class="btn btn-sm btn-secondary" href="@Url.Action("Edit", new { id = report.ID, userid = @userid })">Edit</a>
                     <form method="post" asp-action="Delete" asp-route-id="@report.ID" asp-route-userid="@userid" style="display:inline">

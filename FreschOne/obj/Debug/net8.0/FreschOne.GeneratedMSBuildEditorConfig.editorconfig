@@ -168,6 +168,18 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZUNvbHVtbnNUb0lnbm9yZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_V1UAT/FreschOne/FreschOne/Views/foTableGroups/Create.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZUdyb3Vwc1xDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_V1UAT/FreschOne/FreschOne/Views/foTableGroups/Edit.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZUdyb3Vwc1xFZGl0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/Schalk.vandermerwe/source/repos/FreschOne_V1UAT/FreschOne/FreschOne/Views/foTableGroups/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZUdyb3Vwc1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/Schalk.vandermerwe/source/repos/FreschOne_V1UAT/FreschOne/FreschOne/Views/foTablePrefixes/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcZm9UYWJsZVByZWZpeGVzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

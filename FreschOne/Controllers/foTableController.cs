@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using FreschOne.Models;
 using System.Collections.Generic;
 using System.Data;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FreschOne.Controllers
 {
@@ -30,10 +31,14 @@ namespace FreschOne.Controllers
                     {
                         ID = (long)reader["ID"],
                         SchemaName = reader["SchemaName"].ToString(),
-                        TableName = reader["TableName"].ToString()
+                        TableName = reader["TableName"].ToString(),
+                        TableGroup = reader["TableGroup"].ToString()
+
                     });
                 }
             }
+
+
 
             return View(tables);
         }
@@ -55,11 +60,13 @@ namespace FreschOne.Controllers
             using (var conn = GetConnection())
             {
                 var cmd = new SqlCommand(@"
-                    INSERT INTO foTable (SchemaName, TableName, Active)
-                    VALUES (@SchemaName, @TableName, 1)", conn);
+                    INSERT INTO foTable (SchemaName, TableName, TableGroup,Active)
+                    VALUES (@SchemaName, @TableName, @TableGroup, 1)", conn);
 
                 cmd.Parameters.AddWithValue("@SchemaName", table.SchemaName);
                 cmd.Parameters.AddWithValue("@TableName", table.TableName);
+                cmd.Parameters.AddWithValue("@TableGroup", table.TableGroup);
+
 
                 conn.Open();
                 cmd.ExecuteNonQuery();
@@ -88,7 +95,10 @@ namespace FreschOne.Controllers
                     {
                         ID = (long)reader["ID"],
                         SchemaName = reader["SchemaName"].ToString(),
-                        TableName = reader["TableName"].ToString()
+                        TableName = reader["TableName"].ToString(),
+                        TableGroup = reader["TableGroup"].ToString()
+
+
                     };
                 }
             }
@@ -213,7 +223,7 @@ namespace FreschOne.Controllers
             if (tableId > 0)
             {
                 using var conn = GetConnection();
-                var cmd = new SqlCommand("SELECT SchemaName, TableName,ColumnNames FROM foTable WHERE ID = @ID", conn);
+                var cmd = new SqlCommand("SELECT SchemaName, TableName,ColumnNames,TableGroup FROM foTable WHERE ID = @ID", conn);
                 cmd.Parameters.AddWithValue("@ID", tableId);
                 conn.Open();
 
@@ -223,10 +233,14 @@ namespace FreschOne.Controllers
                     var schema = reader["SchemaName"]?.ToString();
                     var fullName = reader["TableName"]?.ToString();
                     var columnNames = reader["ColumnNames"]?.ToString();
+                    var TableGroup = reader["TableGroup"]?.ToString(); 
 
                     ViewBag.SchemaName = schema;
                     ViewBag.TableName = fullName;
                     ViewBag.ColumnNames = columnNames; // 👈 Add this
+                    ViewBag.TableGroup = TableGroup;
+                    ViewBag.SelectedTableGroup = TableGroup; // or empty string if new
+
 
                     matchedPrefix = prefixes
                         .FirstOrDefault(p => fullName != null && fullName.ToLowerInvariant().StartsWith(p.Prefix.ToLowerInvariant()))
@@ -273,6 +287,9 @@ namespace FreschOne.Controllers
                 }
             }
 
+            ViewBag.TableGroupsSelectList = GetTableGroupSelectList();
+
+
             ViewBag.SavedColumns = savedColumns;
 
             ViewBag.ForeignKeyTables = foreignKeyTables;
@@ -312,11 +329,13 @@ namespace FreschOne.Controllers
 
                     var updateCmd = new SqlCommand(@"
                 UPDATE foTable 
-                SET ColumnNames = @ColumnNames, Script = @Script
+                SET ColumnNames = @ColumnNames, Script = @Script, TableGroup = @TableGroup
                 WHERE ID = @ID", conn);
 
                     updateCmd.Parameters.AddWithValue("@ColumnNames", (object?)table.ColumnNames ?? DBNull.Value);
                     updateCmd.Parameters.AddWithValue("@Script", (object?)table.Script ?? DBNull.Value);
+                    updateCmd.Parameters.AddWithValue("@TableGroup", (object?)table.TableGroup ?? DBNull.Value);
+
                     updateCmd.Parameters.AddWithValue("@ID", tableId);
 
                     updateCmd.ExecuteNonQuery();
@@ -325,13 +344,15 @@ namespace FreschOne.Controllers
                 {
                     // 🆕 Insert new
                     var insertCmd = new SqlCommand(@"
-                INSERT INTO foTable (SchemaName, TableName, ColumnNames, Script, Active)
+                INSERT INTO foTable (SchemaName, TableName, ColumnNames, Script, TableGroup, Active)
                 OUTPUT INSERTED.ID
-                VALUES (@SchemaName, @TableName, @ColumnNames, @Script, 1)", conn);
+                VALUES (@SchemaName, @TableName, @ColumnNames, @Script, @TableGroup, 1)", conn);
 
                     insertCmd.Parameters.AddWithValue("@SchemaName", table.SchemaName);
                     insertCmd.Parameters.AddWithValue("@TableName", table.TableName);
                     insertCmd.Parameters.AddWithValue("@ColumnNames", (object?)table.ColumnNames ?? DBNull.Value);
+                    insertCmd.Parameters.AddWithValue("@TableGroup", (object?)table.TableGroup ?? DBNull.Value);
+
                     insertCmd.Parameters.AddWithValue("@Script", (object?)table.Script ?? DBNull.Value);
 
                     tableId = (long)insertCmd.ExecuteScalar();
@@ -385,6 +406,24 @@ namespace FreschOne.Controllers
         {
             public long TableID { get; set; }
             public List<foTableColumns> Columns { get; set; }
+        }
+
+        private List<SelectListItem> GetTableGroupSelectList()
+        {
+            var list = new List<SelectListItem>();
+            using var conn = GetConnection();
+            var cmd = new SqlCommand("SELECT ID, Description FROM foTableGroups WHERE Active = 1", conn);
+            conn.Open();
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                list.Add(new SelectListItem
+                {
+                    Value = reader["Description"].ToString(),
+                    Text = reader["Description"].ToString()
+                });
+            }
+            return list;
         }
 
     }

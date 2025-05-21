@@ -21,6 +21,9 @@ namespace FreschOne.Models
 
         public string Script { get; set; }
 
+        public string TableGroup { get; set; } 
+
+
         // 🔁 Optional: list of all columns associated with this table
         public List<foTableColumns> Columns { get; set; } = new List<foTableColumns>();
     }

@@ -1,4 +1,5 @@
-﻿@{
+﻿
+@{
     ViewData["Title"] = "🧩 Generate Table Script";
     var userid = ViewBag.userid;
     var tableId = ViewBag.tableId;
@@ -7,6 +8,8 @@
     var baseTableName = ViewBag.BaseTableName as string ?? "";
     var matchedPrefix = ViewBag.MatchedPrefix as string ?? "";
     var ColumnNames = (ViewBag.ColumnNames as string ?? "").Replace("\"", "").Trim();
+    var TableGroup = ViewBag.TableGroup;
+
 
 
 }
@@ -14,6 +17,16 @@
 <partial name="_Sidebar" />
 
 <h2 class="mb-3">🧩 Generate SQL Script</h2>
+<input type="hidden" name="userid" value="@userid" />
+
+<div class="col-md-6">
+    <label class="form-label">Table Group:</label>
+    @Html.DropDownList("TableGroup",
+            (List<SelectListItem>)ViewBag.TableGroupsSelectList,
+            ViewBag.SelectedTableGroup as string, // 👈 this sets the selected item
+            new { @class = "form-select" })
+</div>
+
 
 <div class="mb-3">
     <label class="form-label">Schema</label>
@@ -33,14 +46,14 @@
 
 <div class="mb-3">
     <label class="form-label">Table Name</label>
-    <input type="text" id="tableName" class="form-control" value="@baseTableName" placeholder="Enter name without prefix e.g. Student" />
+    <input type="text" id="tableName" class="form-control" value="@baseTableName" placeholder="Enter name without prefix e.g. Student" required />
 </div>
 
 <div class="mb-3">
     <label class="form-label">Comma-delimited Column Names</label>
     <input type="text" id="columnList" class="form-control"
            placeholder="e.g., Name,DateOfBirth,Grade"
-           value="@ColumnNames"/>
+           value="@ColumnNames" required />
 
 </div>
 
@@ -49,7 +62,7 @@
 </div>
 <form id="fieldsForm">
     <table class="table table-bordered table-sm" id="fieldBuilder">
-        <thead class="table-light">
+        <thead class="table-light align-middle">
             <tr>
                 <th>Column Name</th>
                 <th>Data Type</th>
@@ -63,8 +76,6 @@
         <tbody></tbody>
     </table>
 </form>
-
-
 
 
 <h5 class="mt-4">📜 Generated Script</h5>
@@ -116,7 +127,7 @@
         // Create table structure
         fieldBuilder.innerHTML = `
             <table class="table table-bordered table-sm">
-                <thead class="table-light">
+        <thead class="table-light align-middle">
                     <tr>
                         <th style="width: 18%">Field Name</th>
                         <th style="width: 18%">Type</th>
@@ -159,12 +170,15 @@
             if (pascalName.toLowerCase().endsWith("id")) defaultType = "bigint";
             if (pascalName.toLowerCase().includes("date")) defaultType = "datetime";
 
+            let defaultLength = "";
+            if (defaultType === "varchar") defaultLength = "max";
+            if (defaultType === "decimal") defaultLength = "18,2";
+
+
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td class="align-middle text-center">
-                    <label class="form-label fw-bold mb-0" data-original="${originalName}">${pascalName}</label>
-                </td>
-                    <td>
+                <td><label class="form-label fw-bold" data-original="${originalName}">${pascalName}</label></td>
+                <td>
                     <select class="form-select datatype">
                         <option ${defaultType === "varchar" ? "selected" : ""}>varchar</option>
                         <option ${defaultType === "int" ? "selected" : ""}>int</option>
@@ -174,8 +188,8 @@
                         <option ${defaultType === "bit" ? "selected" : ""}>bit</option>
                     </select>
                 </td>
-                <td><input type="text" class="form-control length" placeholder="Length/Precision (optional)" /></td>
-                <td>
+                    <td><input type="text" class="form-control length" placeholder="Length/Precision (optional)" value="${defaultLength}" /></td>
+                 <td>
                     <select class="form-select nullable">
                         <option value="NULL">NULL</option>
                         <option value="NOT NULL">NOT NULL</option>
@@ -211,10 +225,24 @@
         }
     }
 
-    datatypeSelect.addEventListener("change", () => {
+        datatypeSelect.addEventListener("change", () => {
         toggleSpecialFields();
+
+        // Auto-fill length based on selected type
+        const type = datatypeSelect.value.toLowerCase();
+        const lengthInput = row.querySelector(".length");
+
+        if (type === "varchar") {
+            lengthInput.value = "max";
+        } else if (type === "decimal") {
+            lengthInput.value = "18,2";
+        } else {
+            lengthInput.value = "";
+        }
+
         updateScript();
     });
+
 
     attachCheckbox.addEventListener("change", () => {
         if (attachCheckbox.checked) {
@@ -355,33 +383,43 @@
         const columnNames = [];
 
         document.querySelectorAll("#fieldRows tr").forEach(row => {
-            const columnName = row.querySelector("label").getAttribute("data-original")?.trim();
-            const columnDataType = row.querySelector(".datatype").value.trim();
-            const columnLength = row.querySelector(".length").value.trim();
-            const isNullable = row.querySelector(".nullable").value === "NULL";
-            const fkTable = row.querySelector(".fk-ref")?.value.trim();
-            const attachment = row.querySelector(".attach-check").checked;
-            const geo = row.querySelector(".geo-check").checked;
+        const label = row.querySelector("label");
+        if (!label) return; // 🚫 skip header or malformed rows
 
-            columnNames.push(columnName);
+        const original = label.getAttribute("data-original")?.trim();
+        let name = original;
+
+        const isAttachment = row.querySelector(".attach-check").checked;
+        const isGeo = row.querySelector(".geo-check").checked;
+
+        if (isAttachment) name = `attachment_${name}`;
+        if (isGeo) name = `geo_${name}`;
+
+        columnNames.push(name);
+
             columns.push({
-                ColumnName: columnName,
-                ColumnDataType: columnDataType,
-                ColumnLength_Precision: columnLength || null,
-                IsNullable: isNullable,
-                ForeignKeyTable: fkTable || null,
-                Attachment: attachment,
-                Geo: geo
+                ColumnName: name,
+                ColumnDataType: row.querySelector(".datatype").value.trim(),
+                ColumnLength_Precision: row.querySelector(".length").value.trim() || null,
+                IsNullable: row.querySelector(".nullable").value === "NULL",
+                ForeignKeyTable: row.querySelector(".fk-ref")?.value.trim() || null,
+                Attachment: isAttachment,
+                Geo: isGeo
             });
         });
 
+
         const generatedScript = document.getElementById("generatedScript").innerText;
+        const tableGroup = document.querySelector("select[name='TableGroup']").value;
+
 
         const foTable = {
             SchemaName: schemaName,
             TableName: fullTableName,
             ColumnNames: columnNames.join(','),
-            Script: generatedScript
+            Script: generatedScript,
+            TableGroup: tableGroup // 👈 now included in the object sent to the API
+
         };
 
         fetch(`/foTable/SaveGeneratedTable?userid=${userId}`, {
