@@ -84,6 +84,23 @@ body {
         border-color: #ffc107;
     }
 
+.btn-purple {
+    color: #b266ff; /* light purple text */
+    border-color: #b266ff;
+    background-color: transparent;
+}
+
+    .btn-purple:hover {
+        color: white;
+        background-color: #b266ff;
+        border-color: #b266ff;
+    }
+
+.border-start {
+    border-left: 1px solid #ccc;
+}
+
+
 .btn-red {
     color: #dc3545;
     border-color: #dc3545;
