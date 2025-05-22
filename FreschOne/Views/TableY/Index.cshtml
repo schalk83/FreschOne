@@ -51,6 +51,11 @@
                     var stripped = column.Replace("attachment_", "");
                     formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
                 }
+                else if (column.StartsWith("geo_"))
+                {
+                    var stripped = column.Replace("geo_", "");
+                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
+                }
                 else
                 {
                     formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
@@ -117,7 +122,8 @@
                     </td>
                 }
                 <td class="text-center align-middle actions-column">
-                    <div class="action-buttons">
+                    <div class="d-flex flex-row justify-content-center align-items-center gap-2">
+
                         @if (readwriteaccess == "RW")
                         {
                             <form method="get" asp-action="Edit" class="m-0 p-0">
@@ -127,14 +133,18 @@
                                 <input type="hidden" name="tablename" value="@tablename" />
                                 <input type="hidden" name="userid" value="@userid" />
                                 <input type="hidden" name="pageNumber" value="@ViewBag.pageNumber" />
-                                <button type="submit" class="custom-button btn-gold btn-sm d-flex align-items-center">
-                                    <i class="bi bi-pencil-fill me-1"></i> Edit
+                                <button type="submit"
+                                        class="custom-button btn-gold btn-sm d-flex align-items-center justify-content-center"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                                    <i class="bi bi-pencil-fill"></i>
                                 </button>
                             </form>
 
-                            <button type="button" class="custom-button btn-red btn-sm d-flex align-items-center"
-                                    onclick="confirmDelete(@row["ID"], '@tablename')">
-                                <i class="bi bi-trash-fill me-1"></i> 
+                            <button type="button"
+                                    class="custom-button btn-red btn-sm d-flex align-items-center justify-content-center"
+                                    onclick="confirmDelete(@row["ID"], '@tablename')"
+                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
+                                <i class="bi bi-trash-fill"></i>
                             </button>
                         }
 
@@ -147,18 +157,25 @@
                                 <input type="hidden" name="tablename" value="@tablename" />
                                 <input type="hidden" name="userid" value="@userid" />
                                 <input type="hidden" name="pageNumber" value="@ViewBag.pageNumber" />
-                                <button type="submit" class="custom-button btn-gold btn-sm d-flex align-items-center">
-                                    <i class="bi bi-eye-fill me-1"></i> View
+                                <button type="submit"
+                                        class="custom-button btn-gold btn-sm d-flex align-items-center justify-content-center"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+                                    <i class="bi bi-eye-fill"></i>
                                 </button>
                             </form>
                         }
 
-                        <button type="button" class="custom-button btn-green btn-sm d-flex align-items-center"
-                                onclick="showPopup(event, '@tablename', '@row["ID"]')">
-                            <i class="bi bi-link-45deg me-1"></i> More
+                        <button type="button"
+                                class="custom-button btn-green btn-sm d-flex align-items-center justify-content-center"
+                                onclick="showPopup(event, '@tablename', '@row["ID"]')"
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="More">
+                            <i class="bi bi-link-45deg"></i>
                         </button>
                     </div>
                 </td>
+
+
+
 
 
 
@@ -322,5 +339,14 @@
             input.addEventListener("keyup", filterTable);
             input.addEventListener("change", filterTable);
         });
+
+        // Enable Bootstrap tooltips globally
+        document.addEventListener('DOMContentLoaded', function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+
     </script>
 }

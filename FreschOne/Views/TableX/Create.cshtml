@@ -47,6 +47,11 @@
                 string columnLabel = formattedColumn.Replace("attachment_", "").Replace("_", " ");
                 <label class="fw-bold">@columnLabel</label>
             }
+            else if (column.StartsWith("geo_"))
+            {
+                string columnLabel = formattedColumn.Replace("geo_", "").Replace("_", " ");
+                <label class="fw-bold">@columnLabel</label>
+            }
             else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
             {
                 <label class="fw-bold" for="@column">@column.Replace("ID", "")</label>
@@ -98,7 +103,14 @@
                     </p>
                 }
             }
-            @if (columnType == "varchar" && columnLength <= 255)
+            else if (column.StartsWith("geo_"))
+            {
+                <div class="input-group">
+                    <input type="text" name="@column" id="@column" value="@columnValue" class="form-control" placeholder="Latitude, Longitude" />
+                    <button type="button" class="btn btn-outline-secondary" onclick="getLocation('@column')">📍 My Location</button>
+                </div>
+            }
+            else if (columnType == "varchar" && columnLength <= 255)
             {
                 @if (column.StartsWith("attachment_"))
                 {
@@ -151,18 +163,22 @@
     <div class="attachment-section p-3 mt-4 rounded">
         <h4 class="d-flex justify-content-between align-items-center">
             Add Attachments
-            <button type="button" id="toggleAttachmentForm" class="btn btn-link" style="font-size: 1.2em;">
+            <button type="button" id="toggleAttachmentForm" class="btn btn-link p-0" style="font-size: 1.2em;">
                 <i class="fas fa-chevron-down" id="toggleIcon"></i>
             </button>
         </h4>
 
         <div id="attachmentForm" style="display: none;">
             <div id="attachmentContainer"></div>
-            <button type="button" id="addAttachmentButton" class="btn btn-success mt-2" style="font-size: 1.5em; padding: 10px 20px;">
-                <i class="fas fa-plus"></i>
+
+            <button type="button" id="addAttachmentButton" class="custom-button btn-green btn-sm mt-3 d-flex align-items-center">
+                <i class="bi bi-plus-circle me-1"></i> Add
             </button>
         </div>
     </div>
+
+
+
     @if (ViewBag.DataManagementBreadcrumbX != null)
     {
         <a href="@Url.Action("Index", new {
@@ -171,12 +187,18 @@
         pageNumber = ViewBag.DataManagementBreadcrumbX.Parameters["pageNumber"]
     })  " class="text-decoration-none">← Back</a>
     }
+
     <div class="form-group text-center">
-        <button type="submit" class="btn btn-primary">Create Record</button>
+        <button type="submit" class="custom-button btn-blue">
+            <i class="bi bi-check-circle me-1"></i> Create
+        </button>
     </div>
+
     <br />
     <hr />
 </form>
+
+@section Scripts {
 
 <!-- JavaScript -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
@@ -230,35 +252,54 @@
             });
         });
 
-    document.getElementById('addAttachmentButton').addEventListener('click', function () {
-        var container = document.getElementById('attachmentContainer');
-        var attachmentGroup = document.createElement('div');
-        attachmentGroup.classList.add('attachment-group', 'd-flex', 'align-items-center', 'mt-2');
+            document.getElementById('addAttachmentButton').addEventListener('click', function () {
+            var container = document.getElementById('attachmentContainer');
+            var attachmentGroup = document.createElement('div');
+            attachmentGroup.classList.add('d-flex', 'align-items-center', 'gap-2', 'mb-2');
 
-        attachmentGroup.innerHTML = `
-            <div style="flex-grow: 1;">
-                <div class="form-group">
-                    <label for="AttachmentDescription">Attachment Description</label>
-                    <input type="text" name="AttachmentDescriptions" class="form-control attachment-field" required />
+            attachmentGroup.innerHTML = `
+            <div class="row w-100">
+                <div class="col-md-6">
+                    <input type="text" name="AttachmentDescriptions" placeholder="Description" class="form-control attachment-field" required />
                 </div>
-                <div class="form-group">
-                    <label for="Attachment">Upload Attachment</label>
+                <div class="col-md-5">
                     <input type="file" name="Attachments" class="form-control attachment-field" required />
                 </div>
-            </div>
-            <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
-                <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
+                <div class="col-md-1 d-flex align-items-center justify-content-end">
+                    <button type="button" class="btn btn-link text-danger removeAttachmentButton" title="Remove Attachment">
+                        <i class="bi bi-trash-fill fs-5"></i>
+                    </button>
+                </div>
             </div>
         `;
 
-        container.appendChild(attachmentGroup);
-    });
+
+            container.appendChild(attachmentGroup);
+        });
+
 
     document.addEventListener('click', function (event) {
         if (event.target.closest('.removeAttachmentButton')) {
             event.target.closest('.attachment-group').remove();
         }
     });
+
+    function getLocation(fieldId) {
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser.");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+                    document.getElementById(fieldId).value = coords;
+                },
+                error => {
+                    alert("Unable to retrieve your location.");
+                    console.error("Geolocation error:", error);
+                }
+            );
+        }
 </script>
+}

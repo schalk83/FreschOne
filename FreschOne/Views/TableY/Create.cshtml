@@ -67,6 +67,11 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
                 string columnLabel = formattedColumn.Replace("attachment_", "").Replace("_", " ");
                 <label class="fw-bold">@columnLabel</label>
             }
+            else if (column.StartsWith("geo_"))
+            {
+                string columnLabel = formattedColumn.Replace("geo_", "").Replace("_", " ");
+                <label class="fw-bold">@columnLabel</label>
+            }
             else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
             {
                 <label class="fw-bold" for="@column">@column.Replace("ID", "")</label>
@@ -116,6 +121,14 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
                         Current File: <a href="@fileUrl" target="_blank">@System.IO.Path.GetFileName(attachmentFilePath)</a>
                     </p>
                 }
+            }
+
+            else if (column.StartsWith("geo_"))
+            {
+                <div class="input-group">
+                    <input type="text" name="@column" id="@column" value="@columnValue" class="form-control" placeholder="Latitude, Longitude" />
+                    <button type="button" class="btn btn-outline-secondary" onclick="getLocation('@column')">📍 My Location</button>
+                </div>
             }
 
             @if (columnType == "varchar" && columnLength <= 255)
@@ -222,6 +235,8 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
     <hr />
 </form>
 
+@section Scripts {
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
 <script>
     document.getElementById('toggleAttachmentForm').addEventListener('click', function () {
@@ -324,4 +339,24 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
             }
         }
     });
+
+         function getLocation(fieldId) {
+                if (!navigator.geolocation) {
+                    alert("Geolocation is not supported by your browser.");
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+                        document.getElementById(fieldId).value = coords;
+                    },
+                    error => {
+                        alert("Unable to retrieve your location.");
+                        console.error("Geolocation error:", error);
+                    }
+                );
+            }
 </script>
+
+}

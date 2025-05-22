@@ -77,10 +77,27 @@
                     string formattedDate = DateTime.TryParse(value, out var dtVal) ? dtVal.ToString("yyyy-MM-dd") : "";
                     <input type="date" name="@fieldName" value="@formattedDate" class="form-control input-short" />
                 }
+                else if (column.StartsWith("geo_", StringComparison.OrdinalIgnoreCase))
+                {
+                    <div class="input-group">
+                        <input type="text"
+                               name="@fieldName"
+                               id="@fieldName"
+                               value="@value"
+                               class="form-control summary-trigger"
+                               placeholder="Latitude, Longitude" />
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                onclick="getLocation('@fieldName')">
+                            📍
+                        </button>
+                    </div>
+                }
                 else
                 {
                     <input type="text" name="@fieldName" value="@value" class="form-control summary-trigger" />
                 }
+
             </td>
         }
 

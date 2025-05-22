@@ -130,7 +130,7 @@
                                             }
                                         </ul>
                                         @entry.DetailID
-                                                                            </div>
+                                    </div>
                                 }
                             </div>
                         }
@@ -367,6 +367,15 @@
                                                 string formattedDate = DateTime.TryParse(columnValue, out var dtVal) ? dtVal.ToString("yyyy-MM-dd") : "";
                                                 <label for="@fieldName" class="fw-bold">@label</label>
                                                 <input type="date" name="@fieldName" value="@formattedDate" class="form-control input-short" />
+                                            }
+                                            else if (column.StartsWith("geo_"))
+                                            {
+                                                var cleanLabel = label.Replace("geo_", "").Replace("_", " ");
+                                                <label for="@fieldName" class="fw-bold">@cleanLabel</label>
+                                                <div class="input-group">
+                                                    <input type="text" name="@fieldName" id="@fieldName" value="@columnValue" class="form-control" placeholder="Latitude, Longitude" />
+                                                    <button type="button" class="btn btn-outline-secondary" onclick="getLocation('@fieldName')">📍 My Location</button>
+                                                </div>
                                             }
                                             else
                                             {
@@ -663,6 +672,29 @@
 
                 document.body.removeChild(tempSpan);
             });
+        }
+
+        function getLocation(fieldId) {
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser.");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+                    document.getElementById(fieldId).value = coords;
+                },
+                error => {
+                    alert("Unable to retrieve your location.");
+                    console.error("Geolocation error:", error);
+                }
+            );
+        }
+
+        function getCustomController {
+
+
         }
 
     </script>

@@ -139,7 +139,7 @@ namespace FreschOne.Controllers
                 conn.Open();
 
                 // Check if table is referenced in TableColumns
-                var cmd = new SqlCommand("SELECT COUNT(*) FROM TableColumns WHERE TableID = @TableID", conn);
+                var cmd = new SqlCommand("SELECT COUNT(*) FROM foTableColumns WHERE TableID = @TableID", conn);
                 cmd.Parameters.AddWithValue("@TableID", id);
 
                 int count = (int)cmd.ExecuteScalar();

@@ -56,31 +56,6 @@
 
         <div class="form-group">
 
-            @* @if (column.StartsWith("attachment_"))
-            {
-                <br />
-                string columnLabel = formattedColumn.Replace("attachment_", "").Replace("_", " "); // Remove "attachment_" and replace "_" with spaces
-                <label>@columnLabel</label>
-            }
-            else
-            {
-                @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
-                {
-                    <label for="@column">@column.Replace("ID", "")</label>
-                }
-                else
-                {
-                    if (@column == PKColumn)
-                    {
-                        <label for="@column" style="display: none;">@column</label>
-                    }
-                    else
-                    {
-                        <label for="@formattedColumn">@formattedColumn</label>
-                    }
-                }           
-            } *@
-
             @if (column == PKColumn)
             {
                 <label style="display: none;" for="@column">@column</label>
@@ -89,6 +64,11 @@
             {
                 <br />
                 string columnLabel = formattedColumn.Replace("attachment_", "").Replace("_", " ");
+                <label class="fw-bold">@columnLabel</label>
+            }
+            else if (column.StartsWith("geo_"))
+            {
+                string columnLabel = formattedColumn.Replace("geo_", "").Replace("_", " ");
                 <label class="fw-bold">@columnLabel</label>
             }
             else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
@@ -143,9 +123,14 @@
                         </p>
                     }
                 }
-
-                <!-- Editable rendering with onchange event handler -->
-                @if (columnType == "varchar" && columnLength <= 255)
+                else if (column.StartsWith("geo_"))
+                {
+                    <div class="input-group">
+                        <input type="text" name="@column" id="@column" value="@columnValue" class="form-control" placeholder="Latitude, Longitude" />
+                        <button type="button" class="btn btn-outline-secondary" onclick="getLocation('@column')">📍 My Location</button>
+                    </div>
+                }
+                else if (columnType == "varchar" && columnLength <= 255)
                 {
                     @if (column.StartsWith("attachment_"))
                     {
@@ -408,6 +393,8 @@
 </div>
 
 
+@section Scripts {
+
 <!-- Include Font Awesome -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
 <script>
@@ -521,5 +508,24 @@
 
     });
 
+        function getLocation(fieldId) {
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser.");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+                    document.getElementById(fieldId).value = coords;
+                },
+                error => {
+                    alert("Unable to retrieve your location.");
+                    console.error("Geolocation error:", error);
+                }
+            );
+        }
+
 
 </script>
+}

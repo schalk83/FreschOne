@@ -371,10 +371,18 @@
         }, 50);
     }
 
-    function saveTable() {
-        const columns = [];
+        function saveTable() {
         const schemaName = document.getElementById("schemaName").value.trim();
         const baseName = document.getElementById("tableName").value.trim();
+        const columnList = document.getElementById("columnList").value.trim();
+
+        if (!baseName || !columnList) {
+            alert("❌ Table Name and Column Names are required before saving.");
+            return;
+        }
+
+        // ✅ Continue only if both are filled
+        const columns = [];
         const prefixRadio = document.querySelector("input[name='tablePrefix']:checked");
         const prefix = prefixRadio ? prefixRadio.value : "";
         const fullTableName = prefix + baseName;
@@ -383,19 +391,19 @@
         const columnNames = [];
 
         document.querySelectorAll("#fieldRows tr").forEach(row => {
-        const label = row.querySelector("label");
-        if (!label) return; // 🚫 skip header or malformed rows
+            const label = row.querySelector("label");
+            if (!label) return;
 
-        const original = label.getAttribute("data-original")?.trim();
-        let name = original;
+            const original = label.getAttribute("data-original")?.trim();
+            let name = original;
 
-        const isAttachment = row.querySelector(".attach-check").checked;
-        const isGeo = row.querySelector(".geo-check").checked;
+            const isAttachment = row.querySelector(".attach-check").checked;
+            const isGeo = row.querySelector(".geo-check").checked;
 
-        if (isAttachment) name = `attachment_${name}`;
-        if (isGeo) name = `geo_${name}`;
+            if (isAttachment) name = `attachment_${name}`;
+            if (isGeo) name = `geo_${name}`;
 
-        columnNames.push(name);
+            columnNames.push(name);
 
             columns.push({
                 ColumnName: name,
@@ -408,18 +416,15 @@
             });
         });
 
-
         const generatedScript = document.getElementById("generatedScript").innerText;
-        const tableGroup = document.querySelector("select[name='TableGroup']").value;
-
+        const tableGroup = document.getElementById("TableGroup").value;
 
         const foTable = {
             SchemaName: schemaName,
             TableName: fullTableName,
+            TableGroup: tableGroup,
             ColumnNames: columnNames.join(','),
-            Script: generatedScript,
-            TableGroup: tableGroup // 👈 now included in the object sent to the API
-
+            Script: generatedScript
         };
 
         fetch(`/foTable/SaveGeneratedTable?userid=${userId}`, {
@@ -430,40 +435,41 @@
             },
             body: JSON.stringify(foTable)
         })
-            .then(async response => {
-                const rawText = await response.text();
-                if (!response.ok) throw new Error(`SaveGeneratedTable failed: ${rawText}`);
-                return JSON.parse(rawText);
-            })
-            .then(data => {
-                const tableId = data.tableId;
-                return fetch('/foTable/SaveTableColumns', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    body: JSON.stringify({
-                        TableID: tableId,
-                        SchemaName: schemaName,
-                        TableName: fullTableName,
-                        Columns: columns,
-                        UserID: userId
-                    })
-                });
-            })
-            .then(response => {
-                if (!response.ok) throw new Error("SaveTableColumns failed");
-                return response.text();
-            })
-            .then(() => {
-                window.location.href = `/foTable/Index?userid=${userId}`;
-            })
-            .catch(error => {
-                console.error("❌ Save failed:", error);
-                alert("❌ Save failed: " + error.message);
+        .then(async response => {
+            const rawText = await response.text();
+            if (!response.ok) throw new Error(`SaveGeneratedTable failed: ${rawText}`);
+            return JSON.parse(rawText);
+        })
+        .then(data => {
+            const tableId = data.tableId;
+            return fetch('/foTable/SaveTableColumns', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                body: JSON.stringify({
+                    TableID: tableId,
+                    SchemaName: schemaName,
+                    TableName: fullTableName,
+                    Columns: columns,
+                    UserID: userId
+                })
             });
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("SaveTableColumns failed");
+            return response.text();
+        })
+        .then(() => {
+            window.location.href = `/foTable/Index?userid=${userId}`;
+        })
+        .catch(error => {
+            console.error("❌ Save failed:", error);
+            alert("❌ Save failed: " + error.message);
+        });
     }
+
 </script>
 
 
