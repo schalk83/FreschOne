@@ -30,8 +30,12 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 5,
           "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
             {
               "$type": "Document",
               "DocumentIndex": 3,
@@ -90,9 +94,9 @@
               "Title": "ProcessEventsController.cs",
               "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\ProcessEventsController.cs",
               "RelativeDocumentMoniker": "FreschOne\\Controllers\\ProcessEventsController.cs",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\ProcessEventsController.cs*",
-              "RelativeToolTip": "FreschOne\\Controllers\\ProcessEventsController.cs*",
-              "ViewState": "AgIAAO0DAAAAAAAAAAAAAAMEAABDAAAAAAAAAA==",
+              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\ProcessEventsController.cs",
+              "RelativeToolTip": "FreschOne\\Controllers\\ProcessEventsController.cs",
+              "ViewState": "AgIAAO0DAAAAAAAAAAAAAAgEAAApAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-05-22T18:05:16.031Z",
               "EditorCaption": ""
