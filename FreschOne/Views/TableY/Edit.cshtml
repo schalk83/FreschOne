@@ -62,7 +62,6 @@
             }
             else if (column.StartsWith("attachment_"))
             {
-                <br />
                 string columnLabel = formattedColumn.Replace("attachment_", "").Replace("_", " ");
                 <label class="fw-bold">@columnLabel</label>
             }
@@ -346,11 +345,11 @@
     </div>
 </div>
 
-<!-- 🆕 Add New Attachments -->
+<!-- Add Attachments -->
 <div class="attachment-section p-3 mb-4 rounded">
     <h4 class="d-flex justify-content-between align-items-center">
-        Add New Attachments
-        <button type="button" id="toggleAttachmentForm" class="btn btn-link" style="font-size: 1.2em;">
+        Add Attachments
+        <button type="button" id="toggleAttachmentForm" class="btn btn-link p-0" style="font-size: 1.2em;">
             <i class="fas fa-chevron-down" id="toggleIcon"></i>
         </button>
     </h4>
@@ -363,34 +362,28 @@
         <input type="hidden" name="PKID" value="@PKID" />
 
         <div id="attachmentContainer">
-            <div class="attachment-group d-flex align-items-center">
-                <div style="flex-grow: 1;">
-                    <div class="form-group">
-                        <label for="AttachmentDescription">Attachment Description</label>
-                        <input type="text" name="AttachmentDescriptions" class="form-control" required />
-                    </div>
-                    <div class="form-group">
-                        <label for="Attachment">Upload Attachment</label>
-                        <input type="file" name="Attachments" class="form-control" required />
-                    </div>
+            <div class="row w-100 mb-2">
+                <div class="col-md-6">
+                    <input type="text" name="AttachmentDescriptions[]" placeholder="Description" class="form-control" required />
                 </div>
-                <div class="trash-container d-flex align-items-center ps-3">
-                    <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
-                        <i class="fas fa-trash-alt"></i>
+                <div class="col-md-5">
+                    <input type="file" name="Attachments[]" class="form-control" required />
+                </div>
+                <div class="col-md-1 d-flex align-items-center justify-content-end">
+                    <button type="button" class="btn btn-link text-danger removeAttachmentButton" title="Remove Attachment">
+                        <i class="bi bi-trash-fill fs-5"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <button type="button" id="addAttachmentButton" class="btn btn-success mt-2" style="font-size: 1.5em; padding: 10px 20px;">
-            <i class="fas fa-plus"></i>
+        <button type="button" id="addAttachmentButton" class="custom-button btn-green btn-sm mt-3 d-flex align-items-center">
+            <i class="bi bi-plus-circle me-1"></i> Add
         </button>
 
-        <div class="mt-3">
-            <button type="submit" class="btn btn-primary">Upload Attachments</button>
-        </div>
     </form>
 </div>
+
 
 
 @section Scripts {

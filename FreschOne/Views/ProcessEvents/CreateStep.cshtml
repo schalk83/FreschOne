@@ -76,7 +76,8 @@
                         ColumnTypes = columnTypes.ContainsKey(tableName) ? columnTypes[tableName] : new Dictionary<string, string>(),
                         ColumnLengths = columnLengths.ContainsKey(tableName) ? columnLengths[tableName] : new Dictionary<string, int>(),
                         ForeignKeys = foreignKeys.ContainsKey(tableName) ? foreignKeys[tableName] : new List<ForeignKeyInfo>(),
-                        ForeignKeyOptions = foreignKeyOptions
+                        ForeignKeyOptions = foreignKeyOptions,
+
                     };
 
                             <table class="table">
@@ -235,7 +236,6 @@
                                                     <button type="button" class="btn btn-outline-secondary" onclick="getLocation('@fieldName')">📍 My Location</button>
                                                 </div>
                                             }
-
                                             else
                                             {
                                                 <label for="@fieldName" class="fw-bold">@label</label>

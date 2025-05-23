@@ -1,5 +1,4 @@
 ﻿@model FreschOne.Models.TableCreateViewModel
-
 @{
     var userid = ViewBag.userid;
     var readwriteaccess = ViewBag.readwriteaccess;
@@ -201,18 +200,20 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
     <div class="attachment-section p-3 mt-4 rounded">
         <h4 class="d-flex justify-content-between align-items-center">
             Add Attachments
-            <button type="button" id="toggleAttachmentForm" class="btn btn-link" style="font-size: 1.2em;">
+            <button type="button" id="toggleAttachmentForm" class="btn btn-link p-0" style="font-size: 1.2em;">
                 <i class="fas fa-chevron-down" id="toggleIcon"></i>
             </button>
         </h4>
 
         <div id="attachmentForm" style="display: none;">
             <div id="attachmentContainer"></div>
-            <button type="button" id="addAttachmentButton" class="btn btn-success mt-2" style="font-size: 1.5em; padding: 10px 20px;">
-                <i class="fas fa-plus"></i>
+
+            <button type="button" id="addAttachmentButton" class="custom-button btn-green btn-sm mt-3 d-flex align-items-center">
+                <i class="bi bi-plus-circle me-1"></i> Add
             </button>
         </div>
     </div>
+
 
     @* @if (ViewBag.DataManagementBreadcrumbY != null)
     {
@@ -228,9 +229,13 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
     {
         <a href="@Context.Request.Query["returnUrl"]" class="text-decoration-none">← Back</a>
     }
+
     <div class="form-group text-center">
-        <button type="submit" class="btn btn-primary">Create Record</button>
+        <button type="submit" class="custom-button btn-blue">
+            <i class="bi bi-check-circle me-1"></i> Create
+        </button>
     </div>
+
     <br />
     <hr />
 </form>
@@ -293,23 +298,21 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
         var attachmentGroup = document.createElement('div');
         attachmentGroup.classList.add('attachment-group', 'd-flex', 'align-items-center', 'mt-2');
 
-        attachmentGroup.innerHTML = `
-            <div style="flex-grow: 1;">
-                <div class="form-group">
-                    <label for="AttachmentDescription">Attachment Description</label>
-                    <input type="text" name="AttachmentDescriptions" class="form-control attachment-field" required />
+                attachmentGroup.innerHTML = `
+                <div class="row w-100">
+                    <div class="col-md-6">
+                        <input type="text" name="AttachmentDescriptions" placeholder="Description" class="form-control attachment-field" required />
+                    </div>
+                    <div class="col-md-5">
+                        <input type="file" name="Attachments" class="form-control attachment-field" required />
+                    </div>
+                    <div class="col-md-1 d-flex align-items-center justify-content-end">
+                        <button type="button" class="btn btn-link text-danger removeAttachmentButton" title="Remove Attachment">
+                            <i class="bi bi-trash-fill fs-5"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="Attachment">Upload Attachment</label>
-                    <input type="file" name="Attachments" class="form-control attachment-field" required />
-                </div>
-            </div>
-            <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
-                <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
-        `;
+            `;
 
         container.appendChild(attachmentGroup);
     });

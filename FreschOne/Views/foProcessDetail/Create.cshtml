@@ -9,6 +9,8 @@
 
     var tablePrefixes = ViewBag.TablePrefixes as List<(string Prefix, string Description)>;
     var tableOptions = ViewBag.ValidTables as List<SelectListItem>;
+    var md_tableOptions = ViewBag.ValidmdTables as List<SelectListItem>;
+
 }
 
 <partial name="_Sidebar" />
@@ -110,6 +112,19 @@
         <select asp-for="FormType" asp-items="ViewBag.FormTypes" class="form-select"></select>
         <span asp-validation-for="FormType" class="text-danger"></span>
     </div>
+ 
+    <div class="mb-3" id="listTableContainer" style="display:@(Model.FormType == "T" ? "block" : "none")">
+        <label asp-for="ListTable" class="form-label">List Table</label>
+        <select asp-for="ListTable" class="form-select" id="mdTableNameDropdown">
+            <option value=""></option>
+            @foreach (var item in md_tableOptions)
+            {
+                var prefix = item.Group?.Name ?? "";
+                <option value="@item.Value" data-prefix="@prefix">@item.Text</option>
+            }
+        </select>
+        <span asp-validation-for="ListTable" class="text-danger"></span>
+    </div>
 
     <div class="mb-3">
         <label asp-for="ColumnCount" class="form-label">Column Count</label>
@@ -174,14 +189,60 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
+        function handleFormTypeChange() {
+            const formType = document.getElementById("FormType").value;
+            const columnCalcsContainer = document.getElementById("columnCalcsContainer");
+            const listTableContainer = document.getElementById("listTableContainer");
+            const columnCountInput = document.getElementById("ColumnCount");
+
+            if (formType === "T") {
+                columnCountInput.value = 0;
+                columnCountInput.setAttribute("readonly", "readonly");
+                columnCalcsContainer.style.display = "block";
+                listTableContainer.style.display = "block";
+            } else {
+                columnCountInput.removeAttribute("readonly");
+                columnCalcsContainer.style.display = "none";
+                listTableContainer.style.display = "none";
+                document.getElementById("mdTableNameDropdown").value = ""; // Optional reset
+            }
+        }
+
         function toggleFKDropdown() {
-            const parent = document.querySelector('[name="Parent"]').value;
+            const isParent = document.querySelector('[name="Parent"]').value === "true";
             const fkGroup = document.getElementById('fkColumnGroup');
             const fkSelect = document.getElementById('FKColumnSelect');
-            fkGroup.style.display = (parent === "true") ? "none" : "block";
-            if (parent === "true") {
+
+            fkGroup.style.display = isParent ? "none" : "block";
+
+            if (isParent) {
                 fkSelect.value = "";
+                fkSelect.removeAttribute("required");
+            } else {
+                fkSelect.setAttribute("required", "required");
             }
+        }
+
+        function validateColumnCalcs() {
+            const input = document.getElementById("ColumnCalcs");
+            const error = document.getElementById("columnCalcsError");
+
+            const pattern = /^\s*(Count|Sum)\(\s*\w+\s*\)\s*(,\s*(Count|Sum)\(\s*\w+\s*\)\s*)*$/i;
+
+            if (!input.value.trim() || pattern.test(input.value.trim())) {
+                error.style.display = "none";
+                return true;
+            } else {
+                error.style.display = "block";
+                return false;
+            }
+        }
+
+        function checkTestQueryVisibility() {
+            const tableName = document.getElementById("TableNameDropdown").value.trim();
+            const columnQuery = document.querySelector('[name="ColumnQuery"]').value.trim();
+            const section = document.getElementById("testQuerySection");
+            section.style.display = (tableName && columnQuery) ? "block" : "none";
         }
 
         function loadFKColumns(tableName, selectedColumn = null) {
@@ -203,137 +264,7 @@
                 });
         }
 
-       
-
-        function handleFormTypeChange() {
-            const formType = document.getElementById("FormType").value;
-            const columnCountInput = document.getElementById("ColumnCount");
-
-            if (formType === "T") {
-                columnCountInput.value = 0;
-                columnCountInput.setAttribute("readonly", "readonly");
-            } else {
-                columnCountInput.removeAttribute("readonly");
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            document.getElementById("FormType").addEventListener("change", handleFormTypeChange);
-            handleFormTypeChange(); // run on load
-        });
-
-        function toggleFKDropdown() {
-            const isParent = document.querySelector('[name="Parent"]').value === "true";
-            const fkGroup = document.getElementById('fkColumnGroup');
-            const fkSelect = document.getElementById('FKColumnSelect');
-
-            fkGroup.style.display = isParent ? "none" : "block";
-
-            if (isParent) {
-                fkSelect.value = "";
-                fkSelect.removeAttribute("required");
-            } else {
-                fkSelect.setAttribute("required", "required");
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            document.querySelector('[name="Parent"]').addEventListener("change", toggleFKDropdown);
-            toggleFKDropdown(); // run on load
-        });
-
-
-        function handleFormTypeChange() {
-            const formType = document.getElementById("FormType").value;
-            const columnCalcsContainer = document.getElementById("columnCalcsContainer");
-
-            if (formType === "T") {
-                columnCalcsContainer.style.display = "block";
-            } else {
-                columnCalcsContainer.style.display = "none";
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const formTypeEl = document.getElementById("FormType");
-            if (formTypeEl) {
-                formTypeEl.addEventListener("change", handleFormTypeChange);
-                handleFormTypeChange(); // run on load
-            }
-        });
-
-        function validateColumnCalcs() {
-            const input = document.getElementById("ColumnCalcs");
-            const error = document.getElementById("columnCalcsError");
-
-            const pattern = /^\s*(Count|Sum)\(\s*\w+\s*\)\s*(,\s*(Count|Sum)\(\s*\w+\s*\)\s*)*$/i;
-
-            if (!input.value.trim() || pattern.test(input.value.trim())) {
-                error.style.display = "none";
-                return true;
-            } else {
-                error.style.display = "block";
-                return false;
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const input = document.getElementById("ColumnCalcs");
-            if (input) {
-                input.addEventListener("input", validateColumnCalcs);
-                validateColumnCalcs(); // Initial run
-            }
-        });
-
-        function checkTestQueryVisibility() {
-            const tableName = document.getElementById("TableNameDropdown").value.trim();
-            const columnQuery = document.querySelector('[name="ColumnQuery"]').value.trim();
-            const section = document.getElementById("testQuerySection");
-            section.style.display = (tableName && columnQuery) ? "block" : "none";
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const tableDropdown = document.getElementById("TableNameDropdown");
-            const columnInput = document.querySelector('[name="ColumnQuery"]');
-            const currentValue = "@Model.FKColumn";
-
-            tableDropdown.addEventListener("change", () => {
-                loadFKColumns(tableDropdown.value);
-                checkTestQueryVisibility();
-            });
-
-            columnInput.addEventListener("input", checkTestQueryVisibility);
-
-            if (tableDropdown.value) {
-                loadFKColumns(tableDropdown.value, currentValue);
-            }
-
-            checkTestQueryVisibility();
-        });
-
-
-        document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll(".prefix-filter").forEach(radio => {
-                radio.addEventListener("change", function () {
-                    const selectedPrefix = this.value;
-                    const dropdown = document.getElementById("TableNameDropdown");
-                    const options = dropdown.querySelectorAll("option");
-
-                    options.forEach(option => {
-                        if (!option.value) return; // Skip empty option
-                        const optionPrefix = option.getAttribute("data-prefix");
-
-                        // Show all or only matching prefix
-                        option.hidden = (selectedPrefix !== "ALL" && optionPrefix !== selectedPrefix);
-                    });
-
-                    // Reset selection
-                    dropdown.value = "";
-                });
-            });
-        });
-
-         function testQuery() {
+        function testQuery() {
             const tableName = document.getElementById("TableNameDropdown").value;
             const columnQuery = document.querySelector('[name="ColumnQuery"]').value;
 
@@ -357,5 +288,55 @@
                 });
         }
 
+        document.addEventListener("DOMContentLoaded", () => {
+            // FormType logic
+            document.getElementById("FormType").addEventListener("change", handleFormTypeChange);
+            handleFormTypeChange();
+
+            // Parent logic
+            document.querySelector('[name="Parent"]').addEventListener("change", toggleFKDropdown);
+            toggleFKDropdown();
+
+            // Column Calcs validation
+            const input = document.getElementById("ColumnCalcs");
+            if (input) {
+                input.addEventListener("input", validateColumnCalcs);
+                validateColumnCalcs();
+            }
+
+            // Test Query logic
+            const tableDropdown = document.getElementById("TableNameDropdown");
+            const columnInput = document.querySelector('[name="ColumnQuery"]');
+            const currentValue = "@Model.FKColumn";
+
+            tableDropdown.addEventListener("change", () => {
+                loadFKColumns(tableDropdown.value);
+                checkTestQueryVisibility();
+            });
+
+            columnInput.addEventListener("input", checkTestQueryVisibility);
+
+            if (tableDropdown.value) {
+                loadFKColumns(tableDropdown.value, currentValue);
+            }
+
+            checkTestQueryVisibility();
+
+            // Prefix filter logic
+            document.querySelectorAll(".prefix-filter").forEach(radio => {
+                radio.addEventListener("change", function () {
+                    const selectedPrefix = this.value;
+                    const options = document.getElementById("TableNameDropdown").querySelectorAll("option");
+
+                    options.forEach(option => {
+                        if (!option.value) return;
+                        const optionPrefix = option.getAttribute("data-prefix");
+                        option.hidden = (selectedPrefix !== "ALL" && optionPrefix !== selectedPrefix);
+                    });
+
+                    document.getElementById("TableNameDropdown").value = "";
+                });
+            });
+        });
     </script>
 }

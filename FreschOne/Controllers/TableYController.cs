@@ -460,158 +460,127 @@ namespace FreschOne.Controllers
         }
 
         [HttpPost]
-        public IActionResult Update(int id, int PKID, string PKColumn, string tablename, int userid, IFormCollection form, int pageNumber, string returnURL)
+        public IActionResult Update(int id, int PKID, string PKColumn, string tablename, int userid, IFormCollection form, int pageNumber, string returnURL, string[] AttachmentDescriptions, List<IFormFile> Attachments)
         {
-            // Create a dictionary to store the updated values
             var updatedValues = new Dictionary<string, object>();
+            updatedValues["ID"] = form["ID"].ToString();
 
-            // Add the ID manually
-            updatedValues["ID"] = form["ID"].ToString();  // Convert StringValues to string
-
-            // Loop through the form collection to get all keys and values
             foreach (var key in form.Keys)
             {
-                if (key == "ID") continue; // Skip the ID field, which is handled separately
+                if (key == "ID") continue;
 
-                string value = form[key].ToString().Trim(); // Trim to avoid whitespace issues
+                string value = form[key].ToString().Trim();
 
-                // Handle empty values as NULL
                 if (string.IsNullOrEmpty(value))
                 {
                     updatedValues[key] = DBNull.Value;
                 }
                 else if (key.StartsWith("attachment_"))
                 {
-                    // ✅ Extract the existing values from the database entry
                     string[] parts = value.Split(';');
-                    string newDescription = parts.Length > 0 ? parts[0].Trim() : ""; // Extract description
-                    string existingFilePath = (parts.Length > 1 ? parts[1].Trim() : "").Split(',')[0]; // Extract ONLY the file path
+                    string newDescription = parts.Length > 0 ? parts[0].Trim() : "";
+                    string existingFilePath = (parts.Length > 1 ? parts[1].Trim() : "").Split(',')[0];
 
-                    Console.WriteLine($"📌 Processing Attachment: Key={key}, New Desc='{newDescription}', Existing File='{existingFilePath}'");
-
-                    string finalFilePath = existingFilePath; // Default to the existing file path unless a new file is uploaded
-
-                    // ✅ Fetch new file from form input
                     var file = form.Files["file_" + key];
+                    string finalFilePath = existingFilePath;
 
                     if (file != null && file.Length > 0)
                     {
-                        var rootPath = Directory.GetCurrentDirectory();
-                        var uploadsFolder = Path.Combine(rootPath, "Attachments", tablename);
+                        var root = Directory.GetCurrentDirectory();
+                        var folder = Path.Combine(root, "Attachments", tablename);
+                        Directory.CreateDirectory(folder);
 
-                        if (!Directory.Exists(uploadsFolder))
-                        {
-                            Directory.CreateDirectory(uploadsFolder);
-                        }
-
-                        string newFileName = Path.GetFileName(file.FileName);
+                        var newFileName = Path.GetFileName(file.FileName);
                         finalFilePath = Path.Combine("Attachments", tablename, newFileName);
 
-                        using (var stream = new FileStream(Path.Combine(rootPath, finalFilePath), FileMode.Create))
-                        {
-                            file.CopyTo(stream);
-                        }
-
-                        Console.WriteLine($"✅ File '{newFileName}' uploaded successfully to '{finalFilePath}'");
+                        using var stream = new FileStream(Path.Combine(root, finalFilePath), FileMode.Create);
+                        file.CopyTo(stream);
                     }
 
-                    // ✅ Store NULL if both description & file path are empty
-                    if (string.IsNullOrWhiteSpace(newDescription) && string.IsNullOrWhiteSpace(finalFilePath))
-                    {
-                        updatedValues[key] = DBNull.Value;
-                    }
-                    else
-                    {
-                        updatedValues[key] = $"{newDescription};{finalFilePath}";
-                    }
-
-                    // 🚀 REMOVE any `file_attachment_*` keys to prevent SQL errors
-                    string fileKey = "file_" + key;
-                    if (updatedValues.ContainsKey(fileKey))
-                    {
-                        updatedValues.Remove(fileKey);
-                        Console.WriteLine($"🗑️ Removed invalid key from SQL query: {fileKey}");
-                    }
+                    updatedValues[key] = string.IsNullOrWhiteSpace(newDescription) && string.IsNullOrWhiteSpace(finalFilePath)
+                        ? DBNull.Value
+                        : $"{newDescription};{finalFilePath}";
                 }
-
                 else if (key.ToLower().Contains("is") || key.ToLower().Contains("active") || key.ToLower().EndsWith("flag"))
                 {
-                    // Convert to bit (Boolean) - 1 for true, 0 for false
                     updatedValues[key] = (value.ToLower() == "true" || value == "1") ? 1 : 0;
                 }
-                else if (DateTime.TryParse(value, out DateTime parsedDate))
+                else if (DateTime.TryParse(value, out var parsedDate))
                 {
-                    // Convert to DateTime if valid
                     updatedValues[key] = parsedDate;
                 }
-                else if (int.TryParse(value, out int parsedInt))
+                else if (int.TryParse(value, out var parsedInt))
                 {
-                    // Convert to int if valid
                     updatedValues[key] = parsedInt;
                 }
                 else
                 {
-                    // Default to string
                     updatedValues[key] = value;
                 }
             }
 
-            // Log the dictionary to verify the data
-            foreach (var kv in updatedValues)
-            {
-                Console.WriteLine($"Key: {kv.Key}, Value: {(kv.Value == DBNull.Value ? "NULL" : kv.Value)}");
-            }
-
-            // Add standard columns for tracking modifications
             updatedValues["ModifiedUserID"] = userid;
-
-            // Use SQL GETDATE() directly (no quotes)
-            string modifiedDateField = "ModifiedDate = GETDATE()";
-
-            // If you need to update the database, build the update query here
-            var setClauses = updatedValues
-                .Where(kv => kv.Key != "ID") // Skip the ID column
-                .Select(kv => $"{kv.Key} = @{kv.Key}")
-                .ToList();
-
-            setClauses.Add(modifiedDateField); // Add GETDATE() field directly
+            var setClauses = updatedValues.Where(kv => kv.Key != "ID")
+                                          .Select(kv => $"{kv.Key} = @{kv.Key}")
+                                          .ToList();
+            setClauses.Add("ModifiedDate = GETDATE()");
 
             var query = $"UPDATE {tablename} SET {string.Join(", ", setClauses)} WHERE ID = @Id";
 
-            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
-                connection.Open();
-                using (var command = new SqlCommand(query, connection))
+                conn.Open();
+                using (var cmd = new SqlCommand(query, conn))
                 {
-                    // Add the ID parameter
-                    command.Parameters.AddWithValue("@Id", updatedValues["ID"]);
+                    cmd.Parameters.AddWithValue("@Id", updatedValues["ID"]);
 
-                    // Add parameters for each updated value
-                    foreach (var kv in updatedValues)
+                    foreach (var kv in updatedValues.Where(kv => kv.Key != "ID"))
                     {
-                        if (kv.Key != "ID")
-                        {
-                            var parameter = command.Parameters.Add($"@{kv.Key}", SqlDbType.NVarChar); // Default to string
+                        var param = cmd.Parameters.Add($"@{kv.Key}", SqlDbType.NVarChar);
+                        param.Value = kv.Value ?? DBNull.Value;
+                    }
 
-                            // Assign NULL if the value is DBNull.Value
-                            if (kv.Value == DBNull.Value)
+                    cmd.ExecuteNonQuery();
+
+                    // ✅ Save new attachments (Add Attachments section)
+                    if (Attachments != null && Attachments.Count > 0)
+                    {
+                        var root = Directory.GetCurrentDirectory();
+                        var folder = Path.Combine(root, "Attachments");
+                        Directory.CreateDirectory(folder);
+
+                        for (int i = 0; i < Attachments.Count; i++)
+                        {
+                            var file = Attachments[i];
+                            var description = (AttachmentDescriptions.Length > i) ? AttachmentDescriptions[i] : "No Description";
+
+                            if (file.Length > 0)
                             {
-                                parameter.Value = DBNull.Value;
-                                parameter.IsNullable = true;
-                            }
-                            else
-                            {
-                                parameter.Value = kv.Value;
+                                var path = Path.Combine(folder, Guid.NewGuid() + Path.GetExtension(file.FileName));
+                                using var stream = new FileStream(path, FileMode.Create);
+                                file.CopyTo(stream);
+
+                                var insert = @"
+                            INSERT INTO foTableAttachments (tablename, PKID, AttachmentDescription, Attachment, UserID, DateAdded)
+                            VALUES (@tablename, @PKID, @desc, @path, @userid, @date)";
+
+                                using var insertCmd = new SqlCommand(insert, conn);
+                                insertCmd.Parameters.AddWithValue("@tablename", tablename);
+                                insertCmd.Parameters.AddWithValue("@PKID", id);
+                                insertCmd.Parameters.AddWithValue("@desc", description);
+                                insertCmd.Parameters.AddWithValue("@path", path);
+                                insertCmd.Parameters.AddWithValue("@userid", userid);
+                                insertCmd.Parameters.AddWithValue("@date", DateTime.Now);
+                                insertCmd.ExecuteNonQuery();
                             }
                         }
                     }
-
-                    command.ExecuteNonQuery(); // Execute the query
                 }
             }
 
             return RedirectToAction("Index", new { userid, PKID, PKColumn, tablename, pageNumber });
         }
+
 
         [HttpPost]
         public IActionResult Delete(int id, int userid, int PKID, string PKColumn, string tablename)

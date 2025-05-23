@@ -17,6 +17,8 @@ namespace FreschOne.Models
         [Required]
         public string FormType { get; set; }
 
+        public string? ListTable { get; set; }
+
         [Required]
         public int? ColumnCount { get; set; }
 

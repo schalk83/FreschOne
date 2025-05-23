@@ -483,11 +483,16 @@ namespace FreschOne.Controllers
         [HttpPost]
         public IActionResult Update(int id, int userid, string tablename, IFormCollection form, int pageNumber)
         {
+
+
             // Create a dictionary to store the updated values
             var updatedValues = new Dictionary<string, object>();
 
             // Add the ID manually
             updatedValues["ID"] = form["ID"].ToString();  // Convert StringValues to string
+
+            string[] attachmentDescriptions = form["AttachmentDescriptions"];
+            var uploadedFiles = form.Files;
 
             // Loop through the form collection to get all keys and values
             foreach (var key in form.Keys)
@@ -629,6 +634,41 @@ namespace FreschOne.Controllers
                     }
 
                     command.ExecuteNonQuery(); // Execute the query
+
+                    if (uploadedFiles != null && uploadedFiles.Count > 0)
+                    {
+                        for (int i = 0; i < uploadedFiles.Count; i++)
+                        {
+                            var file = uploadedFiles[i];
+                            var description = (attachmentDescriptions.Length > i) ? attachmentDescriptions[i] : "No Description";
+
+                            if (file.Length > 0)
+                            {
+                                var folder = Path.Combine(Directory.GetCurrentDirectory(), "Attachments");
+                                Directory.CreateDirectory(folder);
+
+                                var savePath = Path.Combine(folder, Guid.NewGuid() + Path.GetExtension(file.FileName));
+                                using (var stream = new FileStream(savePath, FileMode.Create))
+                                {
+                                    file.CopyTo(stream);
+                                }
+
+                                string insertAttach = @"
+                        INSERT INTO foTableAttachments (tablename, PKID, AttachmentDescription, Attachment, UserID, DateAdded)
+                        VALUES (@tablename, @PKID, @desc, @path, @userid, @date)";
+
+                                using var attachCmd = new SqlCommand(insertAttach, connection);
+                                attachCmd.Parameters.AddWithValue("@tablename", tablename);
+                                attachCmd.Parameters.AddWithValue("@PKID", id);
+                                attachCmd.Parameters.AddWithValue("@desc", description);
+                                attachCmd.Parameters.AddWithValue("@path", savePath);
+                                attachCmd.Parameters.AddWithValue("@userid", userid);
+                                attachCmd.Parameters.AddWithValue("@date", DateTime.Now);
+
+                                attachCmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
                 }
             }
 
@@ -790,26 +830,15 @@ namespace FreschOne.Controllers
                     }
                 }
 
-                // ✅ Dynamically add metadata fields only if both present in table and ignore list
-                if (columns.Contains("Active", StringComparer.OrdinalIgnoreCase) && ignoredColumns.Contains("Active", StringComparer.OrdinalIgnoreCase))
-                {
+             
                     tableColumns.Add("Active");
                     valuePlaceholders.Add("@Active");
                     parameters["@Active"] = 1;
-                }
-
-                if (columns.Contains("CreatedUserID", StringComparer.OrdinalIgnoreCase) && ignoredColumns.Contains("CreatedUserID", StringComparer.OrdinalIgnoreCase))
-                {
                     tableColumns.Add("CreatedUserID");
                     valuePlaceholders.Add("@CreatedUserID");
                     parameters["@CreatedUserID"] = userid;
-                }
-
-                if (columns.Contains("CreatedDate", StringComparer.OrdinalIgnoreCase) && ignoredColumns.Contains("CreatedDate", StringComparer.OrdinalIgnoreCase))
-                {
                     tableColumns.Add("CreatedDate");
                     valuePlaceholders.Add("GETDATE()");
-                }
 
                 string columnNames = string.Join(", ", tableColumns);
                 string valueClause = string.Join(", ", valuePlaceholders);

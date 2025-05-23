@@ -255,7 +255,7 @@ namespace FreschOne.Controllers
 
             return View();
         }
-       
+
         public IActionResult PendingStep(int Eventid, int processId, int? stepId, int? processInstanceId, int userId)
         {
             SetUserAccess(userId);
@@ -509,7 +509,7 @@ namespace FreschOne.Controllers
         INNER JOIN foUsers u ON d.CreatedUserID = u.ID
         WHERE d.ProcessInstanceID = @InstanceID
         ORDER BY d.ID DESC", conn);
-            
+
 
                 cmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
 
@@ -1014,10 +1014,11 @@ namespace FreschOne.Controllers
                                         parametersSqlList.Add("@" + colName);
                                     }
 
-                                    // FK logic
-                                    if (!string.IsNullOrEmpty(fkColumn))
+                                    // 🔐 Handle foreign key only if FKColumn is NOT null or empty
+                                    if (!string.IsNullOrWhiteSpace(fkColumn))
                                     {
                                         int? fkValue = null;
+
                                         if (table.Parent && string.IsNullOrEmpty(fkColumn))
                                         {
                                             fkValue = null;
@@ -1031,6 +1032,7 @@ namespace FreschOne.Controllers
                                             fkValue = rootParentId.Value;
                                         }
 
+                                        // Only set if value exists
                                         if (fkValue.HasValue)
                                         {
                                             parameterValues[fkColumn] = fkValue.Value;
@@ -1038,6 +1040,7 @@ namespace FreschOne.Controllers
                                             parametersSqlList.Add("@" + fkColumn);
                                         }
                                     }
+
 
                                     parameterValues["Active"] = 1;
 
@@ -1926,9 +1929,6 @@ LEFT JOIN foUsers c on c.ID = a.CreatedUserID
                         ? Convert.ToInt32(reader["CHARACTER_MAXIMUM_LENGTH"]) : 255;
                 }
             }
-
-
-
             var foreignKeys = GetForeignKeyColumns(table.TableName)
                 .Where(fk => fk.TableName.Contains("_md_"))
                 .ToList();

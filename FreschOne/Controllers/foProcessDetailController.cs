@@ -49,6 +49,8 @@ namespace FreschOne.Controllers
             ViewBag.IsFirstDetail = isFirstDetail;
 
             ViewBag.ValidTables = GetPrefixedTableNames();
+            ViewBag.ValidmdTables = GetPrefixedmdTableNames();
+
             ViewBag.TablePrefixes = GetTablePrefixes(); // For the radio buttons
 
 
@@ -118,14 +120,15 @@ namespace FreschOne.Controllers
             using (var conn = GetConnection())
             {
                 var cmd = new SqlCommand(@"INSERT INTO foProcessDetail
-        (StepID, TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription,ColumnCalcs, Active)
+        (StepID, TableName, ColumnQuery, FormType, ListTable, ColumnCount, Parent, FKColumn, TableDescription,ColumnCalcs, Active)
         VALUES
-        (@StepID, @TableName, @ColumnQuery, @FormType, @ColumnCount, @Parent, @FKColumn, @TableDescription, @ColumnCalcs, @Active)", conn);
+        (@StepID, @TableName, @ColumnQuery, @FormType, @ListTable, @ColumnCount, @Parent, @FKColumn, @TableDescription, @ColumnCalcs, @Active)", conn);
 
                 cmd.Parameters.AddWithValue("@StepID", detail.StepID);
                 cmd.Parameters.AddWithValue("@TableName", detail.TableName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ColumnQuery", detail.ColumnQuery ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@FormType", detail.FormType ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ListTable", detail.ListTable ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ColumnCount", detail.ColumnCount);
                 cmd.Parameters.AddWithValue("@Parent", detail.Parent);
                 cmd.Parameters.AddWithValue("@FKColumn", detail.FKColumn ?? (object)DBNull.Value);
@@ -180,6 +183,8 @@ namespace FreschOne.Controllers
                         TableName = reader["TableName"]?.ToString(),
                         ColumnQuery = reader["ColumnQuery"]?.ToString(),
                         FormType = reader["FormType"]?.ToString(),
+                        ListTable = reader["ListTable"]?.ToString(),
+
                         ColumnCount = reader["ColumnCount"] != DBNull.Value ? (int)reader["ColumnCount"] : 0,
                         Parent = reader["Parent"] != DBNull.Value && (bool)reader["Parent"],
                         FKColumn = reader["FKColumn"]?.ToString(),
@@ -193,6 +198,8 @@ namespace FreschOne.Controllers
 
 
             ViewBag.ValidTables = GetPrefixedTableNames();
+            ViewBag.ValidmdTables = GetPrefixedmdTableNames();
+
             ViewBag.TablePrefixes = GetTablePrefixes(); // For the radio buttons
 
 
@@ -255,6 +262,7 @@ namespace FreschOne.Controllers
             TableName = @TableName,
             ColumnQuery = @ColumnQuery,
             FormType = @FormType,
+            ListTable = @ListTable,
             ColumnCount = @ColumnCount,
             Parent = @Parent,
             FKColumn = @FKColumn,
@@ -266,6 +274,7 @@ namespace FreschOne.Controllers
                 cmd.Parameters.AddWithValue("@TableName", detail.TableName ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ColumnQuery", detail.ColumnQuery ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@FormType", detail.FormType ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ListTable", detail.ListTable ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ColumnCount", detail.ColumnCount);
                 cmd.Parameters.AddWithValue("@Parent", detail.Parent);
                 cmd.Parameters.AddWithValue("@FKColumn", detail.FKColumn ?? (object)DBNull.Value);
@@ -341,6 +350,7 @@ namespace FreschOne.Controllers
                     TableName = reader["TableName"]?.ToString(),
                     ColumnQuery = reader["ColumnQuery"]?.ToString(),
                     FormType = reader["FormType"]?.ToString(),
+                    ListTable = reader["ListTable"]?.ToString(),
                     ColumnCount = reader["ColumnCount"] != DBNull.Value ? (int)reader["ColumnCount"] : 0,
                     Parent = reader["Parent"] != DBNull.Value && (bool)reader["Parent"],
                     FKColumn = reader["FKColumn"]?.ToString(),
@@ -500,6 +510,52 @@ namespace FreschOne.Controllers
             // Step 1: Get active prefixes
             var prefixes = new List<string>();
             using (var cmd = new SqlCommand("SELECT Prefix FROM foTablePrefixes WHERE Active = 1", conn))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                    prefixes.Add(reader["Prefix"].ToString());
+            }
+
+            // Step 2: Build WHERE clause and get matching table names
+            if (prefixes.Any())
+            {
+                var conditions = string.Join(" OR ", prefixes.Select((p, i) => $"name LIKE @p{i}"));
+                var tableCmd = new SqlCommand($"SELECT name FROM sys.tables WHERE {conditions} ORDER BY name", conn);
+
+                for (int i = 0; i < prefixes.Count; i++)
+                    tableCmd.Parameters.AddWithValue($"@p{i}", prefixes[i] + "%");
+
+                using (var reader = tableCmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var name = reader["name"].ToString();
+                        var matchedPrefix = prefixes.FirstOrDefault(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+                        list.Add(new SelectListItem
+                        {
+                            Text = name,
+                            Value = name,
+                            // Store prefix explicitly in Text OR as Value + use JS later
+                            // We'll use this prefix in the view
+                            Group = new SelectListGroup { Name = matchedPrefix } // optional: for optgroup use
+                        });
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        private List<SelectListItem> GetPrefixedmdTableNames()
+        {
+            var list = new List<SelectListItem>();
+
+            using var conn = GetConnection();
+            conn.Open();
+
+            // Step 1: Get active prefixes
+            var prefixes = new List<string>();
+            using (var cmd = new SqlCommand("SELECT Prefix FROM foTablePrefixes WHERE Active = 1 and Description = 'Maintenance'", conn))
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
