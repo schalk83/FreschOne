@@ -1,3 +1,5 @@
 
 CREATE TABLE foTableGroups ( ID BIGINT IDENTITY, PRIMARY KEY(ID), Description VARCHAR(255),Active bit)
 ALTER TABLE foTableColumns ADD Attachment BIT, Geo BIT 
+
+ALTER TABLE foProcessDetail ADD ListTable NVARCHAR(100) NULL
