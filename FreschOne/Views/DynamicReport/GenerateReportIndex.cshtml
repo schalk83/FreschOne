@@ -69,6 +69,10 @@
                                                     {
                                                         formattedColumn = formattedColumn.Replace("attachment_", "");
                                                     }
+                                                    if (formattedColumn.StartsWith("geo_"))
+                                                    {
+                                                        formattedColumn = formattedColumn.Replace("geo_", "");
+                                                    }
                                                     <th onclick="sortTable(this)">@(column.ColumnName == "ID" ? column.ColumnName : formattedColumn)</th>
                                                 }
                                             </tr>
@@ -141,7 +145,10 @@
                                                                 {
                                                                     formattedColumn = formattedColumn.Replace("attachment_", "");
                                                                 }
-
+                                                                if (formattedColumn.StartsWith("geo_"))
+                                                                {
+                                                                    formattedColumn = formattedColumn.Replace("geo_", "");
+                                                                }
                                                                 <td class="freeform-label"><strong>@formattedColumn:</strong></td>
                                                                 <td class="freeform-value">
                                                                     @{
