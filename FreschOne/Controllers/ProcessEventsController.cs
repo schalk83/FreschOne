@@ -1197,9 +1197,9 @@ namespace FreschOne.Controllers
                             foreach (var approverId in approvers)
                             {
                                 var insertCmd = new SqlCommand(@"
-            INSERT INTO foApprovalEvents 
-            (ProcessInstanceID, StepID, PreviousEventID, UserID, DateAssigned, Active)
-            VALUES (@ProcessInstanceID, 0, @PreviousEventID, @UserID, GETDATE(), 1)", conn, transaction);
+                                INSERT INTO foApprovalEvents 
+                                (ProcessInstanceID, StepID, PreviousEventID, UserID, DateAssigned, Active)
+                                VALUES (@ProcessInstanceID, 0, @PreviousEventID, @UserID, GETDATE(), 1)", conn, transaction);
 
                                 insertCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
                                 insertCmd.Parameters.AddWithValue("@PreviousEventID", -EventID);
@@ -1225,7 +1225,9 @@ namespace FreschOne.Controllers
                             markDoneCmd.Parameters.AddWithValue("@EventID", EventID);
                             markDoneCmd.ExecuteNonQuery();
 
-                            transaction.Commit();
+                            //   var transitionResult_rework = HandleNextStep(conn, transaction, stepId, processEventId, processInstanceId, userId, action, SendForApproval, SelectedApproverIds);
+
+                            //   transaction.Commit();
 
                             // ✅ Compose final message
                             ViewBag.action = "Step resubmitted successfully";
@@ -1236,14 +1238,13 @@ namespace FreschOne.Controllers
                                 message += "<br>Reassigned to:<br> - " + string.Join("<br>- ", assignees);
                             }
 
-                            return RedirectToAction("StepCompleted", "StepCompleted", new
-                            {
-                                message,
-                                userId,
-                                actionheader = ViewBag.action
-                            });
+                            //return RedirectToAction("StepCompleted", "StepCompleted", new
+                            //{
+                            //    message,
+                            //    userId,
+                            //    actionheader = ViewBag.action
+                            //});
                         }
-
 
 
                         // ✅ Always save data first above
@@ -1262,21 +1263,18 @@ namespace FreschOne.Controllers
                         TempData["SuccessMessage"] = nextAssignmentMessage;
                         TempData["UserId"] = userId;
 
-                        if ( action == "SaveLater")
+                        if (action == "SaveLater")
                         {
                             ViewBag.action = "Step Saved Successully";
                         }
-                        else if ( action == "CancelProcess")
+                        else if (action == "CancelProcess")
                         {
                             ViewBag.action = "Process Cancelled Successully";
                         }
-                        else if ( action == "SaveContinue")
+                        else if (action == "SaveContinue")
                         {
                             ViewBag.action = "Step Submitted Successully";
                         }
-
-
-                     
 
                         return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessage, userId, actionheader = ViewBag.action });
 
@@ -2011,7 +2009,7 @@ LEFT JOIN foUsers c on c.ID = a.CreatedUserID
             return list;
         }
 
-        private string GetNextStepAssignment(SqlConnection conn, SqlTransaction transaction, int currentEventId, string action)
+        private string GetNextStepAssignment(SqlConnection conn, SqlTransaction transaction, int currentEventId, string action, string overrideMessage = null)
         {
             var assignees = new List<string>();
             string stepDescription = null;

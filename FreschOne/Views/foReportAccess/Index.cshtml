@@ -1,0 +1,69 @@
+﻿@model List<FreschOne.Models.foReportAccess>
+@{
+    ViewData["Title"] = "🗂️ Report Access Management";
+    int userid = ViewBag.userid;
+    long reportid = ViewBag.reportid;
+    var users = ViewBag.Users as List<SelectListItem> ?? new();
+    var groups = ViewBag.Groups as List<SelectListItem> ?? new();
+}
+
+<partial name="_Sidebar" />
+
+<h2 class="mb-4">🗂️ Manage Report Access</h2>
+
+<form asp-action="Create" method="post" class="row g-3">
+    <input type="hidden" name="userid" value="@userid" />
+
+    <input type="hidden" name="reportid" value="@reportid" />
+    <div class="col-md-4">
+        <label class="form-label">Select User</label>
+        @Html.DropDownList("accessUserID", users, "-- Select User --", new { @class = "form-select" })
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Select Group</label>
+        @Html.DropDownList("groupID", groups, "-- Select Group --", new { @class = "form-select" })
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+        <button type="submit" class="btn btn-green">Add Access</button>
+    </div>
+</form>
+
+<hr />
+
+<table class="table table-bordered table-sm mt-4">
+    <thead class="table-light">
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Group</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="4" class="text-center">No access records found.</td>
+            </tr>
+        }
+        else
+        {
+            foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.ID</td>
+                    <td>@(item.UserID.HasValue ? users.FirstOrDefault(u => u.Value == item.UserID.ToString())?.Text ?? "N/A" : "-")</td>
+                    <td>@(item.GroupID.HasValue ? groups.FirstOrDefault(g => g.Value == item.GroupID.ToString())?.Text ?? "N/A" : "-")</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.ID" asp-route-userid="@userid" asp-route-reportid="@reportid" class="btn btn-sm btn-blue">Edit</a>
+                        <form asp-action="Delete" method="post" style="display:inline;">
+                            <input type="hidden" name="id" value="@item.ID" />
+                            <input type="hidden" name="userid" value="@userid" />
+                            <button type="submit" class="btn btn-sm btn-red">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>

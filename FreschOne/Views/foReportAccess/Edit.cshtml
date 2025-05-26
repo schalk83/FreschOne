@@ -1,0 +1,69 @@
+﻿@model FreschOne.Models.foReportAccess
+@{
+    ViewData["Title"] = "🖋 Edit Report Access";
+    int userid = ViewBag.userid;
+    long reportid = ViewBag.reportid;
+    var users = ViewBag.Users as List<SelectListItem> ?? new();
+    var groups = ViewBag.Groups as List<SelectListItem> ?? new();
+}
+
+<partial name="_Sidebar" />
+
+<h2 class="mb-4">🖋 Edit Report Access</h2>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div>@error.ErrorMessage</div>
+        }
+    </div>
+}
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" name="userid" value="@userid" />
+    <input type="hidden" name="reportid" value="@reportid" />
+    <input type="hidden" name="ID" value="@Model.ID" />
+
+    <div class="mb-3">
+        <label class="form-label">Select User</label>
+        @Html.DropDownList("UserID", users, "-- Select User --", new { @class = "form-select" })
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Select Group</label>
+        @Html.DropDownList("GroupID", groups, "-- Select Group --", new { @class = "form-select" })
+    </div>
+
+    <button type="submit" class="btn btn-green">Save Changes</button>
+    <a asp-action="Index" asp-route-userid="@userid" asp-route-reportid="@reportid" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const userSelect = document.querySelector("select[name='UserID']");
+            const groupSelect = document.querySelector("select[name='GroupID']");
+
+            function toggleOther(selectChanged, otherSelect) {
+                if (selectChanged.value) {
+                    otherSelect.disabled = true;
+                } else {
+                    otherSelect.disabled = false;
+                }
+            }
+
+            userSelect.addEventListener("change", function () {
+                toggleOther(this, groupSelect);
+            });
+
+            groupSelect.addEventListener("change", function () {
+                toggleOther(this, userSelect);
+            });
+
+            toggleOther(userSelect, groupSelect);
+            toggleOther(groupSelect, userSelect);
+        });
+    </script>
+}

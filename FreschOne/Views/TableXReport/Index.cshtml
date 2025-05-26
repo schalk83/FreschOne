@@ -25,6 +25,14 @@
                     @if (column.StartsWith("attachment_"))
                     {
                         formattedColumn = column.Replace("attachment_", ""); // Remove prefix
+                        formattedColumn = System.Text.RegularExpressions.Regex.Replace(formattedColumn, "(?<=.)([A-Z])", " $1");
+
+                    }
+                    @if (column.StartsWith("geo_"))
+                    {
+                        formattedColumn = column.Replace("geo_", ""); // Remove prefix
+                        formattedColumn = System.Text.RegularExpressions.Regex.Replace(formattedColumn, "(?<=.)([A-Z])", " $1");
+
                     }
 
                     @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))

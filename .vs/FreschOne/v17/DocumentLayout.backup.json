@@ -3,24 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_v1uat\\freschone\\freschone\\controllers\\processeventscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\processeventscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_v1uat\\freschone\\freschone\\views\\processevents\\pendingstep.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\processevents\\pendingstep.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_v1uat\\freschone\\freschone\\views\\shared\\_tablerows.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\shared\\_tablerows.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_v1uat\\freschone\\freschone\\views\\processevents\\createstep.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\processevents\\createstep.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_v1uat\\freschone\\freschone\\models\\dynamictableviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\models\\dynamictableviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_v1uat\\freschone\\freschone\\controllers\\foreportscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\foreportscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -30,71 +14,19 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "CreateStep.cshtml",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Views\\ProcessEvents\\CreateStep.cshtml",
-              "RelativeDocumentMoniker": "FreschOne\\Views\\ProcessEvents\\CreateStep.cshtml",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Views\\ProcessEvents\\CreateStep.cshtml",
-              "RelativeToolTip": "FreschOne\\Views\\ProcessEvents\\CreateStep.cshtml",
-              "ViewState": "AgIAAD8AAAAAAAAAAAAkwE8AAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-05-23T10:49:33.138Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "DynamicTableViewModel.cs",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Models\\DynamicTableViewModel.cs",
-              "RelativeDocumentMoniker": "FreschOne\\Models\\DynamicTableViewModel.cs",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Models\\DynamicTableViewModel.cs",
-              "RelativeToolTip": "FreschOne\\Models\\DynamicTableViewModel.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-23T10:46:49.094Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "PendingStep.cshtml",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
-              "RelativeDocumentMoniker": "FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
-              "RelativeToolTip": "FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
-              "ViewState": "AgIAAJgCAAAAAAAAAAAIwLsCAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-05-23T10:41:11.099Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "_TableRows.cshtml",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Views\\Shared\\_TableRows.cshtml",
-              "RelativeDocumentMoniker": "FreschOne\\Views\\Shared\\_TableRows.cshtml",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Views\\Shared\\_TableRows.cshtml",
-              "RelativeToolTip": "FreschOne\\Views\\Shared\\_TableRows.cshtml",
-              "ViewState": "AgIAAB4AAAAAAAAAAAApwCMAAAAJAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-05-22T18:11:53.32Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "ProcessEventsController.cs",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\ProcessEventsController.cs",
-              "RelativeDocumentMoniker": "FreschOne\\Controllers\\ProcessEventsController.cs",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\ProcessEventsController.cs*",
-              "RelativeToolTip": "FreschOne\\Controllers\\ProcessEventsController.cs*",
-              "ViewState": "AgIAAO0DAAAAAAAAAAAAAAMEAABDAAAAAAAAAA==",
+              "Title": "foReportsController.cs",
+              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\foReportsController.cs",
+              "RelativeDocumentMoniker": "FreschOne\\Controllers\\foReportsController.cs",
+              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\foReportsController.cs",
+              "RelativeToolTip": "FreschOne\\Controllers\\foReportsController.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAABEAAAAkAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-22T18:05:16.031Z",
+              "WhenOpened": "2025-05-26T13:37:02.188Z",
               "EditorCaption": ""
             }
           ]
