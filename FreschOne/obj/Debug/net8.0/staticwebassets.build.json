@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "VQpPiJU/R/Hx6gpyHtOlzTJG/KNo3aofOPJJnw0yGz0=",
+  "Hash": "5GXAg+nmJlo7UTx2OYOm7sQTMer3h8ViSMa7CAiv8w4=",
   "Source": "FreschOne",
   "BasePath": "_content/FreschOne",
   "Mode": "Default",
@@ -94,8 +94,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "3o7r3bt2fg",
-      "Integrity": "bWFK1qql/bnz+iZIO486ALLZho1zEYOFx9/uo2Inppk=",
+      "Fingerprint": "kvs20lysh1",
+      "Integrity": "sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B+ynORS/Q2LRtXs=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\site.css"
@@ -1445,51 +1445,6 @@
       ]
     },
     {
-      "Route": "css/site.3o7r3bt2fg.css",
-      "AssetFile": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\wwwroot\\css\\site.css",
-      "Selectors": [],
-      "ResponseHeaders": [
-        {
-          "Name": "Accept-Ranges",
-          "Value": "bytes"
-        },
-        {
-          "Name": "Content-Length",
-          "Value": "8563"
-        },
-        {
-          "Name": "Content-Type",
-          "Value": "text/css"
-        },
-        {
-          "Name": "ETag",
-          "Value": "\"bWFK1qql/bnz+iZIO486ALLZho1zEYOFx9/uo2Inppk=\""
-        },
-        {
-          "Name": "Last-Modified",
-          "Value": "Thu, 22 May 2025 13:18:22 GMT"
-        },
-        {
-          "Name": "Cache-Control",
-          "Value": "max-age=31536000, immutable"
-        }
-      ],
-      "EndpointProperties": [
-        {
-          "Name": "fingerprint",
-          "Value": "3o7r3bt2fg"
-        },
-        {
-          "Name": "label",
-          "Value": "css/site.css"
-        },
-        {
-          "Name": "integrity",
-          "Value": "sha256-bWFK1qql/bnz+iZIO486ALLZho1zEYOFx9/uo2Inppk="
-        }
-      ]
-    },
-    {
       "Route": "css/site.css",
       "AssetFile": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\wwwroot\\css\\site.css",
       "Selectors": [],
@@ -1500,7 +1455,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "8563"
+          "Value": "10047"
         },
         {
           "Name": "Content-Type",
@@ -1508,11 +1463,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"bWFK1qql/bnz+iZIO486ALLZho1zEYOFx9/uo2Inppk=\""
+          "Value": "\"sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B+ynORS/Q2LRtXs=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Thu, 22 May 2025 13:18:22 GMT"
+          "Value": "Tue, 27 May 2025 12:04:32 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -1522,7 +1477,52 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-bWFK1qql/bnz+iZIO486ALLZho1zEYOFx9/uo2Inppk="
+          "Value": "sha256-sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B+ynORS/Q2LRtXs="
+        }
+      ]
+    },
+    {
+      "Route": "css/site.kvs20lysh1.css",
+      "AssetFile": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\wwwroot\\css\\site.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "10047"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B+ynORS/Q2LRtXs=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 27 May 2025 12:04:32 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "kvs20lysh1"
+        },
+        {
+          "Name": "label",
+          "Value": "css/site.css"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B+ynORS/Q2LRtXs="
         }
       ]
     },

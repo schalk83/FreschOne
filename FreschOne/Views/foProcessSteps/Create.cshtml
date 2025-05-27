@@ -55,9 +55,7 @@
     </div>
 </div>
 
-
-
-<form asp-action="Create" asp-route-userid="@userid" method="post">
+<form asp-action="Create" asp-route-userid="@userid" method="post" id="processStepForm">
     <input type="hidden" asp-for="ProcessID" />
 
     <div class="mb-3">
@@ -77,7 +75,7 @@
         @Html.DropDownListFor(m => m.AssignGroupID,
                  new SelectList(ViewBag.GroupDropdown, "Value", "Text"),
                  "",
-                 new { @class = "form-select" })
+                 new { @class = "form-select", @id = "assignGroupSelect" })
         <span asp-validation-for="AssignGroupID" class="text-danger"></span>
     </div>
 
@@ -86,7 +84,7 @@
         @Html.DropDownListFor(m => m.AssignUserID,
                  new SelectList(ViewBag.UserDropdown, "Value", "Text"),
                  "",
-                 new { @class = "form-select" })
+                 new { @class = "form-select", @id = "assignUserSelect" })
         <span asp-validation-for="AssignUserID" class="text-danger"></span>
     </div>
 
@@ -104,4 +102,31 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const groupSelect = document.getElementById("assignGroupSelect");
+            const userSelect = document.getElementById("assignUserSelect");
+
+            function toggleOther(selected, other) {
+                if (selected.value) {
+                    other.disabled = true;
+                } else {
+                    other.disabled = false;
+                }
+            }
+
+            groupSelect.addEventListener("change", function () {
+                toggleOther(this, userSelect);
+            });
+
+            userSelect.addEventListener("change", function () {
+                toggleOther(this, groupSelect);
+            });
+
+            // Initialize on page load
+            toggleOther(groupSelect, userSelect);
+            toggleOther(userSelect, groupSelect);
+        });
+    </script>
 }

@@ -11,21 +11,30 @@
 
 <h2 class="mb-4">🗂️ Manage Report Access</h2>
 
-<form asp-action="Create" method="post" class="row g-3">
-    <input type="hidden" name="userid" value="@userid" />
+@if (TempData["ReportAccessErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ReportAccessErrorMessage"]</div>
+}
+@if (TempData["ReportAccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["ReportAccessMessage"]</div>
+}
 
+<form asp-action="Create" method="post" id="accessForm">
+    <input type="hidden" name="userid" value="@userid" />
     <input type="hidden" name="reportid" value="@reportid" />
-    <div class="col-md-4">
+
+    <div class="mb-3">
         <label class="form-label">Select User</label>
         @Html.DropDownList("accessUserID", users, "-- Select User --", new { @class = "form-select" })
     </div>
-    <div class="col-md-4">
+
+    <div class="mb-3">
         <label class="form-label">Select Group</label>
         @Html.DropDownList("groupID", groups, "-- Select Group --", new { @class = "form-select" })
     </div>
-    <div class="col-md-4 d-flex align-items-end">
-        <button type="submit" class="btn btn-green">Add Access</button>
-    </div>
+
+    <button type="submit" class="btn btn-green">Add Access</button>
 </form>
 
 <hr />
@@ -55,10 +64,10 @@
                     <td>@(item.UserID.HasValue ? users.FirstOrDefault(u => u.Value == item.UserID.ToString())?.Text ?? "N/A" : "-")</td>
                     <td>@(item.GroupID.HasValue ? groups.FirstOrDefault(g => g.Value == item.GroupID.ToString())?.Text ?? "N/A" : "-")</td>
                     <td>
-                        <a asp-action="Edit" asp-route-id="@item.ID" asp-route-userid="@userid" asp-route-reportid="@reportid" class="btn btn-sm btn-blue">Edit</a>
                         <form asp-action="Delete" method="post" style="display:inline;">
                             <input type="hidden" name="id" value="@item.ID" />
                             <input type="hidden" name="userid" value="@userid" />
+                            <input type="hidden" name="reportid" value="@reportid" />
                             <button type="submit" class="btn btn-sm btn-red">Delete</button>
                         </form>
                     </td>
@@ -67,3 +76,42 @@
         }
     </tbody>
 </table>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("accessForm");
+        if (!form) return;
+
+        const userSelect = form.querySelector("select[name='accessUserID']");
+        const groupSelect = form.querySelector("select[name='groupID']");
+
+        form.addEventListener("submit", function (e) {
+            const userSelected = userSelect.value;
+            const groupSelected = groupSelect.value;
+
+            if ((userSelected && groupSelected) || (!userSelected && !groupSelected)) {
+                alert("Please select either a User or a Group, but not both.");
+                e.preventDefault();
+            }
+        });
+
+        function toggleOther(selectChanged, otherSelect) {
+            if (selectChanged.value) {
+                otherSelect.disabled = true;
+            } else {
+                otherSelect.disabled = false;
+            }
+        }
+
+        userSelect.addEventListener("change", function () {
+            toggleOther(this, groupSelect);
+        });
+
+        groupSelect.addEventListener("change", function () {
+            toggleOther(this, userSelect);
+        });
+
+        toggleOther(userSelect, groupSelect);
+        toggleOther(groupSelect, userSelect);
+    });
+</script>

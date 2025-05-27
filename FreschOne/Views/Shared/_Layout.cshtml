@@ -19,13 +19,12 @@
 
     @RenderSection("Styles", required: false)
 </head>
-<body>
+<body class="@ViewData["BodyClass"]">
     <div class="container-fluid px-3 px-md-4">
         <div class="content-wrapper w-10">
             @RenderBody()
         </div>
     </div>
-
 
     <!-- jQuery (must be included before your custom scripts) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

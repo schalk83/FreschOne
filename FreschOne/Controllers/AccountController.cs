@@ -1,6 +1,8 @@
 ﻿using FreschOne.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization; 
+
 
 namespace FreschOne.Controllers
 {
@@ -11,8 +13,23 @@ namespace FreschOne.Controllers
 
         public IActionResult Login()
         {
+            var licenseEndDateString = GetDecodedLicenseKey();
+            if (DateTime.TryParse(licenseEndDateString, out DateTime endDate))
+            {
+                var daysRemaining = (endDate - DateTime.Now).Days;
+                if (daysRemaining < 0) daysRemaining = 0; // Avoid negative days
+
+                ViewBag.LicenseStatus = $"License valid until: {endDate:yyyy-MM-dd} <br> (Days remaining: {daysRemaining})";
+            }
+            else
+            {
+                ViewBag.LicenseStatus = "❌ Invalid license.";
+            }
+
             return View();
         }
+
+
 
         [HttpPost]
         public IActionResult Login(string username, string password)

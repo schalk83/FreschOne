@@ -19,7 +19,7 @@ namespace FreschOne.Controllers
             SetUserAccess(userid);
 
             var tableList = new List<AdminTableInfo>();
-            var query = "SELECT TableName, TableGroup FROM dbo.foAdminTables WHERE Active = 1";
+            var query = "SELECT TableName, TableGroup FROM dbo.foAdminTables WHERE Active = 1 ORDER BY 2";
 
             using (SqlConnection conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {

@@ -1,4 +1,5 @@
-﻿html {
+﻿
+html {
     font-size: 14px;
     position: relative;
     min-height: 100%;
@@ -17,15 +18,31 @@ body {
 
 .container,
 .content-wrapper {
-    max-width: 90% !important;
+    max-width: 98% !important;
     margin: 0 auto;
+    margin-top: 20px;
 }
 
 .content-wrapper {
-    padding: 20px;
+    padding: 5px;
+    padding-top: 20px;
     background-color: transparent;
     border-radius: 8px;
     border: 1px solid #cce3f6;
+}
+
+/* Login Page Centering */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 !important;
+    padding: 0;
+}
+
+.login-box {
+    margin-top: 0 !important;
 }
 
 /* Utility & Form Controls */
@@ -431,3 +448,60 @@ body {
     background-color: #f8f9fa; /* Light grey */
     border: 1px solid #d1e3f0; /* Soft border */
 }
+.login-page {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #f0faff, #ffffff); /* Subtle background */
+}
+
+.login-box {
+    background-color: #ffffff;
+    border: 1px solid #cce3f6;
+    border-radius: 8px;
+    padding: 30px;
+    width: 320px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* Soft shadow */
+    text-align: center;
+}
+
+    .login-box h2 {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+    }
+
+    .login-box form .form-label {
+        text-align: left;
+        display: block;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+
+    .login-box input[type="text"],
+    .login-box input[type="password"] {
+        width: 100%;
+        padding: 8px 10px;
+        margin-bottom: 15px;
+        border: 1px solid #cce3f6;
+        border-radius: 4px;
+    }
+
+    .login-box button {
+        width: 100%;
+        padding: 8px 10px;
+    }
+
+    .login-box p {
+        font-size: 0.85rem;
+        margin-top: 10px;
+    }
+
+        .login-box p a {
+            font-size: 0.85rem;
+        }
+
+
+

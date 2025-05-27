@@ -1,15 +1,27 @@
-﻿namespace FreschOne.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace FreschOne.Models
 {
-    public class foReportAccess
+    public class foReportAccess : IValidatableObject
     {
-
         public long ID { get; set; }
-        public long ReportID { get; set; }       // Nullable: allows either user-level or group-level access
 
-        public long? UserID { get; set; }       // Nullable: allows either user-level or group-level access
+        [Required(ErrorMessage = "Report is required.")]
+        public long ReportID { get; set; }
 
-        public long? GroupID { get; set; }      // Nullable: same reason
+        public long? UserID { get; set; }
+        public long? GroupID { get; set; }
 
         public bool Active { get; set; } = true;
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if ((UserID == null && GroupID == null) || (UserID != null && GroupID != null))
+            {
+                yield return new ValidationResult(
+                    "Please select either a User or a Group, but not both.",
+                    new[] { nameof(UserID), nameof(GroupID) });
+            }
+        }
     }
 }
