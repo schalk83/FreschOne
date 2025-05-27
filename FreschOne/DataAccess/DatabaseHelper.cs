@@ -13,6 +13,11 @@ public class DatabaseHelper
         _connectionString = configuration.GetConnectionString("DefaultConnection");
     }
 
+    public SqlConnection GetConnection()
+    {
+        return new SqlConnection(_connectionString);
+    }
+
     // New ExecuteQuery Method
     public List<T> ExecuteQuery<T>(string query, object parameters = null)
     {

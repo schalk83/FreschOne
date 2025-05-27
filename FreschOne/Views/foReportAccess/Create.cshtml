@@ -1,57 +1,93 @@
 ﻿@model FreschOne.Models.foReportAccess
+
 @{
     ViewData["Title"] = "➕ Add Report Access";
     int userid = ViewBag.userid;
     long reportid = ViewBag.reportid;
     var users = ViewBag.Users as List<SelectListItem> ?? new();
     var groups = ViewBag.Groups as List<SelectListItem> ?? new();
+    var accessList = ViewBag.AccessList as List<FreschOne.Models.foReportAccess> ?? new();
 }
 
 <partial name="_Sidebar" />
 
 <h2 class="mb-4">➕ Add Report Access</h2>
 
-@if (!ViewData.ModelState.IsValid)
-{
-    <div class="alert alert-danger">
-        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-        {
-            <div>@error.ErrorMessage</div>
-        }
-    </div>
-}
-
-
-<form asp-action="Create" method="post">
-
+<form asp-action="Create" method="post" id="accessForm">
     <input type="hidden" name="userid" value="@userid" />
     <input type="hidden" name="reportid" value="@reportid" />
 
     <div class="mb-3">
-        <label class="form-label">Select User</label>
-        @Html.DropDownList("accessUserID", users, "-- Select User --", new { @class = "form-select" })
+        <label asp-for="UserID" class="form-label">Select User</label>
+        @Html.DropDownListFor(m => m.UserID, users, "-- Select User --", new { @class = "form-select", @id = "UserID" })
+        <span asp-validation-for="UserID" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Select Group</label>
-        @Html.DropDownList("groupID", groups, "-- Select Group --", new { @class = "form-select" })
+        <label asp-for="GroupID" class="form-label">Select Group</label>
+        @Html.DropDownListFor(m => m.GroupID, groups, "-- Select Group --", new { @class = "form-select", @id = "GroupID" })
+        <span asp-validation-for="GroupID" class="text-danger"></span>
     </div>
 
     <button type="submit" class="btn btn-green">Add Access</button>
-    <a asp-action="Index" asp-route-userid="@userid" asp-route-reportid="@reportid" class="btn btn-secondary">Cancel</a>
 </form>
 
+
+<hr />
+
+<table class="table table-bordered table-sm mt-4">
+    <thead class="table-light">
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Group</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!accessList.Any())
+        {
+            <tr>
+                <td colspan="4" class="text-center">No access records found.</td>
+            </tr>
+        }
+        else
+        {
+            foreach (var item in accessList)
+            {
+                <tr>
+                    <td>@item.ID</td>
+                    <td>@(item.UserID.HasValue ? users.FirstOrDefault(u => u.Value == item.UserID.ToString())?.Text ?? "N/A" : "-")</td>
+                    <td>@(item.GroupID.HasValue ? groups.FirstOrDefault(g => g.Value == item.GroupID.ToString())?.Text ?? "N/A" : "-")</td>
+                    <td>
+                        <form asp-action="Delete" method="post" style="display:inline;">
+                            <input type="hidden" name="id" value="@item.ID" />
+                            <input type="hidden" name="userid" value="@userid" />
+                            <input type="hidden" name="reportid" value="@reportid" />
+                            <button type="submit" class="btn btn-sm btn-red">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
 @section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const userSelect = document.querySelector("select[name='accessUserID']");
-            const groupSelect = document.querySelector("select[name='groupID']");
+            const userSelect = document.getElementById("UserID");
+            const groupSelect = document.getElementById("GroupID");
 
-            function toggleOther(selectChanged, otherSelect) {
-                if (selectChanged.value) {
-                    otherSelect.disabled = true;
+            if (!userSelect || !groupSelect) return;
+
+            function toggleOther(selected, other) {
+                if (selected.value) {
+                    other.disabled = true;
                 } else {
-                    otherSelect.disabled = false;
+                    other.disabled = false;
                 }
             }
 

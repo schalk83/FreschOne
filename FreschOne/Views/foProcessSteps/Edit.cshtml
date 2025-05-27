@@ -17,7 +17,7 @@
                 Show Existing Steps for This Process
             </button>
         </h2>
-        <div id="collapseSteps" class="accordion-collapsee" aria-labelledby="headingSteps" data-bs-parent="#stepsAccordion">
+        <div id="collapseSteps" class="accordion-collapse" aria-labelledby="headingSteps" data-bs-parent="#stepsAccordion">
             <div class="accordion-body">
                 <table class="table table-bordered table-sm">
                     <thead>
@@ -54,8 +54,6 @@
         </div>
     </div>
 </div>
-
-
 
 <form asp-action="Edit" asp-route-userid="@userid" method="post">
     <input type="hidden" asp-for="ID" />
@@ -105,4 +103,33 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const groupSelect = document.getElementById("AssignGroupID");
+            const userSelect = document.getElementById("AssignUserID");
+
+            if (!groupSelect || !userSelect) return;
+
+            function toggleOther(selected, other) {
+                if (selected.value) {
+                    other.disabled = true;
+                } else {
+                    other.disabled = false;
+                }
+            }
+
+            groupSelect.addEventListener("change", function () {
+                toggleOther(this, userSelect);
+            });
+
+            userSelect.addEventListener("change", function () {
+                toggleOther(this, groupSelect);
+            });
+
+            // Initialize on page load
+            toggleOther(groupSelect, userSelect);
+            toggleOther(userSelect, groupSelect);
+        });
+    </script>
 }

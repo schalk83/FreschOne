@@ -15,14 +15,14 @@
 }
 
 <h2>Processes</h2>
-<a href="@Url.Action("Create", new { userid = userid })" class="btn btn-primary mb-3">Add New Process</a>
+<a href="@Url.Action("Create", new { userid = userid })" class="btn btn-gold mb-3">➕ Add New Process</a>
 
 <table class="table table-bordered sortable">
     <thead>
         <tr>
             <th onclick="sortTable(this)" style="cursor:pointer;">Process Name</th>
             <th onclick="sortTable(this)" style="cursor:pointer;">Description</th>
-            <th></th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -32,15 +32,17 @@
                 <td>@process.ProcessName</td>
                 <td>@process.ProcessDescription</td>
                 <td>
-                    <a href="@Url.Action("Edit", new { id = process.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
-                    <form method="post" asp-action="Delete" asp-route-id="@process.ID" asp-route-userid="@userid" style="display:inline">
-                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    <a href="@Url.Action("Edit", new { id = process.ID, userid = userid })" class="btn btn-sm btn-blue">Edit</a>
+
+                    <form method="post" asp-action="Delete" asp-route-id="@process.ID" asp-route-userid="@userid" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-red">Delete</button>
                     </form>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+
 
 @section Scripts {
     <script>

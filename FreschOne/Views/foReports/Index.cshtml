@@ -9,7 +9,17 @@
 
 <h1 class="mb-4">Reports</h1>
 
-<a href="@Url.Action("Create", new { userid = userid })" class="btn btn-primary mb-4">Add New Report</a>
+@if (TempData["ReportAccessErrorMessage"] != null)
+{
+    <div class="alert alert-danger">@TempData["ReportAccessErrorMessage"]</div>
+}
+@if (TempData["ReportAccessErrorMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["ReportAccess"]</div>
+}
+<a href="@Url.Action("Create", new { userid = userid })" class="btn btn-gold mb-4">➕ Add New Report</a>
+
+
 
 <div class="row">
     @foreach (var report in Model)
@@ -25,13 +35,13 @@
                         }
                     </div>
                     <div class="d-flex justify-content-between mt-2">
-                        <a href="@Url.Action("Edit", new { id = report.ID, userid = userid })" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <a href="@Url.Action("Edit", new { id = report.ID, userid = userid })" class="btn btn-sm btn-blue">Edit</a>
 
                         <form method="post" asp-action="Delete" asp-route-id="@report.ID" asp-route-userid="@userid" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            <button type="submit" class="btn btn-sm btn-red">Delete</button>
                         </form>
 
-                        <a href="@Url.Action("Index", "foReportAccess", new { userid = userid, reportid = report.ID })" class="btn btn-sm btn-outline-primary">
+                        <a href="@Url.Action("Index", "foReportAccess", new { userid = userid, reportid = report.ID })" class="btn btn-sm btn-green">
                             Manage Access
                         </a>
                     </div>

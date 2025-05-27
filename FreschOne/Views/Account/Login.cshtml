@@ -3,12 +3,14 @@
 }
 @{
     ViewData["Title"] = "Login";
+    ViewData["BodyClass"] = "login-page";
+
 }
 
 
 <div class="login-container">
     <div class="login-box">
-        <h2>Login</h2>
+        <h2 class="text-center mt-2">Login</h2>
 
         @if (ViewBag.Message != null)
         {
@@ -25,11 +27,25 @@
                 <label class="form-label">Password</label>
                 <input type="password" name="password" class="form-control" required />
             </div>
-            <button type="submit" class="btn btn-primary">Login</button>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-blue">Login</button>
+            </div>
+
+            <p class="text-center mt-2">
+                <a id="resetPasswordLink" href="#">Forgot Password?</a>
+            </p>
         </form>
-        <p>
-            <a id="resetPasswordLink" href="#">Forgot Password?</a>
-        </p>
+
+
+
+        @* License Info *@
+        @if (ViewBag.LicenseStatus != null)
+        {
+            <p style="font-size: 0.8em; color: #888; margin-top: 20px; text-align: center;">
+                @Html.Raw(ViewBag.LicenseStatus)
+            </p>
+        }
     </div>
 </div>
 
