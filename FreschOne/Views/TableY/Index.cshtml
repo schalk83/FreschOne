@@ -72,6 +72,12 @@
                 if (column == PKColumn) { continue; }
                 string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
 
+                if (column.StartsWith("geo_"))
+                {
+                    var stripped = column.Replace("geo_", "");
+                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
+                }
+
                 <th class="fixed-width">
                     @if (column.StartsWith("attachment_"))
                     {

@@ -69,6 +69,13 @@
             </li>
 
             <li class="nav-item">
+                <a class="nav-link text-dark" asp-controller="ArchivedItems" asp-action="ArchivedItems"
+                   asp-route-userId="@Context.Request.Query["userId"]">
+                    Archived Items
+                </a>
+            </li>
+
+            <li class="nav-item">
                 <a class="nav-link text-dark" asp-controller="DataManagement" asp-action="Index"
                    asp-route-userId="@Context.Request.Query["userId"]">
                     Data Management New

@@ -16,13 +16,13 @@
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\site.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B\u002BynORS/Q2LRtXs="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"10047"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B\u002BynORS/Q2LRtXs=\u0022"},{"Name":"Last-Modified","Value":"Tue, 27 May 2025 12:04:32 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"10047"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B\u002BynORS/Q2LRtXs=\u0022"},{"Name":"Last-Modified","Value":"Tue, 27 May 2025 12:14:21 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/FreschOne/css/site.kvs20lysh1.css">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\site.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"kvs20lysh1"},{"Name":"integrity","Value":"sha256-sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B\u002BynORS/Q2LRtXs="},{"Name":"label","Value":"_content/FreschOne/css/site.css"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"10047"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B\u002BynORS/Q2LRtXs=\u0022"},{"Name":"Last-Modified","Value":"Tue, 27 May 2025 12:04:32 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"10047"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B\u002BynORS/Q2LRtXs=\u0022"},{"Name":"Last-Modified","Value":"Tue, 27 May 2025 12:14:21 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/FreschOne/favicon.61n19gt1b8.ico">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\favicon.ico'))</AssetFile>

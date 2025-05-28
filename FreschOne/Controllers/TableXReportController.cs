@@ -35,85 +35,77 @@ namespace FreschOne.Controllers
 
         public IActionResult Index(int userid, int reportid, string tablename, int pageNumber = 1, string searchText = "")
         {
-
             EnsureAuditFieldsExist(tablename);
             SetUserAccess(userid);
 
-            string ReportName = GetReportName(reportid);
-            ViewBag.ReportName = ReportName;
+            // Report metadata
+            ViewBag.ReportName = GetReportName(reportid);
+            ViewBag.userid = userid;
+            ViewBag.tablename = tablename;
+            ViewBag.ReportID = reportid;
 
-            var columns = GetTableColumns(tablename,reportid);  // Get the columns for the table
-            var tableData = GetTableData(tablename,reportid);   // Get the data for the table
+            // Get table description (prefix stripping)
+            var tablePrefixes = GetTablePrefixes();
+            var tableDescription = tablePrefixes
+                .Where(p => tablename.StartsWith(p.Prefix))
+                .Select(p => tablename.Replace(p.Prefix, ""))
+                .FirstOrDefault() ?? tablename;
+            ViewBag.tableDescription = tableDescription.Replace("_", " ");
 
+            // Fetch columns + QR detection
+            bool hasQR;
+            var columns = GetTableColumns(tablename, reportid, out hasQR);
+            ViewBag.HasQR = hasQR;
 
-            // Apply column-based filtering if any column's search text is provided
+            // Fetch data
+            var tableData = GetTableData(tablename, reportid, hasQR);
+
+            // Filter by search text (if provided)
             if (!string.IsNullOrEmpty(searchText))
             {
                 tableData = tableData.Where(row =>
-                    row.Values.Any(value => value.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    row.Values.Any(v => v?.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) == true)
                 ).ToList();
             }
 
-            // Fetch all foreign key columns and replace them with corresponding descriptions
+            // Replace FK values with descriptions
             var foreignKeys = GetForeignKeyColumns(tablename);
             foreach (var row in tableData)
             {
-                foreach (var foreignKey in foreignKeys)
+                foreach (var fk in foreignKeys)
                 {
-                    if (row.ContainsKey(foreignKey.ColumnName))
+                    if (row.ContainsKey(fk.ColumnName) && row[fk.ColumnName] != DBNull.Value)
                     {
-                        var foreignKeyValue = row[foreignKey.ColumnName];
-                        if (foreignKeyValue != DBNull.Value)
-                        {
-                            row[foreignKey.ColumnName] = GetForeignKeyDescription(foreignKey.TableName, foreignKeyValue);
-                        }
+                        row[fk.ColumnName] = GetForeignKeyDescription(fk.TableName, row[fk.ColumnName]);
                     }
                 }
             }
 
-            // Pagination logic
+            // Pagination
             int pageSize = 20;
+            int totalPages = (int)Math.Ceiling((double)tableData.Count / pageSize);
             var paginatedData = tableData.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
-            var totalPages = (int)Math.Ceiling((double)tableData.Count / pageSize);
 
             ViewBag.pageNumber = pageNumber;
             ViewBag.totalPages = totalPages;
             ViewBag.searchText = searchText;
-
-            ViewBag.userid = userid;
-            ViewBag.tablename = tablename;
             ViewBag.readwriteaccess = "R";
-            ViewBag.ReportID = reportid;
 
-
-            var tablePrefixes = GetTablePrefixes();
-            var tableDescription = "";
-            // Check if the ChildTable name starts with any prefix and remove it
-            foreach (var prefix in tablePrefixes)
-            {
-                if (tablename.Contains(prefix.Prefix))
-                {
-                    tableDescription = tablename.Replace(prefix.Prefix.ToString(), "");
-                }
-            }
-            ViewBag.tableDescription = tableDescription.Replace("_"," ");
-
-            // Set the breadcrumb for tracking
+            // Breadcrumb
             TempData["DataManagementBreadcrumbX"] = JsonConvert.SerializeObject(new DataManagementBreadcrumbX
             {
                 PreviousScreen = "Index",
                 Parameters = new Dictionary<string, string>
-                {
-                    { "tablename", tablename },
-                    { "description",tableDescription.Replace("_"," ")},
-                    { "userid", userid.ToString() },
-                    { "pageNumber", pageNumber.ToString() }
-                }
+        {
+            { "tablename", tablename },
+            { "description", tableDescription.Replace("_", " ") },
+            { "userid", userid.ToString() },
+            { "pageNumber", pageNumber.ToString() }
+        }
             });
-
             TempData.Keep("DataManagementBreadcrumbX");
 
-
+            // Build view model
             var viewModel = new TableViewModel
             {
                 UserId = userid,
@@ -122,11 +114,11 @@ namespace FreschOne.Controllers
                 TableData = paginatedData,
                 PrimaryKeyColumn = GetPrimaryKeyColumn(tablename),
                 ForeignKeys = foreignKeys
-
             };
 
             return View(viewModel);
         }
+
 
         private string GetReportName(int reportid)
         {
@@ -303,68 +295,52 @@ namespace FreschOne.Controllers
             return dropdownData;
         }
 
-        private List<string> GetTableColumns(string tableName, int reportId)
+        private List<string> GetTableColumns(string tableName, int reportId, out bool hasQR)
         {
+            hasQR = false;
             var columns = new List<string>();
-            string columnQuery = string.Empty;
 
-            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            conn.Open();
+            var columnQuery = new SqlCommand("SELECT ColumnQuery FROM foReportTable WHERE TableName = @TableName AND ReportsID = @ReportID", conn)
             {
-                connection.Open();
+                Parameters = { new SqlParameter("@TableName", tableName), new SqlParameter("@ReportID", reportId) }
+            }.ExecuteScalar()?.ToString()?.Trim();
 
-                // Step 1: Get columnQuery from foReportTable
-                string query = "SELECT columnQuery FROM foReportTable WHERE TableName = @TableName AND ReportsID = @ReportID";
+            var ignoredColumns = GetIgnoredColumns(conn).Select(c => c.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                using (var command = new SqlCommand(query, connection))
+            if (columnQuery == "*")
+            {
+                // Expand *
+                var cmd = new SqlCommand("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName", conn);
+                cmd.Parameters.AddWithValue("@TableName", tableName);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
                 {
-                    command.Parameters.AddWithValue("@TableName", tableName);
-                    command.Parameters.AddWithValue("@ReportID", reportId);
-                    columnQuery = command.ExecuteScalar()?.ToString();
+                    var col = reader["COLUMN_NAME"].ToString();
+                    if (!ignoredColumns.Contains(col) && !col.Equals("QR", StringComparison.OrdinalIgnoreCase))
+                    {
+                        columns.Add(col);
+                    }
                 }
-
-                // Step 2: Get ignored columns dynamically
-                var ignoredColumns = GetIgnoredColumns(connection)
+            }
+            else if (!string.IsNullOrEmpty(columnQuery))
+            {
+                // Parse specific list, skip ignored, allow QR alias detection
+                columns = columnQuery.Split(',')
                     .Select(c => c.Trim())
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase); // For fast exclusion
+                    .Where(c => !ignoredColumns.Contains(c) || c.Contains("'") || c.Contains(" as ", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
 
-                // Step 3: Determine columns to return
-                if (!string.IsNullOrEmpty(columnQuery))
-                {
-                    if (columnQuery.Trim() == "*")
-                    {
-                        string allColumnsQuery = @"
-                    SELECT COLUMN_NAME 
-                    FROM INFORMATION_SCHEMA.COLUMNS 
-                    WHERE TABLE_NAME = @TableName
-                    ORDER BY ORDINAL_POSITION";
-
-                        using (var columnCmd = new SqlCommand(allColumnsQuery, connection))
-                        {
-                            columnCmd.Parameters.AddWithValue("@TableName", tableName);
-                            using var reader = columnCmd.ExecuteReader();
-                            while (reader.Read())
-                            {
-                                var columnName = reader["COLUMN_NAME"].ToString();
-                                if (!ignoredColumns.Contains(columnName))
-                                {
-                                    columns.Add(columnName);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // If a specific list is given, filter it too just in case
-                        columns = columnQuery.Split(',')
-                                             .Select(c => c.Trim())
-                                             .Where(c => !string.IsNullOrEmpty(c) && !ignoredColumns.Contains(c))
-                                             .ToList();
-                    }
-                }
+                if (columnQuery.IndexOf("'QR' as QR", StringComparison.OrdinalIgnoreCase) >= 0)
+                    hasQR = true;
             }
 
             return columns;
         }
+
+
+
 
         private List<string> GetIgnoredColumns(SqlConnection conn)
         {
@@ -384,85 +360,57 @@ namespace FreschOne.Controllers
 
             return ignoredColumns;
         }
-        private List<Dictionary<string, object>> GetTableData(string tableName, int reportId)
+        private List<Dictionary<string, object>> GetTableData(string tableName, int reportId, bool hasQR)
         {
             var tableData = new List<Dictionary<string, object>>();
-            string columnQuery = string.Empty;
+            string columnQuery;
 
-            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            conn.Open();
+
+            columnQuery = new SqlCommand("SELECT ColumnQuery FROM foReportTable WHERE TableName = @TableName AND ReportsID = @ReportID", conn)
             {
-                connection.Open();
+                Parameters = { new SqlParameter("@TableName", tableName), new SqlParameter("@ReportID", reportId) }
+            }.ExecuteScalar()?.ToString()?.Trim();
 
-                // Step 1: Retrieve columnQuery from foReportTable
-                string query = "SELECT columnQuery FROM foReportTable WHERE TableName = @TableName AND ReportsID = @ReportID";
-                using (var command = new SqlCommand(query, connection))
+            var ignoredColumns = GetIgnoredColumns(conn).Select(c => c.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var columns = new List<string>();
+
+            if (columnQuery == "*")
+            {
+                var cmd = new SqlCommand("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName", conn);
+                cmd.Parameters.AddWithValue("@TableName", tableName);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
                 {
-                    command.Parameters.AddWithValue("@TableName", tableName);
-                    command.Parameters.AddWithValue("@ReportID", reportId);
-                    columnQuery = command.ExecuteScalar()?.ToString();
+                    var col = reader["COLUMN_NAME"].ToString();
+                    if (!ignoredColumns.Contains(col) && !col.Equals("QR", StringComparison.OrdinalIgnoreCase))
+                    {
+                        columns.Add(col);
+                    }
                 }
-
-                // Step 2: Get ignored columns from your custom table
-                var ignoredColumns = GetIgnoredColumns(connection)
+            }
+            else if (!string.IsNullOrEmpty(columnQuery))
+            {
+                columns = columnQuery.Split(',')
                     .Select(c => c.Trim())
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase); // Fast lookup
+                    .Where(c => !ignoredColumns.Contains(c) || c.Contains("'") || c.Contains(" as ", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
 
-                var columns = new List<string>();
+            if (columns.Count == 0) return tableData;
 
-                // Step 3: Decide how to get the list of columns
-                if (!string.IsNullOrEmpty(columnQuery) && columnQuery.Trim() == "*")
+            var selectQuery = $"SELECT {string.Join(", ", columns)} FROM {tableName} WHERE Active = 1";
+            using var dataCmd = new SqlCommand(selectQuery, conn);
+            using var dataReader = dataCmd.ExecuteReader();
+            while (dataReader.Read())
+            {
+                var row = new Dictionary<string, object>();
+                for (int i = 0; i < dataReader.FieldCount; i++)
                 {
-                    string allColumnsQuery = @"
-                SELECT COLUMN_NAME 
-                FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE TABLE_NAME = @TableName
-                ORDER BY ORDINAL_POSITION";
-
-                    using (var columnCmd = new SqlCommand(allColumnsQuery, connection))
-                    {
-                        columnCmd.Parameters.AddWithValue("@TableName", tableName);
-                        using var reader = columnCmd.ExecuteReader();
-                        while (reader.Read())
-                        {
-                            var columnName = reader["COLUMN_NAME"].ToString();
-                            if (!ignoredColumns.Contains(columnName))
-                            {
-                                columns.Add(columnName);
-                            }
-                        }
-                    }
+                    row[dataReader.GetName(i)] = dataReader[i];
                 }
-                else
-                {
-                    // Parse specific columns, and exclude ignored ones
-                    columns = columnQuery.Split(',')
-                                         .Select(c => c.Trim())
-                                         .Where(c => !string.IsNullOrEmpty(c) && !ignoredColumns.Contains(c))
-                                         .ToList();
-                }
-
-                // If no columns are valid, return empty result
-                if (columns.Count == 0)
-                {
-                    return tableData;
-                }
-
-                // Step 4: Fetch data with the allowed columns
-                string selectQuery = $"SELECT {string.Join(", ", columns)} FROM {tableName} WHERE Active = 1";
-
-                using (var dataCmd = new SqlCommand(selectQuery, connection))
-                {
-                    using var reader = dataCmd.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        var row = new Dictionary<string, object>();
-                        for (int i = 0; i < reader.FieldCount; i++)
-                        {
-                            row[reader.GetName(i)] = reader[i];
-                        }
-                        tableData.Add(row);
-                    }
-                }
+                tableData.Add(row);
             }
 
             return tableData;

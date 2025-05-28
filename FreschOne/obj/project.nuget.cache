@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "V0+3mz4tBQM=",
+  "dgSpecHash": "iWALfjcQcC0=",
   "success": true,
   "projectFilePath": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\FreschOne.csproj",
   "expectedPackageFiles": [
@@ -132,6 +132,7 @@
     "C:\\Users\\Schalk.vandermerwe\\.nuget\\packages\\nuget.projectmodel\\6.11.0\\nuget.projectmodel.6.11.0.nupkg.sha512",
     "C:\\Users\\Schalk.vandermerwe\\.nuget\\packages\\nuget.protocol\\6.11.0\\nuget.protocol.6.11.0.nupkg.sha512",
     "C:\\Users\\Schalk.vandermerwe\\.nuget\\packages\\nuget.versioning\\6.11.0\\nuget.versioning.6.11.0.nupkg.sha512",
+    "C:\\Users\\Schalk.vandermerwe\\.nuget\\packages\\qrcoder\\1.6.0\\qrcoder.1.6.0.nupkg.sha512",
     "C:\\Users\\Schalk.vandermerwe\\.nuget\\packages\\questpdf\\2025.1.7\\questpdf.2025.1.7.nupkg.sha512",
     "C:\\Users\\Schalk.vandermerwe\\.nuget\\packages\\rbush\\4.0.0\\rbush.4.0.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\runtime.native.system\\4.0.0\\runtime.native.system.4.0.0.nupkg.sha512",

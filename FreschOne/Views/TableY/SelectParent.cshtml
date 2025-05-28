@@ -33,6 +33,11 @@
                     var stripped = column.Replace("attachment_", "");
                     formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
                 }
+                else if (column.StartsWith("geo_"))
+                {
+                    var stripped = column.Replace("geo_", "");
+                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
+                }
                 else
                 {
                     formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
@@ -44,8 +49,21 @@
         <tr id="searchRow" style="display: none;">
             @foreach (var column in Model.Columns)
             {
+                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+
+                if (column.StartsWith("geo_"))
+                {
+                    var stripped = column.Replace("geo_", "");
+                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
+                }
+                else if (column.StartsWith("attachment_"))
+                {
+                    var stripped = column.Replace("attachment_", "");
+                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
+                }
+
                 <th>
-                    <input type="text" class="form-control column-search" data-column="@column" placeholder="Search..." />
+                    <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @formattedColumn" />
                 </th>
             }
             <th></th>

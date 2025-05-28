@@ -1,0 +1,129 @@
+﻿@model List<FreschOne.Models.PendingStepViewModel>
+
+@{
+    ViewData["Title"] = "Archived Items";
+    int userId = ViewBag.UserID;
+    var fullName = ViewBag.FullName;
+}
+
+<partial name="_Sidebar" />
+
+<h2 class="mb-3">Archived Items for @fullName</h2>
+
+<div class="d-flex justify-content-end mb-2">
+    <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">+ Show Search</button>
+</div>
+
+<table id="archivedTable" class="table table-bordered table-hover align-middle">
+    <thead class="table-light">
+        <tr>
+            <th data-column="ProcessInstanceID">Process Number</th>
+            <th data-column="StepNo">Step No</th>
+            <th data-column="StepDescription">Step Description</th>
+            <th data-column="AssignedTo">Completed by</th>
+            <th data-column="DateAssigned">Date Completed</th>
+        </tr>
+        <tr id="searchRow" style="display: none;">
+            <th><input type="text" class="form-control column-search" data-column="ProcessInstanceID" placeholder="Search Process Number" /></th>
+            <th><input type="text" class="form-control column-search" data-column="StepNo" placeholder="Search Step No" /></th>
+            <th><input type="text" class="form-control column-search" data-column="StepDescription" placeholder="Search Step Description" /></th>
+            <th><input type="text" class="form-control column-search" data-column="AssignedTo" placeholder="Search Completed by" /></th>
+            <th><input type="text" class="form-control column-search" data-column="DateAssigned" placeholder="Search Date Completed" /></th>
+        </tr>
+    </thead>
+    <tbody id="tableBody">
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td data-column="ProcessInstanceID">@item.ProcessInstanceID</td>
+                <td data-column="StepNo">@item.StepNo</td>
+                <td data-column="StepDescription">@item.StepDescription</td>
+                <td data-column="AssignedTo">
+                    @if (item.UserID.HasValue)
+                    {
+                        <span>@item.FullName</span>
+                    }
+                    else if (item.GroupID.HasValue)
+                    {
+                        <span>@item.GroupDescription</span>
+                    }
+                </td>
+                <td data-column="DateAssigned" data-sort="@item.DateAssigned.Ticks">@item.DateAssigned.ToString("yyyy-MM-dd HH:mm")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    document.querySelectorAll("#archivedTable th[data-column]").forEach(header => {
+        header.style.cursor = "pointer";
+        header.addEventListener("click", () => {
+            const table = header.closest("table");
+            const tbody = table.querySelector("tbody");
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            const columnIndex = Array.from(header.parentNode.children).indexOf(header);
+            const sortAsc = !header.classList.contains("asc");
+
+            rows.sort((a, b) => {
+                let cellA = a.children[columnIndex];
+                let cellB = b.children[columnIndex];
+
+                let valueA = cellA.getAttribute("data-sort") || cellA.textContent.trim();
+                let valueB = cellB.getAttribute("data-sort") || cellB.textContent.trim();
+
+                if (!isNaN(valueA) && !isNaN(valueB)) {
+                    return sortAsc ? valueA - valueB : valueB - valueA;
+                }
+
+                return sortAsc
+                    ? valueA.localeCompare(valueB, undefined, { numeric: true })
+                    : valueB.localeCompare(valueA, undefined, { numeric: true });
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+            table.querySelectorAll("th").forEach(th => th.classList.remove("asc", "desc"));
+            header.classList.add(sortAsc ? "asc" : "desc");
+        });
+    });
+
+    function toggleSearch() {
+        const row = document.getElementById("searchRow");
+        const btn = document.getElementById("toggleSearchBtn");
+        row.style.display = row.style.display === "none" ? "table-row" : "none";
+        btn.innerText = row.style.display === "none" ? "+ Show Search" : "- Hide Search";
+    }
+
+    function filterTable() {
+        const inputs = document.querySelectorAll('.column-search');
+        const rows = document.querySelectorAll("#tableBody tr");
+        rows.forEach(row => {
+            let visible = true;
+            inputs.forEach(input => {
+                const col = input.getAttribute("data-column");
+                const val = input.value.toLowerCase();
+                const cell = row.querySelector(`td[data-column="${col}"]`);
+                if (cell && val && !cell.innerText.toLowerCase().includes(val)) {
+                    visible = false;
+                }
+            });
+            row.style.display = visible ? "" : "none";
+        });
+    }
+
+    document.querySelectorAll('.column-search').forEach(input => {
+        input.addEventListener("keyup", filterTable);
+        input.addEventListener("change", filterTable);
+    });
+</script>
+
+<style>
+    th.asc::after {
+        content: " ▲";
+        font-size: 0.8em;
+    }
+
+    th.desc::after {
+        content: " ▼";
+        font-size: 0.8em;
+    }
+</style>

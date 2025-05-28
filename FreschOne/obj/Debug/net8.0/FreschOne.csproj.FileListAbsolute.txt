@@ -1162,3 +1162,4 @@ C:\Users\Schalk.vandermerwe\source\repos\FreschOne_V1UAT\FreschOne\FreschOne\obj
 C:\Users\Schalk.vandermerwe\source\repos\FreschOne_V1UAT\FreschOne\FreschOne\obj\Debug\net8.0\FreschOne.pdb
 C:\Users\Schalk.vandermerwe\source\repos\FreschOne_V1UAT\FreschOne\FreschOne\obj\Debug\net8.0\FreschOne.genruntimeconfig.cache
 C:\Users\Schalk.vandermerwe\source\repos\FreschOne_V1UAT\FreschOne\FreschOne\obj\Debug\net8.0\ref\FreschOne.dll
+C:\Users\Schalk.vandermerwe\source\repos\FreschOne_V1UAT\FreschOne\FreschOne\bin\Debug\net8.0\QRCoder.dll

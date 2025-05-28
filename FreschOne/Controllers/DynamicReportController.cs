@@ -114,18 +114,19 @@ namespace FreschOne.Controllers
             ViewBag.ReportId = reportid;
             ViewBag.PKID = PKID;
 
-            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            var connStr = _configuration.GetConnectionString("DefaultConnection");
             var reportData = new Dictionary<string, Queue<DataTable>>();
             var allTables = new List<object>();
             var tableDescriptions = new Dictionary<string, string>();
+            var tablesWithQR = new HashSet<string>(); // 🌟 Track which tables need QR
 
-            using var conn = new SqlConnection(connectionString);
+            using var conn = new SqlConnection(connStr);
             conn.Open();
 
             var ignoredColumns = GetIgnoredColumns(conn);
             var tablePrefixes = GetTablePrefixes();
 
-            // 🔷 Load foReportTable (structured)
+            // 🔷 Load foReportTable
             var foTables = new List<foReportTable>();
             using (var cmd = new SqlCommand(@"
         SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription
@@ -147,13 +148,19 @@ namespace FreschOne.Controllers
                         FKColumn = reader["FKColumn"]?.ToString(),
                         TableDescription = reader["TableDescription"]?.ToString()
                     };
+
+                    // 🌟 Check for QR in ColumnQuery
+                    if (table.ColumnQuery?.IndexOf("'QR' as QR", StringComparison.OrdinalIgnoreCase) >= 0)
+                        tablesWithQR.Add(table.TableName);
+                        
+
                     foTables.Add(table);
                     allTables.Add(table);
                     tableDescriptions[table.TableName] = CleanTableName(table.TableName, tablePrefixes);
                 }
             }
 
-            // 🔷 Load foReportTableQuery metadata only (no data yet)
+            // 🔷 Load foReportTableQuery
             var foQueryTables = new List<foReportTableQuery>();
             using (var cmd = new SqlCommand(@"
         SELECT ID, Query, FormType, ColumnCount, TableDescription
@@ -173,14 +180,18 @@ namespace FreschOne.Controllers
                         ColumnCount = reader["ColumnCount"] as int?,
                         TableDescription = reader["TableDescription"]?.ToString()
                     };
-                    string tempKey = "Q_" + qtable.ID;
+
+                    // 🌟 Check for QR in Query
+                    if (qtable.Query?.IndexOf("QR", StringComparison.OrdinalIgnoreCase) >= 0)
+                        tablesWithQR.Add($"Q_{qtable.ID}");
+
                     foQueryTables.Add(qtable);
                     allTables.Add(qtable);
-                    tableDescriptions[tempKey] = $"🧪 {qtable.TableDescription ?? "Custom Query"}";
+                    tableDescriptions[$"Q_{qtable.ID}"] = $"🧪 {qtable.TableDescription ?? "Custom Query"}";
                 }
             }
 
-            // 🔷 Execute each foReportTableQuery separately
+            // 🔷 Execute Query Tables
             foreach (var qtable in foQueryTables)
             {
                 try
@@ -189,12 +200,10 @@ namespace FreschOne.Controllers
                     if (qtable.Query.Contains("@PKID") && PKID.HasValue)
                         customCmd.Parameters.AddWithValue("@PKID", PKID.Value);
 
-                    using var adapter = new SqlDataAdapter(customCmd);
                     var dt = new DataTable();
-                    adapter.Fill(dt);
+                    new SqlDataAdapter(customCmd).Fill(dt);
 
-                    string key = "Q_" + qtable.ID;
-                    reportData[key] = new Queue<DataTable>(new[] { dt });
+                    reportData[$"Q_{qtable.ID}"] = new Queue<DataTable>(new[] { dt });
                 }
                 catch (Exception ex)
                 {
@@ -202,49 +211,61 @@ namespace FreschOne.Controllers
                 }
             }
 
-            // 🔷 Load data for structured tables
+            string cols; 
+            // 🔷 Execute Structured Tables
             foreach (var table in foTables)
             {
-                string filteredColumns = table.ColumnQuery.Trim() == "*"
-                    ? GetAllColumnsExceptIgnored(table.TableName, ignoredColumns, conn)
-                    : FilterIgnoredColumns(table.ColumnQuery, ignoredColumns);
+                List<string> columnParts;
 
-                var notNullCheck = string.Join(" AND ", filteredColumns.Split(',')
-                    .Select(c => c.Trim())
-                    .Where(c => c != "ID" && c != "Active")
-                    .Select(c => $"{c} IS NULL"));
+                if (table.ColumnQuery.Trim() == "*")
+                {
+                    cols = GetAllColumnsExceptIgnored(table.TableName, ignoredColumns, conn);
+                    columnParts = cols.Split(',').Select(c => c.Trim()).ToList();
+                }
+                else
+                {
+                    columnParts = table.ColumnQuery.Split(',')
+                        .Select(c => c.Trim())
+                        .Where(c => !ignoredColumns.Contains(c, StringComparer.OrdinalIgnoreCase))
+                        .ToList();
 
-                string baseWhere = table.Parent
-                    ? $"ID = @PKID AND Active = 1"
+                    cols = string.Join(",", columnParts);
+                }
+
+                string where = table.Parent
+                    ? "ID = @PKID AND Active = 1"
                     : $"{table.FKColumn} = @PKID AND Active = 1";
 
-                if (!string.IsNullOrWhiteSpace(notNullCheck))
-                    baseWhere += $" AND NOT ({notNullCheck})";
+                string nullFilter = string.Join(" AND ", columnParts
+                    .Where(c => !c.StartsWith("'") && !c.Contains(" as ", StringComparison.OrdinalIgnoreCase) && c != "ID" && c != "Active")
+                    .Select(c => $"{c} IS NULL"));
 
-                string selectQuery = $"SELECT {filteredColumns} FROM {table.TableName} WHERE {baseWhere} ORDER BY ID";
+                if (!string.IsNullOrWhiteSpace(nullFilter))
+                    where += $" AND NOT ({nullFilter})";
 
-                using var cmd = new SqlCommand(selectQuery, conn);
+                string query = $"SELECT {cols} FROM {table.TableName} WHERE {where} ORDER BY ID";
+
+                using var cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@PKID", PKID ?? 0);
-                using var adapter = new SqlDataAdapter(cmd);
+
                 var dt = new DataTable();
-                adapter.Fill(dt);
+                new SqlDataAdapter(cmd).Fill(dt);
 
                 if (!reportData.ContainsKey(table.TableName))
                     reportData[table.TableName] = new Queue<DataTable>();
                 reportData[table.TableName].Enqueue(dt);
             }
 
-            // 🔷 Send to view
+
+            // 🔷 Pass Flags to View
             ViewBag.ReportTables = allTables;
             ViewBag.ReportData = reportData;
             ViewBag.TableDescriptions = tableDescriptions;
+            ViewBag.TablesWithQR = tablesWithQR; // 🌟 New
             ViewBag.SearchResult = true;
 
             return View("GenerateReportIndex");
         }
-
-
-
 
         private DataTable ConvertToDataTable(List<Dictionary<string, object>> data)
         {
