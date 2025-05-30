@@ -443,6 +443,318 @@ namespace FreschOne.Controllers
         }
 
 
+        //public IActionResult PendingStep(int Eventid, int processId, int? stepId, int? processInstanceId, int userId)
+        //{
+        //    SetUserAccess(userId);
+        //    ViewBag.userid = userId;
+        //    ViewBag.Eventid = Eventid;
+        //    ViewBag.processInstanceId = processInstanceId;
+
+        //    var columnCalcsParsed = new Dictionary<string, List<(string Function, string Column)>>();
+
+        //    if (stepId is null)
+        //    {
+        //        using (var conn = GetConnection())
+        //        {
+        //            conn.Open();
+        //            var cmd = new SqlCommand(@"
+        //        SELECT TOP 1 ID 
+        //        FROM foProcessSteps 
+        //        WHERE ProcessID = @ProcessID AND Active = 1 
+        //        ORDER BY StepNo", conn);
+        //            cmd.Parameters.AddWithValue("@ProcessID", processId);
+        //            var result = cmd.ExecuteScalar();
+        //            if (result == null)
+        //                return NotFound("No steps found for the selected process.");
+        //            stepId = Convert.ToInt32(result);
+        //        }
+        //    }
+
+        //    string stepDescription = "";
+        //    double stepNo = 0;
+
+        //    using (var conn = GetConnection())
+        //    {
+        //        conn.Open();
+        //        var detailCmd = new SqlCommand("SELECT StepDescription, StepNo FROM foProcessSteps WHERE ID = @StepID", conn);
+        //        detailCmd.Parameters.AddWithValue("@StepID", stepId);
+        //        using (var reader = detailCmd.ExecuteReader())
+        //        {
+        //            if (reader.Read())
+        //            {
+        //                stepDescription = reader["StepDescription"].ToString();
+        //                stepNo = Convert.ToDouble(reader["StepNo"]);
+        //            }
+        //        }
+        //    }
+
+        //    ViewBag.StepDescription = stepDescription;
+        //    ViewBag.StepNo = stepNo;
+        //    ViewBag.stepId = stepId;
+
+        //    var tables = new List<foProcessDetail>();
+        //    var tableData = new Dictionary<string, List<Dictionary<string, object>>>();
+        //    var prefilledValues = new Dictionary<string, List<Dictionary<string, object>>>();
+        //    var tablePrefixes = GetTablePrefixes();
+        //    var foreignKeys = new Dictionary<string, List<ForeignKeyInfo>>();
+        //    var foreignKeyOptions = new Dictionary<string, List<SelectListItem>>();
+        //    var columnTypes = new Dictionary<string, Dictionary<string, string>>();
+        //    var columnLengths = new Dictionary<string, Dictionary<string, int>>();
+
+        //    using (var conn = GetConnection())
+        //    {
+        //        conn.Open();
+        //        var ignoredColumns = GetIgnoredColumns(conn);
+
+        //        var query = @"
+        //    SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription, ColumnCalcs
+        //    FROM foProcessDetail 
+        //    WHERE StepID = @StepID AND Active = 1
+        //    ORDER BY Parent DESC, ID";
+
+        //        using (var cmd = new SqlCommand(query, conn))
+        //        {
+        //            cmd.Parameters.AddWithValue("@StepID", stepId);
+        //            using (var reader = cmd.ExecuteReader())
+        //            {
+        //                while (reader.Read())
+        //                {
+        //                    tables.Add(new foProcessDetail
+        //                    {
+        //                        TableName = reader["TableName"].ToString(),
+        //                        ColumnQuery = reader["ColumnQuery"].ToString(),
+        //                        FormType = reader["FormType"].ToString(),
+        //                        ColumnCount = reader["ColumnCount"] != DBNull.Value ? Convert.ToInt32(reader["ColumnCount"]) : (int?)null,
+        //                        Parent = reader["Parent"] != DBNull.Value && Convert.ToBoolean(reader["Parent"]),
+        //                        FKColumn = reader["FKColumn"]?.ToString(),
+        //                        TableDescription = reader["TableDescription"].ToString(),
+        //                        ColumnCalcs = reader["ColumnCalcs"]?.ToString(),
+
+        //                    });
+        //                }
+        //            }
+        //        }
+
+        //        foreach (var table in tables)
+        //        {
+        //            var calcs = new List<(string Function, string Column)>();
+
+        //            if (!string.IsNullOrWhiteSpace(table.ColumnCalcs))
+        //            {
+        //                var expressions = table.ColumnCalcs.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+        //                foreach (var expr in expressions)
+        //                {
+        //                    var match = Regex.Match(expr.Trim(), @"(Count|Sum)\(([^)]+)\)", RegexOptions.IgnoreCase);
+        //                    if (match.Success)
+        //                    {
+        //                        var function = match.Groups[1].Value.Trim();
+        //                        var column = match.Groups[2].Value.Trim();
+        //                        calcs.Add((function, column));
+        //                    }
+        //                }
+        //            }
+
+        //            columnCalcsParsed[table.TableName] = calcs;
+        //        }
+
+        //        ViewBag.CalculationConfig = columnCalcsParsed;
+
+        //        foreach (var table in tables)
+        //        {
+        //            if (!string.IsNullOrEmpty(table.FKColumn))
+        //                ignoredColumns.Add(table.FKColumn);
+
+        //            var columns = table.ColumnQuery.Trim() == "*"
+        //                ? GetAllColumnsForTable(table.TableName, conn).Where(col => !ignoredColumns.Contains(col)).ToList()
+        //                : table.ColumnQuery.Split(',').Select(c => c.Trim()).Where(col => !ignoredColumns.Contains(col)).ToList();
+
+        //            columnTypes[table.TableName] = new Dictionary<string, string>();
+        //            columnLengths[table.TableName] = new Dictionary<string, int>();
+
+        //            using (var metaCmd = new SqlCommand(@"
+        //        SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH 
+        //        FROM INFORMATION_SCHEMA.COLUMNS 
+        //        WHERE TABLE_NAME = @TableName", conn))
+        //            {
+        //                metaCmd.Parameters.AddWithValue("@TableName", table.TableName);
+        //                using (var metaReader = metaCmd.ExecuteReader())
+        //                {
+        //                    while (metaReader.Read())
+        //                    {
+        //                        string col = metaReader["COLUMN_NAME"].ToString();
+        //                        string type = metaReader["DATA_TYPE"].ToString();
+        //                        int length = metaReader["CHARACTER_MAXIMUM_LENGTH"] != DBNull.Value ? Convert.ToInt32(metaReader["CHARACTER_MAXIMUM_LENGTH"]) : 0;
+
+        //                        columnTypes[table.TableName][col] = type;
+        //                        columnLengths[table.TableName][col] = length;
+        //                    }
+        //                }
+        //            }
+
+        //            foreignKeys[table.TableName] = GetForeignKeyColumns(table.TableName).Where(fk => fk.TableName.Contains("_md_")).ToList();
+        //            foreach (var fk in foreignKeys[table.TableName])
+        //            {
+        //                if (!foreignKeyOptions.ContainsKey(fk.TableName))
+        //                    foreignKeyOptions[fk.TableName] = GetForeignKeyOptions(fk.TableName);
+        //            }
+
+        //            var rows = new List<Dictionary<string, object>>();
+
+        //            if (table.FormType == "F")
+        //            {
+        //                // 🟢 Freeform: Only latest record
+        //                var latestCmd = new SqlCommand(@"
+        //            SELECT ProcessEventID, RecordID,DataSetUpdate
+        //            FROM foProcessEventsDetail a
+        //            WHERE ProcessInstanceID = @InstanceID 
+        //              AND TableName = @TableName 
+        //              AND Active = 1
+        //              ", conn);
+
+        //                latestCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
+        //                latestCmd.Parameters.AddWithValue("@TableName", table.TableName);
+
+        //                using (var reader = latestCmd.ExecuteReader())
+        //                {
+        //                    if (reader.Read())
+        //                    {
+        //                        var json = reader["DataSetUpdate"].ToString();
+        //                        var raw = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+        //                        var filtered = columns.ToDictionary(c => c, c => raw.ContainsKey(c) ? raw[c] : null);
+
+        //                        var recordId = reader["RecordID"]?.ToString();
+        //                        filtered["RecordID"] = recordId;
+
+        //                        rows.Add(filtered);
+        //                    }
+        //                }
+        //            }
+        //            else if (table.FormType == "T")
+        //            {
+        //                var allRowsCmd = new SqlCommand(@"
+        //                SELECT a.ProcessEventID, a.RecordID, a.DataSetUpdate
+        //                FROM foProcessEventsDetail a
+        //                INNER JOIN (
+        //                    SELECT MAX(ID) AS MaxID
+        //                    FROM foProcessEventsDetail
+        //                    WHERE ProcessInstanceID = @InstanceID
+        //                      AND StepID = @StepID
+        //                      AND TableName = @TableName
+        //                      AND Active = 1
+        //                    GROUP BY RecordID
+        //                ) b ON a.ID = b.MaxID
+        //                ORDER BY a.ID", conn);
+
+
+        //                allRowsCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
+        //                allRowsCmd.Parameters.AddWithValue("@StepID", stepId);
+        //                allRowsCmd.Parameters.AddWithValue("@TableName", table.TableName);
+
+        //                using (var reader = allRowsCmd.ExecuteReader())
+        //                {
+        //                    while (reader.Read())
+        //                    {
+        //                        var json = reader["DataSetUpdate"].ToString();
+        //                        var raw = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+        //                        var filtered = columns.ToDictionary(c => c, c => raw.ContainsKey(c) ? raw[c] : null);
+
+        //                        var recordId = reader["RecordID"]?.ToString();
+        //                        filtered["RecordID"] = recordId;
+
+        //                        rows.Add(filtered);
+        //                    }
+        //                }
+        //            }
+
+
+        //            // Only if no data exists, add a blank row
+        //            if (!rows.Any())
+        //            {
+        //                var emptyRow = columns.ToDictionary(c => c, c => (object)null);
+        //                emptyRow["RecordID"] = null;
+        //                rows.Add(emptyRow);
+        //            }
+
+        //            tableData[table.TableName] = rows;
+        //            prefilledValues[table.TableName] = rows;
+
+        //        }
+
+        //        ViewBag.PrefilledValues = prefilledValues;
+        //        PopulateProcessHistory(conn, null, processInstanceId);
+        //    }
+
+
+        //    using (var conn = GetConnection())
+        //    {
+        //        conn.Open();
+
+        //        var cmd = new SqlCommand(@"
+        //SELECT TOP 1 d.DataSetUpdate, u.FirstName, u.LastName
+        //FROM foApprovalEventsDetail d
+        //INNER JOIN foUsers u ON d.CreatedUserID = u.ID
+        //WHERE d.ProcessInstanceID = @InstanceID
+        //ORDER BY d.ID DESC", conn);
+
+
+        //        cmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
+
+        //        using (var reader = cmd.ExecuteReader())
+        //        {
+        //            if (reader.Read())
+        //            {
+        //                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(reader["DataSetUpdate"].ToString());
+        //                if (data.ContainsKey("Comment") && data.ContainsKey("Decision") && data["Decision"].ToString() == "Rework")
+        //                {
+        //                    ViewBag.ReworkComment = data["Comment"]?.ToString();
+        //                    ViewBag.ReworkBy = $"{reader["FirstName"]} {reader["LastName"]}";
+        //                }
+        //            }
+        //        }
+        //    }
+
+
+        //    // 🔍 Fetch original ad-hoc approvers (StepID = 0)
+        //    var originalAdhocApprovers = new List<string>();
+        //    using (var conn = GetConnection())
+        //    {
+        //        conn.Open();
+        //        var approverCmd = new SqlCommand(@"
+        //SELECT DISTINCT u.FirstName, u.LastName
+        //FROM foApprovalEvents e
+        //INNER JOIN foUsers u ON e.UserID = u.ID
+        //WHERE e.ProcessInstanceID = @InstanceID
+        //  AND e.StepID = 0
+        //  AND e.Active = 1", conn);
+
+        //        approverCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
+
+        //        using (var reader = approverCmd.ExecuteReader())
+        //        {
+        //            while (reader.Read())
+        //            {
+        //                var fullName = $"{reader["FirstName"]} {reader["LastName"]}";
+        //                originalAdhocApprovers.Add(fullName);
+        //            }
+        //        }
+        //    }
+
+        //    ViewBag.OriginalAdhocApprovers = originalAdhocApprovers;
+
+
+        //    ViewBag.ReportTables = tables;
+        //    ViewBag.ReportData = tableData;
+        //    ViewBag.TableDescriptions = tables.ToDictionary(t => t.TableName, t => CleanTableName(t.TableName, tablePrefixes));
+        //    ViewBag.ForeignKeys = foreignKeys;
+        //    ViewBag.ForeignKeyOptions = foreignKeyOptions;
+        //    ViewBag.ColumnTypes = columnTypes;
+        //    ViewBag.ColumnLengths = columnLengths;
+        //    ViewBag.SearchResult = true;
+
+        //    return View();
+        //}
+
         public IActionResult PendingStep(int Eventid, int processId, int? stepId, int? processInstanceId, int userId)
         {
             SetUserAccess(userId);
@@ -458,10 +770,10 @@ namespace FreschOne.Controllers
                 {
                     conn.Open();
                     var cmd = new SqlCommand(@"
-                SELECT TOP 1 ID 
-                FROM foProcessSteps 
-                WHERE ProcessID = @ProcessID AND Active = 1 
-                ORDER BY StepNo", conn);
+            SELECT TOP 1 ID 
+            FROM foProcessSteps 
+            WHERE ProcessID = @ProcessID AND Active = 1 
+            ORDER BY StepNo", conn);
                     cmd.Parameters.AddWithValue("@ProcessID", processId);
                     var result = cmd.ExecuteScalar();
                     if (result == null)
@@ -507,10 +819,10 @@ namespace FreschOne.Controllers
                 var ignoredColumns = GetIgnoredColumns(conn);
 
                 var query = @"
-            SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription, ColumnCalcs
-            FROM foProcessDetail 
-            WHERE StepID = @StepID AND Active = 1
-            ORDER BY Parent DESC, ID";
+        SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription, ColumnCalcs
+        FROM foProcessDetail 
+        WHERE StepID = @StepID AND Active = 1
+        ORDER BY Parent DESC, ID";
 
                 using (var cmd = new SqlCommand(query, conn))
                 {
@@ -529,7 +841,6 @@ namespace FreschOne.Controllers
                                 FKColumn = reader["FKColumn"]?.ToString(),
                                 TableDescription = reader["TableDescription"].ToString(),
                                 ColumnCalcs = reader["ColumnCalcs"]?.ToString(),
-
                             });
                         }
                     }
@@ -538,23 +849,18 @@ namespace FreschOne.Controllers
                 foreach (var table in tables)
                 {
                     var calcs = new List<(string Function, string Column)>();
-
                     if (!string.IsNullOrWhiteSpace(table.ColumnCalcs))
                     {
                         var expressions = table.ColumnCalcs.Split(',', StringSplitOptions.RemoveEmptyEntries);
-
                         foreach (var expr in expressions)
                         {
                             var match = Regex.Match(expr.Trim(), @"(Count|Sum)\(([^)]+)\)", RegexOptions.IgnoreCase);
                             if (match.Success)
                             {
-                                var function = match.Groups[1].Value.Trim();
-                                var column = match.Groups[2].Value.Trim();
-                                calcs.Add((function, column));
+                                calcs.Add((match.Groups[1].Value.Trim(), match.Groups[2].Value.Trim()));
                             }
                         }
                     }
-
                     columnCalcsParsed[table.TableName] = calcs;
                 }
 
@@ -573,9 +879,9 @@ namespace FreschOne.Controllers
                     columnLengths[table.TableName] = new Dictionary<string, int>();
 
                     using (var metaCmd = new SqlCommand(@"
-                SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH 
-                FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE TABLE_NAME = @TableName", conn))
+            SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = @TableName", conn))
                     {
                         metaCmd.Parameters.AddWithValue("@TableName", table.TableName);
                         using (var metaReader = metaCmd.ExecuteReader())
@@ -592,26 +898,25 @@ namespace FreschOne.Controllers
                         }
                     }
 
-                    foreignKeys[table.TableName] = GetForeignKeyColumns(table.TableName).Where(fk => fk.TableName.Contains("_md_")).ToList();
+                    foreignKeys[table.TableName] = GetForeignKeyColumns(table.TableName).ToList();
                     foreach (var fk in foreignKeys[table.TableName])
                     {
                         if (!foreignKeyOptions.ContainsKey(fk.TableName))
+                        {
                             foreignKeyOptions[fk.TableName] = GetForeignKeyOptions(fk.TableName);
+                        }
                     }
 
                     var rows = new List<Dictionary<string, object>>();
 
                     if (table.FormType == "F")
                     {
-                        // 🟢 Freeform: Only latest record
                         var latestCmd = new SqlCommand(@"
-                    SELECT ProcessEventID, RecordID,DataSetUpdate
-                    FROM foProcessEventsDetail a
-                    WHERE ProcessInstanceID = @InstanceID 
-                      AND TableName = @TableName 
-                      AND Active = 1
-                      ", conn);
-
+                SELECT ProcessEventID, RecordID, DataSetUpdate
+                FROM foProcessEventsDetail
+                WHERE ProcessInstanceID = @InstanceID 
+                  AND TableName = @TableName 
+                  AND Active = 1", conn);
                         latestCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
                         latestCmd.Parameters.AddWithValue("@TableName", table.TableName);
 
@@ -623,9 +928,7 @@ namespace FreschOne.Controllers
                                 var raw = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
                                 var filtered = columns.ToDictionary(c => c, c => raw.ContainsKey(c) ? raw[c] : null);
 
-                                var recordId = reader["RecordID"]?.ToString();
-                                filtered["RecordID"] = recordId;
-
+                                filtered["RecordID"] = reader["RecordID"]?.ToString();
                                 rows.Add(filtered);
                             }
                         }
@@ -633,19 +936,18 @@ namespace FreschOne.Controllers
                     else if (table.FormType == "T")
                     {
                         var allRowsCmd = new SqlCommand(@"
-                        SELECT a.ProcessEventID, a.RecordID, a.DataSetUpdate
-                        FROM foProcessEventsDetail a
-                        INNER JOIN (
-                            SELECT MAX(ID) AS MaxID
-                            FROM foProcessEventsDetail
-                            WHERE ProcessInstanceID = @InstanceID
-                              AND StepID = @StepID
-                              AND TableName = @TableName
-                              AND Active = 1
-                            GROUP BY RecordID
-                        ) b ON a.ID = b.MaxID
-                        ORDER BY a.ID", conn);
-
+                SELECT a.ProcessEventID, a.RecordID, a.DataSetUpdate
+                FROM foProcessEventsDetail a
+                INNER JOIN (
+                    SELECT MAX(ID) AS MaxID
+                    FROM foProcessEventsDetail
+                    WHERE ProcessInstanceID = @InstanceID
+                      AND StepID = @StepID
+                      AND TableName = @TableName
+                      AND Active = 1
+                    GROUP BY RecordID
+                ) b ON a.ID = b.MaxID
+                ORDER BY a.ID", conn);
 
                         allRowsCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
                         allRowsCmd.Parameters.AddWithValue("@StepID", stepId);
@@ -659,16 +961,12 @@ namespace FreschOne.Controllers
                                 var raw = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
                                 var filtered = columns.ToDictionary(c => c, c => raw.ContainsKey(c) ? raw[c] : null);
 
-                                var recordId = reader["RecordID"]?.ToString();
-                                filtered["RecordID"] = recordId;
-
+                                filtered["RecordID"] = reader["RecordID"]?.ToString();
                                 rows.Add(filtered);
                             }
                         }
                     }
 
-
-                    // Only if no data exists, add a blank row
                     if (!rows.Any())
                     {
                         var emptyRow = columns.ToDictionary(c => c, c => (object)null);
@@ -678,25 +976,22 @@ namespace FreschOne.Controllers
 
                     tableData[table.TableName] = rows;
                     prefilledValues[table.TableName] = rows;
-
                 }
 
                 ViewBag.PrefilledValues = prefilledValues;
                 PopulateProcessHistory(conn, null, processInstanceId);
             }
 
-
+            // Rework comment
             using (var conn = GetConnection())
             {
                 conn.Open();
-
                 var cmd = new SqlCommand(@"
         SELECT TOP 1 d.DataSetUpdate, u.FirstName, u.LastName
         FROM foApprovalEventsDetail d
         INNER JOIN foUsers u ON d.CreatedUserID = u.ID
         WHERE d.ProcessInstanceID = @InstanceID
         ORDER BY d.ID DESC", conn);
-
 
                 cmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
 
@@ -714,8 +1009,7 @@ namespace FreschOne.Controllers
                 }
             }
 
-
-            // 🔍 Fetch original ad-hoc approvers (StepID = 0)
+            // Ad-hoc approvers
             var originalAdhocApprovers = new List<string>();
             using (var conn = GetConnection())
             {
@@ -734,15 +1028,12 @@ namespace FreschOne.Controllers
                 {
                     while (reader.Read())
                     {
-                        var fullName = $"{reader["FirstName"]} {reader["LastName"]}";
-                        originalAdhocApprovers.Add(fullName);
+                        originalAdhocApprovers.Add($"{reader["FirstName"]} {reader["LastName"]}");
                     }
                 }
             }
 
             ViewBag.OriginalAdhocApprovers = originalAdhocApprovers;
-
-
             ViewBag.ReportTables = tables;
             ViewBag.ReportData = tableData;
             ViewBag.TableDescriptions = tables.ToDictionary(t => t.TableName, t => CleanTableName(t.TableName, tablePrefixes));
@@ -754,6 +1045,8 @@ namespace FreschOne.Controllers
 
             return View();
         }
+
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -1880,8 +2173,8 @@ namespace FreschOne.Controllers
 
             // 🟰 Copy Approval Events into Archive
             var archiveApprovalCmd = new SqlCommand(@"
-        INSERT INTO foApprovalEventsArchive (ProcessInstanceID, StepID, GroupID, UserID, DateAssigned, DateCompleted, Active)
-        SELECT ProcessInstanceID, StepID, GroupID, UserID, DateAssigned, DateCompleted, Active
+        INSERT INTO foApprovalEventsArchive (ProcessInstanceID, StepID,PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active)
+        SELECT ProcessInstanceID, StepID,PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active
         FROM foApprovalEvents
         WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
             archiveApprovalCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);

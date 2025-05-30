@@ -404,8 +404,8 @@ namespace FreschOne.Controllers
 
             // 🟰 Copy Approval Events into Archive
             var archiveApprovalCmd = new SqlCommand(@"
-        INSERT INTO foApprovalEventsArchive (ProcessInstanceID, StepID, GroupID, UserID, DateAssigned, DateCompleted, Active)
-        SELECT ProcessInstanceID, StepID, GroupID, UserID, DateAssigned, DateCompleted, Active
+        INSERT INTO foApprovalEventsArchive (ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active)
+        SELECT ProcessInstanceID, StepID, PreviousEventID, GroupID, UserID, DateAssigned, DateCompleted, Active
         FROM foApprovalEvents
         WHERE ProcessInstanceID = @ProcessInstanceID", conn, transaction);
             archiveApprovalCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
