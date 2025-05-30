@@ -44,14 +44,13 @@
             var grouped = history.GroupBy(h => new
             {
                 h.ProcessEventID,
-
                 h.StepNo,
                 StepDescription = h.Data.GetValueOrDefault("StepDescription")?.ToString(),
-                StepType = h.Data.ContainsKey("StepType") && h.Data["StepType"]?.ToString() == "Approval" ? "Approval" : "Process",
-            IsApproval = h.Data.TryGetValue("StepType", out var t) && t?.ToString() == "Approval"
-
+                TableDescription = h.Data.GetValueOrDefault("TableDescription")?.ToString(),
+                IsApproval = h.Data.TryGetValue("StepType", out var t) && t?.ToString() == "Approval"
             })
             .OrderBy(g => g.Min(x => x.CreatedDate));
+
             int i = 0;
         }
 
@@ -60,7 +59,6 @@
             var headingId = $"historyHeading_{i}";
             var collapseId = $"historyCollapse_{i}";
             var icon = stepGroup.Key.IsApproval ? "🟡" : "🟢";
-            var label = stepGroup.Key.IsApproval ? "Approval Step" : "Process Step";
 
             <div class="accordion-item">
                 <h2 class="accordion-header" id="@headingId">
@@ -74,46 +72,55 @@
                         </div>
                     </button>
                 </h2>
-                <div id="@collapseId"
-                     class="accordion-collapse collapse"
-                     aria-labelledby="@headingId"
-                     data-bs-parent="#historyAccordion">
-                    <div class="accordion-bodbody">
+                <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#historyAccordion">
+                    <div class="accordion-body">
                         @foreach (var eventGroup in stepGroup.GroupBy(e => new { e.ProcessEventID, e.CreatedDate, e.FullName }))
                         {
                             <div class="border rounded p-2 mb-3 @(stepGroup.Key.IsApproval ? "bg-warning-subtle border-warning" : "bg-info-subtle border-info")">
-                                <strong>Captured:</strong> @eventGroup.Key.CreatedDate.ToString("yyyy-MM-dd HH:mm") by @eventGroup.Key.FullName
+                                <div class="fw-bold mb-2 text-muted">
+                                    Captured on @eventGroup.Key.CreatedDate.ToString("yyyy-MM-dd HH:mm") by @eventGroup.Key.FullName
+                                </div>
 
                                 @foreach (var entry in eventGroup)
                                 {
                                     <div class="mt-3">
-                                        <strong>Table:</strong> @entry.TableName<br />
+                                        <strong>@stepGroup.Key.TableDescription</strong>
 
                                         <ul class="mt-1">
                                             @foreach (var field in entry.Data
-                                           .Where(kvp => kvp.Key != "StepDescription" &&
-                                           kvp.Key != "TableDescription" &&
-                                           kvp.Key != "interactionType" &&
-                                           kvp.Key != "CreatedUserID" &&
-                                           kvp.Key != "CreatedDate" &&
-                                           kvp.Key != "StepType"))
+                                           .Where(kvp => kvp.Key != "StepDescription"
+                                           && kvp.Key != "TableDescription"
+                                           && kvp.Key != "interactionType"
+                                           && kvp.Key != "CreatedUserID"
+                                           && kvp.Key != "CreatedDate"
+                                           && kvp.Key != "StepType"
+                                           && kvp.Key != "RecordID"))
                                             {
                                                 var key = field.Key;
                                                 var value = field.Value?.ToString();
 
-                                                string prettyLabel = key;
-                                                if (prettyLabel.StartsWith("attachment_"))
-                                                    prettyLabel = prettyLabel.Replace("attachment_", "").Replace("_", " ");
-                                                else if (prettyLabel.EndsWith("ID"))
-                                                    prettyLabel = prettyLabel.Substring(0, prettyLabel.Length - 2);
+                                                // Check for FK descriptions (if available)
+                                                if (entry.Data.TryGetValue($"{key}_Display", out var descVal) && descVal != null)
+                                                {
+                                                    value = $"{descVal} (ID: {value})";
+                                                }
 
-                                                prettyLabel = System.Text.RegularExpressions.Regex.Replace(prettyLabel.Replace("_", " "), "(?<=.)([A-Z])", " $1");
+                                                // Clean field label
+                                                string prettyLabel = key
+                                                .Replace("ID", "", StringComparison.OrdinalIgnoreCase)
+                                                .Replace("attachment_", "")
+                                                .Replace("_", " ");
+                                                prettyLabel = System.Text.RegularExpressions.Regex.Replace(prettyLabel, "(?<=.)([A-Z])", " $1").Trim();
 
                                                 <li><strong>@prettyLabel:</strong> @Html.Raw(value)</li>
                                             }
                                         </ul>
-                                        @entry.DetailID
-                                                                            </div>
+
+                                        <div class="small text-muted mt-2">
+                                            Record: @entry.Data.GetValueOrDefault("RecordID")<br />
+                                            Detail ID: @entry.DetailID
+                                        </div>
+                                    </div>
                                 }
                             </div>
                         }
@@ -124,6 +131,7 @@
         }
     </div>
 </div>
+
 
 
 <form asp-action="SaveApproval" method="post" enctype="multipart/form-data">

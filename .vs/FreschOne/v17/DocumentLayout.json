@@ -3,8 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_v1uat\\freschone\\freschone\\controllers\\approvaleventscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\controllers\\approvaleventscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_v1uat\\freschone\\freschone\\views\\approvalevents\\pendingstep.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\approvalevents\\pendingstep.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_v1uat\\freschone\\freschone\\views\\processevents\\pendingstep.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|solutionrelative:freschone\\views\\processevents\\pendingstep.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{E27F1AAC-F90D-4CF8-98E5-0EB0D4BB8FDD}|FreschOne\\FreschOne.csproj|c:\\users\\schalk.vandermerwe\\source\\repos\\freschone_v1uat\\freschone\\freschone\\controllers\\processeventscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -23,27 +27,40 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "ApprovalEventsController.cs",
-              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\ApprovalEventsController.cs",
-              "RelativeDocumentMoniker": "FreschOne\\Controllers\\ApprovalEventsController.cs",
-              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\ApprovalEventsController.cs",
-              "RelativeToolTip": "FreschOne\\Controllers\\ApprovalEventsController.cs",
-              "ViewState": "AgIAAH8BAAAAAAAAAAAlwJYBAAArAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-30T11:38:07.134Z",
+              "Title": "PendingStep.cshtml",
+              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Views\\ApprovalEvents\\PendingStep.cshtml",
+              "RelativeDocumentMoniker": "FreschOne\\Views\\ApprovalEvents\\PendingStep.cshtml",
+              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Views\\ApprovalEvents\\PendingStep.cshtml",
+              "RelativeToolTip": "FreschOne\\Views\\ApprovalEvents\\PendingStep.cshtml",
+              "ViewState": "AgIAAF0AAAAAAAAAAAAuwIUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-30T20:33:32.471Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "ProcessEventsController.cs",
               "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\ProcessEventsController.cs",
               "RelativeDocumentMoniker": "FreschOne\\Controllers\\ProcessEventsController.cs",
               "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Controllers\\ProcessEventsController.cs",
               "RelativeToolTip": "FreschOne\\Controllers\\ProcessEventsController.cs",
-              "ViewState": "AgIAAGgIAAAAAAAAAAAlwH0IAAAzAAAAAAAAAA==",
+              "ViewState": "AgIAADsCAAAAAAAAAAAAAFMCAABoAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-30T11:16:42.928Z",
+              "WhenOpened": "2025-05-30T20:09:45.437Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "PendingStep.cshtml",
+              "DocumentMoniker": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
+              "RelativeDocumentMoniker": "FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
+              "ToolTip": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
+              "RelativeToolTip": "FreschOne\\Views\\ProcessEvents\\PendingStep.cshtml",
+              "ViewState": "AgIAAGkAAAAAAAAAAAAuwJEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-05-30T20:08:53.808Z",
               "EditorCaption": ""
             }
           ]

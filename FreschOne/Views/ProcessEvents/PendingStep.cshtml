@@ -56,7 +56,7 @@
     📜 View Process History
 </button>
 
-<!-- ✅ Collapsible History Section                             <span class="ms-2 text-muted" style="font-size: 0.8rem;">(abel)</span>-->
+<!-- ✅ Collapsible History Section -->
 <div class="collapse" id="historySection">
     <div class="accordion" id="historyAccordion">
         @{
@@ -66,6 +66,7 @@
                 h.ProcessEventID,
                 h.StepNo,
                 StepDescription = h.Data.GetValueOrDefault("StepDescription")?.ToString(),
+                TableDescription = h.Data.GetValueOrDefault("TableDescription")?.ToString(),
                 IsApproval = h.Data.TryGetValue("StepType", out var t) && t?.ToString() == "Approval"
             })
             .OrderBy(g => g.Key.StepNo);
@@ -77,7 +78,6 @@
             var headingId = $"historyHeading_{i}";
             var collapseId = $"historyCollapse_{i}";
             var icon = stepGroup.Key.IsApproval ? "🟡" : "🟢";
-            var label = stepGroup.Key.IsApproval ? "Approval Step" : "Process Step";
 
             <div class="accordion-item">
                 <h2 class="accordion-header" id="@headingId">
@@ -91,45 +91,47 @@
                         </div>
                     </button>
                 </h2>
-                <div id="@collapseId"
-                     class="accordion-collapse collapse"
-                     aria-labelledby="@headingId"
-                     data-bs-parent="#historyAccordion">
-                    <div class="accordion-bodbody">
+                <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="@headingId" data-bs-parent="#historyAccordion">
+                    <div class="accordion-body">
                         @foreach (var eventGroup in stepGroup.GroupBy(e => new { e.ProcessEventID, e.CreatedDate, e.FullName }))
                         {
                             <div class="border rounded p-2 mb-3 @(stepGroup.Key.IsApproval ? "bg-warning-subtle border-warning" : "bg-info-subtle border-info")">
-                                <strong>Captured:</strong> @eventGroup.Key.CreatedDate.ToString("yyyy-MM-dd HH:mm") by @eventGroup.Key.FullName
+                                <div class="fw-bold mb-2 text-muted">
+                                    Captured on @eventGroup.Key.CreatedDate.ToString("yyyy-MM-dd HH:mm") by @eventGroup.Key.FullName
+                                </div>
 
                                 @foreach (var entry in eventGroup)
                                 {
                                     <div class="mt-3">
-                                        <strong>Table:</strong> @entry.TableName<br />
+                                        <strong>@stepGroup.Key.TableDescription</strong>
 
                                         <ul class="mt-1">
                                             @foreach (var field in entry.Data
-                                           .Where(kvp => kvp.Key != "StepDescription" &&
-                                           kvp.Key != "TableDescription" &&
-                                           kvp.Key != "interactionType" &&
-                                           kvp.Key != "CreatedUserID" &&
-                                           kvp.Key != "CreatedDate" &&
-                                           kvp.Key != "StepType"))
+                                           .Where(kvp => kvp.Key != "StepDescription"
+                                           && kvp.Key != "TableDescription"
+                                           && kvp.Key != "interactionType"
+                                           && kvp.Key != "CreatedUserID"
+                                           && kvp.Key != "CreatedDate"
+                                           && kvp.Key != "StepType"
+                                           && kvp.Key != "RecordID"))
                                             {
                                                 var key = field.Key;
                                                 var value = field.Value?.ToString();
 
-                                                string prettyLabel = key;
-                                                if (prettyLabel.StartsWith("attachment_"))
-                                                    prettyLabel = prettyLabel.Replace("attachment_", "").Replace("_", " ");
-                                                else if (prettyLabel.EndsWith("ID"))
-                                                    prettyLabel = prettyLabel.Substring(0, prettyLabel.Length - 2);
-
-                                                prettyLabel = System.Text.RegularExpressions.Regex.Replace(prettyLabel.Replace("_", " "), "(?<=.)([A-Z])", " $1");
+                                                string prettyLabel = key
+                                                .Replace("ID", "", StringComparison.OrdinalIgnoreCase)
+                                                .Replace("attachment_", "")
+                                                .Replace("_", " ");
+                                                prettyLabel = System.Text.RegularExpressions.Regex.Replace(prettyLabel, "(?<=.)([A-Z])", " $1").Trim();
 
                                                 <li><strong>@prettyLabel:</strong> @Html.Raw(value)</li>
                                             }
                                         </ul>
-                                        @entry.DetailID
+
+                                        <div class="small text-muted mt-2">
+                                            Record: @entry.Data.GetValueOrDefault("RecordID")<br />
+                                            Detail ID: @entry.DetailID
+                                        </div>
                                     </div>
                                 }
                             </div>
@@ -139,10 +141,10 @@
             </div>
             i++;
         }
-
-
     </div>
 </div>
+
+
 
 <form method="post" asp-action="SavePendingStepData" asp-controller="ProcessEvents" enctype="multipart/form-data">
     <input type="hidden" name="userId" value="@userId" />
@@ -166,24 +168,15 @@
             var columns = row.Keys
             .Where(k => !k.Equals("ID", StringComparison.OrdinalIgnoreCase)
             && !k.Equals("Active", StringComparison.OrdinalIgnoreCase)
-            && !k.Equals("RecordID", StringComparison.OrdinalIgnoreCase))
+            && !k.Equals("RecordID", StringComparison.OrdinalIgnoreCase)
+            && !k.EndsWith("_Display", StringComparison.OrdinalIgnoreCase)) // 🧹 Hide _Display fields
             .ToList();
 
-            // int rowCount = rowCounts.ContainsKey(tableName) ? rowCounts[tableName] : 1;
+            int rowCount = reportData.ContainsKey(tableName) && reportData[tableName].Any()
+            ? reportData[tableName].Count
+            : (rowCounts.ContainsKey(tableName) ? rowCounts[tableName] : 1);
 
-            int rowCount;
-            if (reportData.ContainsKey(tableName) && reportData[tableName] != null && reportData[tableName].Any())
-            {
-                // Real row count based on Prefilled Data
-                rowCount = reportData[tableName].Count;
-            }
-            else
-            {
-                // New blank table
-                rowCount = rowCounts.ContainsKey(tableName) ? rowCounts[tableName] : 1;
-            }
             <input type="hidden" name="RowCount_@tableName" value="@rowCount" />
-
 
             <div class="accordion-item">
                 <h2 class="accordion-header" id="@sectionId">
@@ -200,25 +193,21 @@
                         TableName = tableName,
                         Columns = columns,
                         RowCount = rowCount,
-                        ColumnTypes = columnTypes.ContainsKey(tableName) ? columnTypes[tableName] : new Dictionary<string, string>(),
-                        ColumnLengths = columnLengths.ContainsKey(tableName) ? columnLengths[tableName] : new Dictionary<string, int>(),
-                        ForeignKeys = foreignKeys.ContainsKey(tableName) ? foreignKeys[tableName] : new List<ForeignKeyInfo>(),
+                        ColumnTypes = columnTypes.ContainsKey(tableName) ? columnTypes[tableName] : new(),
+                        ColumnLengths = columnLengths.ContainsKey(tableName) ? columnLengths[tableName] : new(),
+                        ForeignKeys = foreignKeys.ContainsKey(tableName) ? foreignKeys[tableName] : new(),
                         ForeignKeyOptions = foreignKeyOptions
                     };
-
                             <table class="table">
                                 <thead>
                                     <tr>
-                                        <th class="fw-bold">Row No</th>
-
+                                        <th>Row No</th>
                                         @foreach (var column in columns)
                                         {
-                                            string label = column.StartsWith("attachment_")
-                                            ? column.Replace("attachment_", "").Replace("_", " ")
-                                            : column.EndsWith("ID") ? column[..^2] : column;
-
+                                            string label = column.StartsWith("attachment_") ? column.Replace("attachment_", "").Replace("_", " ") :
+                                            column.EndsWith("ID") ? column[..^2] : column;
                                             label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
-                                            <th class="fw-bold">@label</th>
+                                            <th>@label</th>
                                         }
                                         <th></th>
                                     </tr>
@@ -226,69 +215,19 @@
                                 <tbody id="@($"{tableName}_rows")">
                                     @await Html.PartialAsync("_TableRows", model)
                                 </tbody>
-
-                                @if (ViewBag.CalculationConfig is Dictionary<string, List<(string Function, string Column)>> calcMap &&
-                               calcMap.TryGetValue(tableName, out var calcs) && calcs.Any())
-                                {
-                                    <tfoot>
-                                        <tr>
-                                            <td class="fw-bold text-end" colspan="1">Totals:</td>
-
-                                            @foreach (var column in columns)
-                                            {
-                                                var matchingCalc = calcs.FirstOrDefault(c => c.Column.Equals(column, StringComparison.OrdinalIgnoreCase));
-                                                var colLower = column.ToLower();
-                                                if (matchingCalc.Function?.ToLower() == "count")
-                                                {
-                                                    <td class="text-center text-primary fw-bold summary-count"
-                                                        data-table="@tableName"
-                                                        data-column="@colLower">
-                                                        0
-                                                    </td>
-                                                }
-                                                else if (matchingCalc.Function?.ToLower() == "sum")
-                                                {
-                                                    <td class="text-center text-success fw-bold summary-sum"
-                                                        data-table="@tableName"
-                                                        data-column="@colLower">
-                                                        0
-                                                    </td>
-                                                }
-                                                else
-                                                {
-                                                    <td></td>
-                                                }
-                                            }
-
-                                            <td></td> <!-- for delete column -->
-                                        </tr>
-                                    </tfoot>
-                                }
-
                             </table>
-
-                            <input type="hidden" name="RowCount_@tableName" value="@rowCount" />
-
-
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-primary mt-2"
-                                    onclick="addRowAjax('@tableName')">
-                                ➕ Add Row
-                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addRowAjax('@tableName')">➕ Add Row</button>
                         }
-
                         else if (table.FormType == "F")
                         {
                             int columnCount = table.ColumnCount.GetValueOrDefault();
-                            if (columnCount <= 1) columnCount = 1; // Treat 0 and 1 the same
+                            if (columnCount <= 1) columnCount = 1;
                             int colWidth = columnCount >= 1 && columnCount <= 12 ? 12 / columnCount : 6;
                             int columnRendered = 0;
 
-
-                            var prefillData = ViewBag.PrefilledValues as Dictionary<string, object>;
+                            var prefillData = row;
 
                             <input type="hidden" name="@($"{tableName}_RecordID_0")" value="@row["RecordID"]" />
-
 
                             while (columnRendered < columns.Count)
                             {
@@ -297,20 +236,10 @@
                                     {
                                         var column = columns[columnRendered];
                                         string fieldName = $"{tableName}_{column}";
+                                        string columnValue = prefillData.ContainsKey(column) ? prefillData[column]?.ToString() : "";
 
-                                        string columnValue = null;
-                                        if (prefillData != null && prefillData.TryGetValue(column, out var val))
-                                        {
-                                            columnValue = val?.ToString();
-                                        }
-                                        else
-                                        {
-                                            columnValue = row[column]?.ToString();
-                                        }
-
-                                        string label = column;
-                                        if (label.EndsWith("ID")) label = label[..^2];
-                                        label = System.Text.RegularExpressions.Regex.Replace(label, "(?<=.)([A-Z])", " $1");
+                                        string label = column.EndsWith("ID") ? column[..^2] : column;
+                                        label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
 
                                         string columnType = columnTypes?[tableName].ContainsKey(column) == true ? columnTypes[tableName][column] : "varchar";
                                         int columnLength = columnLengths?[tableName].ContainsKey(column) == true ? columnLengths[tableName][column] : 255;
@@ -322,28 +251,41 @@
                                                 string desc = parts.Length > 0 ? parts[0] : "";
                                                 string path = parts.Length > 1 ? parts[1] : "";
                                                 string url = !string.IsNullOrEmpty(path) ? Url.Content("~/Attachments/" + path) : "";
-
                                                 string fullColumnKey = $"{tableName}_{column}";
 
-                                                <label for="@fullColumnKey" class="fw-bold">
-                                                    @label.Replace("attachment_", "").Replace("_", " ")
-                                                </label>
+                                                <label for="@fullColumnKey" class="fw-bold">@label.Replace("attachment_", "").Replace("_", " ")</label>
                                                 <div class="attachment-group">
-                                                    <input type="text" name="desc_@fullColumnKey" id="desc_@fullColumnKey" placeholder="Attachment Description" value="@desc" class="form-control" />
-                                                    <input type="file" name="file_@fullColumnKey" id="file_@fullColumnKey" class="form-control" onchange="updateAttachmentField('@fullColumnKey')" />
+                                                    <input type="text" name="desc_@fullColumnKey" value="@desc" class="form-control" />
+                                                    <input type="file" name="file_@fullColumnKey" class="form-control" onchange="updateAttachmentField('@fullColumnKey')" />
                                                 </div>
                                                 @if (!string.IsNullOrEmpty(path))
                                                 {
                                                     <a href="@url" target="_blank" class="btn btn-sm btn-outline-secondary">@System.IO.Path.GetFileName(path)</a>
                                                 }
-                                                <input type="hidden" name="@fullColumnKey" id="hidden_@fullColumnKey" value="@desc;@path" />
+                                                <input type="hidden" name="@fullColumnKey" value="@desc;@path" />
                                             }
-                                            else if (foreignKeys != null && foreignKeys.ContainsKey(tableName) && foreignKeys[tableName].Any(fk => fk.ColumnName == column))
+                                            else if (foreignKeys.ContainsKey(tableName) && foreignKeys[tableName].Any(fk => fk.ColumnName == column))
                                             {
-                                                <label for="@fieldName" class="fw-bold">@label</label>
                                                 var foreignKey = foreignKeys[tableName].First(fk => fk.ColumnName == column);
-                                                var options = foreignKeyOptions.ContainsKey(foreignKey.TableName) ? foreignKeyOptions[foreignKey.TableName] : new List<SelectListItem>();
-                                                @Html.DropDownList(fieldName, new SelectList(options, "Value", "Text", columnValue), "", new { @class = "form-select" })
+                                                var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
+                                                var options = foreignKeyOptions.ContainsKey(foreignKey.TableName) ? foreignKeyOptions[foreignKey.TableName] : new();
+
+                                                <label for="@fieldName" class="fw-bold">@label</label>
+                                                @if (isMaintenance)
+                                                {
+                                                    @Html.DropDownList(fieldName, new SelectList(options, "Value", "Text", columnValue), "", new { @class = "form-select" })
+                                                }
+                                                else
+                                                {
+                                                    var displayValue = row.ContainsKey($"{column}_Display") ? row[$"{column}_Display"]?.ToString() : "";
+                                                    <div class="input-group">
+                                                        <input type="hidden" name="@fieldName" value="@columnValue" />
+                                                        <input type="text" id="@fieldName" value="@displayValue" class="form-control" readonly placeholder="Search..." />
+                                                        <button type="button" class="btn btn-outline-secondary" onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fieldName')">
+                                                            <i class="bi bi-search"></i>
+                                                        </button>
+                                                    </div>
+                                                }
                                             }
                                             else if (columnType == "varchar" && columnLength > 255)
                                             {
@@ -368,15 +310,6 @@
                                                 <label for="@fieldName" class="fw-bold">@label</label>
                                                 <input type="date" name="@fieldName" value="@formattedDate" class="form-control input-short" />
                                             }
-                                            else if (column.StartsWith("geo_"))
-                                            {
-                                                var cleanLabel = label.Replace("geo_", "").Replace("_", " ");
-                                                <label for="@fieldName" class="fw-bold">@cleanLabel</label>
-                                                <div class="input-group">
-                                                    <input type="text" name="@fieldName" id="@fieldName" value="@columnValue" class="form-control" placeholder="Latitude, Longitude" />
-                                                    <button type="button" class="btn btn-outline-secondary" onclick="getLocation('@fieldName')">📍 My Location</button>
-                                                </div>
-                                            }
                                             else
                                             {
                                                 <label for="@fieldName" class="fw-bold">@label</label>
@@ -387,12 +320,12 @@
                                 </div>
                             }
                         }
-
                     </div>
                 </div>
             </div>
         }
     </div>
+
 
     @if (ViewBag.OriginalAdhocApprovers is List<string> originalApprovers && originalApprovers.Any())
     {
@@ -690,6 +623,29 @@
                     console.error("Geolocation error:", error);
                 }
             );
+        }
+
+                function openSearchModal(tableName, columnName, targetField) {
+            // Example: Fetch and show modal data
+            fetch(`/ProcessEvents/GetSearchOptions?tableName=${tableName}&columnName=${columnName}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Build modal content dynamically based on `data`
+                    let content = '<div class="modal-header"><h5 class="modal-title">Select Value</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>';
+                    content += '<div class="modal-body"><ul class="list-group">';
+                    data.forEach(item => {
+                        content += `<li class="list-group-item list-group-item-action" onclick="selectSearchValue('${targetField}', '${item.value}')">${item.text}</li>`;
+                    });
+                    content += '</ul></div>';
+
+                    document.getElementById('searchModalContent').innerHTML = content;
+                    new bootstrap.Modal(document.getElementById('searchModal')).show();
+                });
+        }
+
+        function selectSearchValue(fieldId, value) {
+            document.getElementById(fieldId).value = value;
+            bootstrap.Modal.getInstance(document.getElementById('searchModal')).hide();
         }
 
     
