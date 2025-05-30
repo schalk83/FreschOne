@@ -9,7 +9,7 @@ namespace FreschOne.Controllers
         public PendingItemsController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
         private SqlConnection GetConnection() => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-        public IActionResult MergedPendingItems(int userId)
+        public IActionResult MergedPendingItems(int userId, int pageNumber = 1, int pageSize = 10, string processnumberFilter = "", string processNameFilter = "", string stepNoFilter = "", string stepDescriptionFilter = "", string assignedToFilter = "", string dateFilter = "")
         {
             SetUserAccess(userId);
             var pendingSteps = new List<PendingStepViewModel>();
@@ -18,28 +18,30 @@ namespace FreschOne.Controllers
             {
                 conn.Open();
 
-                // Fetch Pending Process Steps
+                // Fetch Process Steps
                 string processQuery = @"
-                    SELECT 
-                        e.ID,
-                        e.ProcessInstanceID,
-                        ISNULL(e.StepID, 0) AS StepID,
-                        e.GroupID,
-                        g.Description AS GroupDescription,
-                        e.UserID,
-                        u.FirstName,
-                        u.LastName,
-                        e.DateAssigned,
-                        s.StepDescription,
-                        ISNULL(s.StepNo, 1) AS StepNo,
-                        ISNULL(s.ProcessID, 0) AS ProcessID
-                    FROM foProcessEvents e
-                    JOIN foProcessSteps s ON e.StepID = s.ID
-                    LEFT JOIN foGroups g ON e.GroupID = g.ID
-                    LEFT JOIN foUsers u ON e.UserID = u.ID
-                    WHERE e.DateCompleted IS NULL
-                      AND (e.UserID = @UserID OR e.GroupID IN (SELECT GroupID FROM foUserGroups WHERE UserID = @UserID))
-                ";
+            SELECT 
+                e.ID,
+                e.ProcessInstanceID,
+                e.StepID,
+                e.GroupID,
+                g.Description AS GroupDescription,
+                e.UserID,
+                u.FirstName,
+                u.LastName,
+                e.DateAssigned,
+                s.StepDescription,
+                ISNULL(s.StepNo, 1) AS StepNo,
+                ISNULL(s.ProcessID, 0) AS ProcessID,
+                p.ProcessName
+            FROM foProcessEvents e
+            JOIN foProcessSteps s ON e.StepID = s.ID
+            JOIN foProcess p ON s.ProcessID = p.ID
+            LEFT JOIN foGroups g ON e.GroupID = g.ID
+            LEFT JOIN foUsers u ON e.UserID = u.ID
+            WHERE e.DateCompleted IS NULL
+              AND (e.UserID = @UserID OR e.GroupID IN (SELECT GroupID FROM foUserGroups WHERE UserID = @UserID))
+        ";
 
                 using (var cmd = new SqlCommand(processQuery, conn))
                 {
@@ -48,55 +50,52 @@ namespace FreschOne.Controllers
                     {
                         while (reader.Read())
                         {
+                            var assignedTo = (reader.IsDBNull(6) && reader.IsDBNull(7)) ? (reader.IsDBNull(4) ? "" : reader.GetString(4)) : $"{reader.GetString(6)} {reader.GetString(7)}";
+
                             pendingSteps.Add(new PendingStepViewModel
                             {
                                 EventID = reader.GetInt32(0),
                                 ProcessInstanceID = reader.GetInt64(1),
                                 StepID = reader.GetInt64(2),
-                                GroupID = reader.IsDBNull(3) ? null : reader.GetInt64(3),
+                                GroupID = reader.IsDBNull(3) ? (long?)null : reader.GetInt64(3),
                                 GroupDescription = reader.IsDBNull(4) ? null : reader.GetString(4),
-                                UserID = reader.IsDBNull(5) ? null : reader.GetInt64(5),
-                                FullName = reader.IsDBNull(6) && reader.IsDBNull(7)
-                                    ? null
-                                    : $"{reader.GetString(6)} {reader.GetString(7)}",
+                                UserID = reader.IsDBNull(5) ? (long?)null : reader.GetInt64(5),
+                                FullName = (reader.IsDBNull(6) && reader.IsDBNull(7)) ? null : $"{reader.GetString(6)} {reader.GetString(7)}",
                                 DateAssigned = reader.GetDateTime(8),
                                 StepDescription = reader.GetString(9),
                                 StepNo = Convert.ToDouble(reader["StepNo"]),
                                 ProcessID = Convert.ToInt32(reader["ProcessID"]),
-                                StepType = "Process" // <--- Important
+                                ProcessName = reader["ProcessName"].ToString(),
+                                StepType = "Process"
                             });
                         }
                     }
                 }
 
-                // Fetch Pending Approval Steps
+                // Fetch Approval Steps
                 string approvalQuery = @"
-                    SELECT 
-                        e.ID,
-                        e.ProcessInstanceID,
-                        ISNULL(e.StepID, 0) AS StepID,
-                        e.GroupID,
-                        g.Description AS GroupDescription,
-                        e.UserID,
-                        u.FirstName,
-                        u.LastName,
-                        e.DateAssigned,
-                        COALESCE(s.StepDescription, 'Approval required for ' + p.ProcessDescription) AS StepDescription,
-                        ISNULL(s.StepNo, 1) AS StepNo,
-                        ISNULL(s.ProcessID, 0) AS ProcessID
-                    FROM foApprovalEvents e
-                    LEFT JOIN foApprovalSteps s ON e.StepID = s.ID
-                    LEFT JOIN foGroups g ON e.GroupID = g.ID
-                    LEFT JOIN foUsers u ON e.UserID = u.ID
-                    LEFT JOIN (
-                        SELECT pe.ID AS EventID, p.ProcessDescription
-                        FROM foProcessEvents pe
-                        INNER JOIN foProcessSteps ps ON pe.StepID = ps.ID
-                        INNER JOIN foProcess p ON ps.ProcessID = p.ID
-                    ) p ON p.EventID = ABS(e.PreviousEventID)
-                    WHERE e.DateCompleted IS NULL
-                      AND (e.UserID = @UserID OR e.GroupID IN (SELECT GroupID FROM foUserGroups WHERE UserID = @UserID))
-                ";
+            SELECT 
+                e.ID,
+                e.ProcessInstanceID,
+                e.StepID,
+                e.GroupID,
+                g.Description AS GroupDescription,
+                e.UserID,
+                u.FirstName,
+                u.LastName,
+                e.DateAssigned,
+                COALESCE(s.StepDescription, 'Approval required for ' + p.ProcessDescription) AS StepDescription,
+                ISNULL(s.StepNo, 1) AS StepNo,
+                ISNULL(s.ProcessID, 0) AS ProcessID,
+                p.ProcessName
+            FROM foApprovalEvents e
+            LEFT JOIN foApprovalSteps s ON e.StepID = s.ID
+            LEFT JOIN foProcess p ON s.ProcessID = p.ID
+            LEFT JOIN foGroups g ON e.GroupID = g.ID
+            LEFT JOIN foUsers u ON e.UserID = u.ID
+            WHERE e.DateCompleted IS NULL
+              AND (e.UserID = @UserID OR e.GroupID IN (SELECT GroupID FROM foUserGroups WHERE UserID = @UserID))
+        ";
 
                 using (var cmd = new SqlCommand(approvalQuery, conn))
                 {
@@ -105,50 +104,69 @@ namespace FreschOne.Controllers
                     {
                         while (reader.Read())
                         {
+                            var assignedTo = (reader.IsDBNull(6) && reader.IsDBNull(7)) ? (reader.IsDBNull(4) ? "" : reader.GetString(4)) : $"{reader.GetString(6)} {reader.GetString(7)}";
+
                             pendingSteps.Add(new PendingStepViewModel
                             {
                                 EventID = reader.GetInt32(0),
                                 ProcessInstanceID = reader.GetInt64(1),
                                 StepID = reader.GetInt64(2),
-                                GroupID = reader.IsDBNull(3) ? null : reader.GetInt64(3),
+                                GroupID = reader.IsDBNull(3) ? (long?)null : reader.GetInt64(3),
                                 GroupDescription = reader.IsDBNull(4) ? null : reader.GetString(4),
-                                UserID = reader.IsDBNull(5) ? null : reader.GetInt64(5),
-                                FullName = reader.IsDBNull(6) && reader.IsDBNull(7)
-                                    ? null
-                                    : $"{reader.GetString(6)} {reader.GetString(7)}",
+                                UserID = reader.IsDBNull(5) ? (long?)null : reader.GetInt64(5),
+                                FullName = (reader.IsDBNull(6) && reader.IsDBNull(7)) ? null : $"{reader.GetString(6)} {reader.GetString(7)}",
                                 DateAssigned = reader.GetDateTime(8),
                                 StepDescription = reader.GetString(9),
                                 StepNo = Convert.ToDouble(reader["StepNo"]),
                                 ProcessID = Convert.ToInt32(reader["ProcessID"]),
-                                StepType = "Approval" // <--- Important
+                                ProcessName = reader["ProcessName"].ToString(),
+                                StepType = "Approval"
                             });
                         }
                     }
                 }
             }
 
+            // Apply search filters
+            if (!string.IsNullOrEmpty(processnumberFilter))
+                pendingSteps = pendingSteps.Where(x => x.ProcessInstanceID.ToString().Contains(processnumberFilter)).ToList();
+            if (!string.IsNullOrEmpty(processNameFilter))
+                pendingSteps = pendingSteps.Where(x => x.ProcessName?.IndexOf(processNameFilter, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            if (!string.IsNullOrEmpty(stepNoFilter))
+                pendingSteps = pendingSteps.Where(x => x.StepNo.ToString().Contains(stepNoFilter)).ToList();
+            pendingSteps = pendingSteps.Where(x => x.StepDescription?.IndexOf(stepDescriptionFilter, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            if (!string.IsNullOrEmpty(assignedToFilter))
+                pendingSteps = pendingSteps.Where(x =>
+                    (x.FullName != null && x.FullName.IndexOf(assignedToFilter, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                    (x.GroupDescription != null && x.GroupDescription.IndexOf(assignedToFilter, StringComparison.OrdinalIgnoreCase) >= 0)
+                ).ToList();
+            if (!string.IsNullOrEmpty(dateFilter) && DateTime.TryParse(dateFilter, out var parsedDate))
+                pendingSteps = pendingSteps.Where(x => x.DateAssigned.Date == parsedDate.Date).ToList();
+
+            // Rework Check (optional: keep or remove)
             using (var conn = GetConnection())
             {
                 conn.Open();
-
                 foreach (var step in pendingSteps)
                 {
-                    var reworkCheckCmd = new SqlCommand(@"
-            SELECT COUNT(1)
-            FROM foProcessEvents
-            WHERE ProcessInstanceID = @ProcessInstanceID
-              AND PreviousEventID < 0", conn);
-
-                    reworkCheckCmd.Parameters.AddWithValue("@ProcessInstanceID", step.ProcessInstanceID);
-                    step.IsReworkInstance = (int)reworkCheckCmd.ExecuteScalar() > 0;
+                    var cmd = new SqlCommand("SELECT COUNT(1) FROM foProcessEvents WHERE ProcessInstanceID = @ProcessInstanceID AND PreviousEventID < 0", conn);
+                    cmd.Parameters.AddWithValue("@ProcessInstanceID", step.ProcessInstanceID);
+                    step.IsReworkInstance = (int)cmd.ExecuteScalar() > 0;
                 }
             }
 
+            // Paging
+            int totalRecords = pendingSteps.Count;
+            ViewBag.totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+            ViewBag.pageNumber = pageNumber;
 
-            // Sort the merged list by DateAssigned DESC (newest first)
-            pendingSteps = pendingSteps.OrderByDescending(x => x.DateAssigned).ToList();
+            pendingSteps = pendingSteps
+                .OrderByDescending(x => x.DateAssigned)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
 
-            // Get User's Full Name for Title
+            // User Name
             using (var conn = GetConnection())
             using (var cmd = new SqlCommand("SELECT FirstName + ' ' + LastName FROM foUsers WHERE ID = @ID", conn))
             {
@@ -158,8 +176,18 @@ namespace FreschOne.Controllers
             }
 
             ViewBag.UserID = userId;
-            return View(pendingSteps); // Will look for /Views/PendingItems/MergedPendingItems.cshtml
+
+            // Determine if any filters are applied
+            ViewBag.SearchVisible = !string.IsNullOrEmpty(processnumberFilter) ||
+                                    !string.IsNullOrEmpty(processNameFilter) ||
+                                    !string.IsNullOrEmpty(stepDescriptionFilter) ||
+                                    !string.IsNullOrEmpty(assignedToFilter) ||
+                                    !string.IsNullOrEmpty(dateFilter);
+
+            return View(pendingSteps);
         }
+
+
 
         private bool IsReworkInstance(SqlConnection conn, long processInstanceId)
         {

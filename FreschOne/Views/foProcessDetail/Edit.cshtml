@@ -16,7 +16,8 @@
 
 <partial name="_Sidebar" />
 
-<h2>Edit Step Detail</h2>
+<h2>Edit Step Detail for @ViewBag.ProcessName : @ViewBag.StepDescription</h2>
+
 
 @if (ViewBag.StepDetailList is List<FreschOne.Models.foProcessDetail> stepDetails && stepDetails.Any())
 {

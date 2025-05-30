@@ -267,18 +267,92 @@ namespace FreschOne.Controllers
         private string GetForeignKeyDescription(string tableName, object foreignKeyValue)
         {
             string description = string.Empty;
-            string query = $"SELECT Description FROM {tableName} WHERE ID = @Id";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using var command = new SqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Id", foreignKeyValue);
-                description = command.ExecuteScalar()?.ToString();
+
+                // Check if table is a Maintenance table (foTablePrefixes.Description = 'Maintenance')
+                string checkQuery = @"
+            SELECT COUNT(*) 
+            FROM foTablePrefixes 
+            WHERE @TableName LIKE Prefix + '%' AND Description = 'Maintenance'";
+
+                bool isMaintenance = false;
+                using (var checkCmd = new SqlCommand(checkQuery, connection))
+                {
+                    checkCmd.Parameters.AddWithValue("@TableName", tableName);
+                    isMaintenance = (int)checkCmd.ExecuteScalar() > 0;
+                }
+
+                if (isMaintenance)
+                {
+                    // Fetch the Description column for Maintenance tables
+                    string descQuery = $"SELECT Description FROM {tableName} WHERE ID = @Id";
+                    using (var cmd = new SqlCommand(descQuery, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", foreignKeyValue);
+                        var result = cmd.ExecuteScalar();
+                        if (result != null)
+                        {
+                            description = result.ToString();
+                        }
+                    }
+                }
+                else
+                {
+                    // Fetch ALL non-ID columns (excluding ignored ones)
+                    var columns = new List<string>();
+                    var columnsQuery = @"
+                    SELECT COLUMN_NAME, DATA_TYPE 
+                    FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = @TableName 
+                    AND COLUMN_NAME NOT IN ('ID', 'Active') 
+                    AND COLUMN_NAME NOT LIKE '%ID'";
+
+                    using (var cmd = new SqlCommand(columnsQuery, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@TableName", tableName);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string columnName = reader["COLUMN_NAME"].ToString();
+                                string dataType = reader["DATA_TYPE"].ToString().ToLower();
+
+                                // If the column is not varchar, nvarchar, or text, convert it to string
+                                if (dataType != "varchar" && dataType != "nvarchar" && dataType != "text")
+                                {
+                                    columnName = $"CONVERT(varchar, {columnName})";
+                                }
+
+                                columns.Add(columnName);
+                            }
+                        }
+                    }
+
+                    if (columns.Count > 0)
+                    {
+                        var selectClause = string.Join(" + ' | ' + ", columns);
+                        var compositeQuery = $"SELECT {selectClause} FROM {tableName} WHERE ID = @Id";
+
+                        using (var cmd = new SqlCommand(compositeQuery, connection))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", foreignKeyValue);
+                            var result = cmd.ExecuteScalar();
+                            if (result != null)
+                            {
+                                description = result.ToString();
+                            }
+                        }
+                    }
+
+                }
             }
 
             return description;
         }
+
 
 
         private Dictionary<string, object> GetRecordById(string tablename, int id)
@@ -307,21 +381,86 @@ namespace FreschOne.Controllers
         private List<SelectListItem> GetForeignKeyOptions(string tableName)
         {
             var options = new List<SelectListItem>();
-            string query = $"SELECT ID, Description FROM {tableName}";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using var command = new SqlCommand(query, connection);
-                using (var reader = command.ExecuteReader())
+
+                // 🔍 Check if this is a Maintenance table (tbl_md_) or not
+                string prefixQuery = "SELECT Description FROM foTablePrefixes WHERE @TableName LIKE Prefix + '%' AND Active = 1";
+                string tableType = null;
+                using (var prefixCmd = new SqlCommand(prefixQuery, connection))
                 {
-                    while (reader.Read())
+                    prefixCmd.Parameters.AddWithValue("@TableName", tableName);
+                    tableType = prefixCmd.ExecuteScalar()?.ToString();
+                }
+
+                if (tableType == "Maintenance")
+                {
+                    // ✅ Maintenance table: use [ID], [Description]
+                    string query = $"SELECT ID, Description FROM {tableName} WHERE Active = 1";
+                    using (var command = new SqlCommand(query, connection))
+                    using (var reader = command.ExecuteReader())
                     {
-                        options.Add(new SelectListItem
+                        while (reader.Read())
                         {
-                            Value = reader["ID"].ToString(),
-                            Text = reader["Description"].ToString()
-                        });
+                            options.Add(new SelectListItem
+                            {
+                                Value = reader["ID"].ToString(),
+                                Text = reader["Description"].ToString()
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    // 🔶 Transaction table: Dynamically build multi-column display text
+                    var ignoredColumns = GetIgnoredColumns(connection);
+                    var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
+
+                    // Get available columns (skip ID, Active, etc.)
+                    var columnsQuery = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
+                    var displayColumns = new List<string>();
+                    using (var cmd = new SqlCommand(columnsQuery, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@TableName", tableName);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var col = reader["COLUMN_NAME"].ToString();
+                                if (!col.Equals("ID", StringComparison.OrdinalIgnoreCase) && !col.EndsWith("ID", StringComparison.OrdinalIgnoreCase) && !ignoredSet.Contains(col))
+                                {
+                                    displayColumns.Add(col);
+                                }
+                            }
+                        }
+                    }
+
+                    if (displayColumns.Count == 0)
+                        displayColumns.Add("ID"); // Fallback
+
+                    // Build SELECT query
+                    var selectColumns = "ID, " + string.Join(", ", displayColumns);
+                    string query = $"SELECT {selectColumns} FROM {tableName} WHERE Active = 1";
+
+                    using (var cmd = new SqlCommand(query, connection))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var values = new List<string>();
+                            foreach (var col in displayColumns)
+                            {
+                                values.Add(reader[col]?.ToString());
+                            }
+
+                            options.Add(new SelectListItem
+                            {
+                                Value = reader["ID"].ToString(),
+                                Text = string.Join(" | ", values)
+                            });
+                        }
                     }
                 }
             }

@@ -19,6 +19,8 @@
         public double StepNo { get; set; }
         public int ProcessID { get; set; }
 
+        public string ProcessName { get; set; }
+
         public string StepType { get; set; } // "Process" or "Approval"
         public bool IsReworkInstance { get; set; }
 

@@ -20,16 +20,249 @@ namespace FreschOne.Controllers
 
         private SqlConnection GetConnection() => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
+        //public IActionResult CreateStep(int processId, int? stepId, int? processInstanceId, int userId)
+        //{
+        //    SetUserAccess(userId);
+
+        //    ViewBag.userid = userId;
+        //    ViewBag.processInstanceId = processInstanceId;
+
+        //    var columnCalcsParsed = new Dictionary<string, List<(string Function, string Column)>>();
+
+
+
+        //    if (stepId is null)
+        //    {
+        //        using (var conn = GetConnection())
+        //        {
+        //            conn.Open();
+        //            var cmd = new SqlCommand(@"SELECT TOP 1 ID FROM foProcessSteps 
+        //                               WHERE ProcessID = @ProcessID AND Active = 1 
+        //                               ORDER BY StepNo", conn);
+        //            cmd.Parameters.AddWithValue("@ProcessID", processId);
+        //            var result = cmd.ExecuteScalar();
+        //            if (result == null)
+        //                return NotFound("No steps found for the selected process.");
+        //            stepId = Convert.ToInt32(result);
+        //        }
+        //    }
+
+        //    string stepDescription = "";
+        //    double stepNo = 0;
+
+        //    using (var conn = GetConnection())
+        //    {
+        //        conn.Open();
+
+        //        var detailCmd = new SqlCommand("SELECT StepDescription, StepNo FROM foProcessSteps WHERE ID = @StepID", conn);
+        //        detailCmd.Parameters.AddWithValue("@StepID", stepId);
+
+        //        using (var reader = detailCmd.ExecuteReader())
+        //        {
+        //            if (reader.Read())
+        //            {
+        //                stepDescription = reader["StepDescription"].ToString();
+        //                stepNo = Convert.ToDouble(reader["StepNo"]);
+        //            }
+        //        }
+        //    }
+
+        //    ViewBag.StepDescription = stepDescription;
+        //    ViewBag.StepNo = stepNo;
+        //    ViewBag.stepId = stepId;
+
+        //    var tables = new List<foProcessDetail>();
+        //    var tableData = new Dictionary<string, List<Dictionary<string, object>>>();
+        //    var tablePrefixes = GetTablePrefixes();
+        //    var foreignKeys = new Dictionary<string, List<ForeignKeyInfo>>();
+        //    var foreignKeyOptions = new Dictionary<string, List<SelectListItem>>();
+        //    var columnTypes = new Dictionary<string, Dictionary<string, string>>();
+        //    var columnLengths = new Dictionary<string, Dictionary<string, int>>();
+
+        //    using (var conn = GetConnection())
+        //    {
+        //        conn.Open();
+
+        //        var ignoredColumns = GetIgnoredColumns(conn);
+
+        //        var query = @"SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription, ColumnCalcs
+        //              FROM foProcessDetail 
+        //              WHERE StepID = @StepID AND Active = 1
+        //              ORDER BY Parent DESC, ID";
+
+        //        using (var cmd = new SqlCommand(query, conn))
+        //        {
+        //            cmd.Parameters.AddWithValue("@StepID", stepId);
+        //            using (var reader = cmd.ExecuteReader())
+        //            {
+        //                while (reader.Read())
+        //                {
+        //                    tables.Add(new foProcessDetail
+        //                    {
+        //                        TableName = reader["TableName"].ToString(),
+        //                        ColumnQuery = reader["ColumnQuery"].ToString(),
+        //                        FormType = reader["FormType"].ToString(),
+        //                        ColumnCount = reader["ColumnCount"] != DBNull.Value ? Convert.ToInt32(reader["ColumnCount"]) : (int?)null,
+        //                        Parent = reader["Parent"] != DBNull.Value && Convert.ToBoolean(reader["Parent"]),
+        //                        FKColumn = reader["FKColumn"].ToString(),
+        //                        TableDescription = reader["TableDescription"].ToString(),
+        //                        ColumnCalcs = reader["ColumnCalcs"].ToString(),
+        //                    });
+        //                }
+        //            }
+        //        }
+
+        //        // Somewhere after loading `tables`
+        //        foreach (var table in tables)
+        //        {
+        //            var calcs = new List<(string Function, string Column)>();
+
+        //            if (!string.IsNullOrWhiteSpace(table.ColumnCalcs))
+        //            {
+        //                var expressions = table.ColumnCalcs.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+        //                foreach (var expr in expressions)
+        //                {
+        //                    var match = Regex.Match(expr.Trim(), @"(Count|Sum)\(([^)]+)\)", RegexOptions.IgnoreCase);
+        //                    if (match.Success)
+        //                    {
+        //                        var function = match.Groups[1].Value.Trim();
+        //                        var column = match.Groups[2].Value.Trim();
+        //                        calcs.Add((function, column));
+        //                    }
+        //                }
+        //            }
+
+        //            columnCalcsParsed[table.TableName] = calcs;
+        //        }
+
+        //        ViewBag.CalculationConfig = columnCalcsParsed;
+
+
+        //        foreach (var table in tables)
+        //        {
+        //            var calcs = new List<(string Function, string Column)>();
+
+        //            if (!string.IsNullOrWhiteSpace(table.ColumnCalcs))
+        //            {
+        //                var expressions = table.ColumnCalcs.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+        //                foreach (var expr in expressions)
+        //                {
+        //                    var match = Regex.Match(expr.Trim(), @"(Count|Sum)\(([^)]+)\)", RegexOptions.IgnoreCase);
+        //                    if (match.Success)
+        //                    {
+        //                        var function = match.Groups[1].Value.Trim();
+        //                        var column = match.Groups[2].Value.Trim();
+        //                        calcs.Add((function, column));
+        //                    }
+        //                }
+        //            }
+
+        //            columnCalcsParsed[table.TableName] = calcs;
+        //            if (!string.IsNullOrEmpty(table.FKColumn))
+        //                ignoredColumns.Add(table.FKColumn);
+
+        //            foreignKeys[table.TableName] = GetForeignKeyColumns(table.TableName)
+        //                .Where(fk => fk.TableName.Contains("_md_"))
+        //                .ToList();
+
+        //            foreach (var fk in foreignKeys[table.TableName])
+        //            {
+        //                if (!foreignKeyOptions.ContainsKey(fk.TableName))
+        //                {
+        //                    foreignKeyOptions[fk.TableName] = GetForeignKeyOptions(fk.TableName);
+        //                }
+        //            }
+
+        //            List<string> columns;
+        //            if (table.ColumnQuery.Trim() == "*")
+        //            {
+        //                columns = GetAllColumnsForTable(table.TableName, conn)
+        //                    .Where(col => !ignoredColumns.Contains(col))
+        //                    .ToList();
+        //            }
+        //            else
+        //            {
+        //                columns = table.ColumnQuery.Split(',')
+        //                    .Select(col => col.Trim())
+        //                    .Where(col => !ignoredColumns.Contains(col))
+        //                    .ToList();
+        //            }
+
+        //            columnTypes[table.TableName] = new Dictionary<string, string>();
+        //            columnLengths[table.TableName] = new Dictionary<string, int>();
+
+        //            var metaQuery = @"SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH 
+        //                      FROM INFORMATION_SCHEMA.COLUMNS 
+        //                      WHERE TABLE_NAME = @TableName";
+
+        //            using (var metaCmd = new SqlCommand(metaQuery, conn))
+        //            {
+        //                metaCmd.Parameters.AddWithValue("@TableName", table.TableName);
+        //                using (var metaReader = metaCmd.ExecuteReader())
+        //                {
+        //                    while (metaReader.Read())
+        //                    {
+        //                        string col = metaReader["COLUMN_NAME"].ToString();
+        //                        string type = metaReader["DATA_TYPE"].ToString();
+        //                        int length = metaReader["CHARACTER_MAXIMUM_LENGTH"] != DBNull.Value
+        //                            ? Convert.ToInt32(metaReader["CHARACTER_MAXIMUM_LENGTH"])
+        //                            : 0;
+
+        //                        columnTypes[table.TableName][col] = type;
+        //                        columnLengths[table.TableName][col] = length;
+        //                    }
+        //                }
+        //            }
+
+        //            var row = new Dictionary<string, object>();
+        //            foreach (var col in columns)
+        //            {
+        //                row[col] = null;
+        //            }
+
+        //            tableData[table.TableName] = new List<Dictionary<string, object>> { row };
+
+        //            // 🔥 Force StartIndex = 0 when initially loading CreateStep
+        //            var model = new DynamicTableViewModel
+        //            {
+        //                TableName = table.TableName,
+        //                Columns = columns,
+        //                RowCount = 1, // Only 1 blank row initially
+        //                StartIndex = 0, // 🟢 Here: Start at 0
+        //                ColumnTypes = columnTypes.ContainsKey(table.TableName) ? columnTypes[table.TableName] : new Dictionary<string, string>(),
+        //                ColumnLengths = columnLengths.ContainsKey(table.TableName) ? columnLengths[table.TableName] : new Dictionary<string, int>(),
+        //                ForeignKeys = foreignKeys.ContainsKey(table.TableName) ? foreignKeys[table.TableName] : new List<ForeignKeyInfo>(),
+        //                ForeignKeyOptions = foreignKeyOptions
+        //            };
+
+        //            ViewBag.InitialModels ??= new List<DynamicTableViewModel>();
+        //            (ViewBag.InitialModels as List<DynamicTableViewModel>).Add(model);
+        //        }
+        //    }
+
+        //    ViewBag.ReportTables = tables;
+        //    ViewBag.ReportData = tableData;
+        //    ViewBag.TableDescriptions = tables.ToDictionary(t => t.TableName, t => CleanTableName(t.TableName, tablePrefixes));
+        //    ViewBag.ForeignKeys = foreignKeys;
+        //    ViewBag.ForeignKeyOptions = foreignKeyOptions;
+        //    ViewBag.ColumnTypes = columnTypes;
+        //    ViewBag.ColumnLengths = columnLengths;
+        //    ViewBag.SearchResult = true;
+        //    ViewBag.UserList = GetApproverSelectList();
+
+
+        //    return View();
+        //}
+
         public IActionResult CreateStep(int processId, int? stepId, int? processInstanceId, int userId)
         {
             SetUserAccess(userId);
-
             ViewBag.userid = userId;
             ViewBag.processInstanceId = processInstanceId;
 
             var columnCalcsParsed = new Dictionary<string, List<(string Function, string Column)>>();
-
-
 
             if (stepId is null)
             {
@@ -37,8 +270,8 @@ namespace FreschOne.Controllers
                 {
                     conn.Open();
                     var cmd = new SqlCommand(@"SELECT TOP 1 ID FROM foProcessSteps 
-                                       WHERE ProcessID = @ProcessID AND Active = 1 
-                                       ORDER BY StepNo", conn);
+                                  WHERE ProcessID = @ProcessID AND Active = 1 
+                                  ORDER BY StepNo", conn);
                     cmd.Parameters.AddWithValue("@ProcessID", processId);
                     var result = cmd.ExecuteScalar();
                     if (result == null)
@@ -53,7 +286,6 @@ namespace FreschOne.Controllers
             using (var conn = GetConnection())
             {
                 conn.Open();
-
                 var detailCmd = new SqlCommand("SELECT StepDescription, StepNo FROM foProcessSteps WHERE ID = @StepID", conn);
                 detailCmd.Parameters.AddWithValue("@StepID", stepId);
 
@@ -82,7 +314,6 @@ namespace FreschOne.Controllers
             using (var conn = GetConnection())
             {
                 conn.Open();
-
                 var ignoredColumns = GetIgnoredColumns(conn);
 
                 var query = @"SELECT TableName, ColumnQuery, FormType, ColumnCount, Parent, FKColumn, TableDescription, ColumnCalcs
@@ -112,61 +343,15 @@ namespace FreschOne.Controllers
                     }
                 }
 
-                // Somewhere after loading `tables`
                 foreach (var table in tables)
                 {
-                    var calcs = new List<(string Function, string Column)>();
-
-                    if (!string.IsNullOrWhiteSpace(table.ColumnCalcs))
-                    {
-                        var expressions = table.ColumnCalcs.Split(',', StringSplitOptions.RemoveEmptyEntries);
-
-                        foreach (var expr in expressions)
-                        {
-                            var match = Regex.Match(expr.Trim(), @"(Count|Sum)\(([^)]+)\)", RegexOptions.IgnoreCase);
-                            if (match.Success)
-                            {
-                                var function = match.Groups[1].Value.Trim();
-                                var column = match.Groups[2].Value.Trim();
-                                calcs.Add((function, column));
-                            }
-                        }
-                    }
-
-                    columnCalcsParsed[table.TableName] = calcs;
-                }
-
-                ViewBag.CalculationConfig = columnCalcsParsed;
-
-
-                foreach (var table in tables)
-                {
-                    var calcs = new List<(string Function, string Column)>();
-
-                    if (!string.IsNullOrWhiteSpace(table.ColumnCalcs))
-                    {
-                        var expressions = table.ColumnCalcs.Split(',', StringSplitOptions.RemoveEmptyEntries);
-
-                        foreach (var expr in expressions)
-                        {
-                            var match = Regex.Match(expr.Trim(), @"(Count|Sum)\(([^)]+)\)", RegexOptions.IgnoreCase);
-                            if (match.Success)
-                            {
-                                var function = match.Groups[1].Value.Trim();
-                                var column = match.Groups[2].Value.Trim();
-                                calcs.Add((function, column));
-                            }
-                        }
-                    }
-
-                    columnCalcsParsed[table.TableName] = calcs;
                     if (!string.IsNullOrEmpty(table.FKColumn))
                         ignoredColumns.Add(table.FKColumn);
 
-                    foreignKeys[table.TableName] = GetForeignKeyColumns(table.TableName)
-                        .Where(fk => fk.TableName.Contains("_md_"))
-                        .ToList();
+                    // Fetch foreign keys (maintenance + non-maintenance)
+                    foreignKeys[table.TableName] = GetForeignKeyColumns(table.TableName);
 
+                    // Fetch foreign key options for each FK table
                     foreach (var fk in foreignKeys[table.TableName])
                     {
                         if (!foreignKeyOptions.ContainsKey(fk.TableName))
@@ -175,21 +360,28 @@ namespace FreschOne.Controllers
                         }
                     }
 
-                    List<string> columns;
-                    if (table.ColumnQuery.Trim() == "*")
+                    // Parse column calcs
+                    var calcs = new List<(string Function, string Column)>();
+                    if (!string.IsNullOrWhiteSpace(table.ColumnCalcs))
                     {
-                        columns = GetAllColumnsForTable(table.TableName, conn)
-                            .Where(col => !ignoredColumns.Contains(col))
-                            .ToList();
+                        var expressions = table.ColumnCalcs.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var expr in expressions)
+                        {
+                            var match = Regex.Match(expr.Trim(), @"(Count|Sum)\(([^)]+)\)", RegexOptions.IgnoreCase);
+                            if (match.Success)
+                            {
+                                calcs.Add((match.Groups[1].Value.Trim(), match.Groups[2].Value.Trim()));
+                            }
+                        }
                     }
-                    else
-                    {
-                        columns = table.ColumnQuery.Split(',')
-                            .Select(col => col.Trim())
-                            .Where(col => !ignoredColumns.Contains(col))
-                            .ToList();
-                    }
+                    columnCalcsParsed[table.TableName] = calcs;
 
+                    // Get columns for the table
+                    List<string> columns = table.ColumnQuery.Trim() == "*"
+                        ? GetAllColumnsForTable(table.TableName, conn).Where(col => !ignoredColumns.Contains(col)).ToList()
+                        : table.ColumnQuery.Split(',').Select(col => col.Trim()).Where(col => !ignoredColumns.Contains(col)).ToList();
+
+                    // Get column types and lengths
                     columnTypes[table.TableName] = new Dictionary<string, string>();
                     columnLengths[table.TableName] = new Dictionary<string, int>();
 
@@ -216,24 +408,18 @@ namespace FreschOne.Controllers
                         }
                     }
 
-                    var row = new Dictionary<string, object>();
-                    foreach (var col in columns)
-                    {
-                        row[col] = null;
-                    }
-
+                    var row = columns.ToDictionary(col => col, col => (object)null);
                     tableData[table.TableName] = new List<Dictionary<string, object>> { row };
 
-                    // 🔥 Force StartIndex = 0 when initially loading CreateStep
                     var model = new DynamicTableViewModel
                     {
                         TableName = table.TableName,
                         Columns = columns,
-                        RowCount = 1, // Only 1 blank row initially
-                        StartIndex = 0, // 🟢 Here: Start at 0
-                        ColumnTypes = columnTypes.ContainsKey(table.TableName) ? columnTypes[table.TableName] : new Dictionary<string, string>(),
-                        ColumnLengths = columnLengths.ContainsKey(table.TableName) ? columnLengths[table.TableName] : new Dictionary<string, int>(),
-                        ForeignKeys = foreignKeys.ContainsKey(table.TableName) ? foreignKeys[table.TableName] : new List<ForeignKeyInfo>(),
+                        RowCount = 1,
+                        StartIndex = 0,
+                        ColumnTypes = columnTypes[table.TableName],
+                        ColumnLengths = columnLengths[table.TableName],
+                        ForeignKeys = foreignKeys[table.TableName],
                         ForeignKeyOptions = foreignKeyOptions
                     };
 
@@ -242,6 +428,7 @@ namespace FreschOne.Controllers
                 }
             }
 
+            ViewBag.CalculationConfig = columnCalcsParsed;
             ViewBag.ReportTables = tables;
             ViewBag.ReportData = tableData;
             ViewBag.TableDescriptions = tables.ToDictionary(t => t.TableName, t => CleanTableName(t.TableName, tablePrefixes));
@@ -252,9 +439,9 @@ namespace FreschOne.Controllers
             ViewBag.SearchResult = true;
             ViewBag.UserList = GetApproverSelectList();
 
-
             return View();
         }
+
 
         public IActionResult PendingStep(int Eventid, int processId, int? stepId, int? processInstanceId, int userId)
         {
@@ -1471,13 +1658,25 @@ namespace FreschOne.Controllers
         private List<SelectListItem> GetForeignKeyOptions(string tableName)
         {
             var options = new List<SelectListItem>();
-            string query = $"SELECT ID, Description FROM {tableName}";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(query, connection))
+
+                // 🔍 Check if this is a Maintenance table (tbl_md_) or not
+                string prefixQuery = "SELECT Description FROM foTablePrefixes WHERE @TableName LIKE Prefix + '%' AND Active = 1";
+                string tableType = null;
+                using (var prefixCmd = new SqlCommand(prefixQuery, connection))
                 {
+                    prefixCmd.Parameters.AddWithValue("@TableName", tableName);
+                    tableType = prefixCmd.ExecuteScalar()?.ToString();
+                }
+
+                if (tableType == "Maintenance")
+                {
+                    // ✅ Maintenance table: use [ID], [Description]
+                    string query = $"SELECT ID, Description FROM {tableName} WHERE Active = 1";
+                    using (var command = new SqlCommand(query, connection))
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -1486,6 +1685,57 @@ namespace FreschOne.Controllers
                             {
                                 Value = reader["ID"].ToString(),
                                 Text = reader["Description"].ToString()
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    // 🔶 Transaction table: Dynamically build multi-column display text
+                    var ignoredColumns = GetIgnoredColumns(connection);
+                    var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
+
+                    // Get available columns (skip ID, Active, etc.)
+                    var columnsQuery = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
+                    var displayColumns = new List<string>();
+                    using (var cmd = new SqlCommand(columnsQuery, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@TableName", tableName);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var col = reader["COLUMN_NAME"].ToString();
+                                if (!col.Equals("ID", StringComparison.OrdinalIgnoreCase) && !col.EndsWith("ID", StringComparison.OrdinalIgnoreCase) && !ignoredSet.Contains(col))
+                                {
+                                    displayColumns.Add(col);
+                                }
+                            }
+                        }
+                    }
+
+                    if (displayColumns.Count == 0)
+                        displayColumns.Add("ID"); // Fallback
+
+                    // Build SELECT query
+                    var selectColumns = "ID, " + string.Join(", ", displayColumns);
+                    string query = $"SELECT {selectColumns} FROM {tableName} WHERE Active = 1";
+
+                    using (var cmd = new SqlCommand(query, connection))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var values = new List<string>();
+                            foreach (var col in displayColumns)
+                            {
+                                values.Add(reader[col]?.ToString());
+                            }
+
+                            options.Add(new SelectListItem
+                            {
+                                Value = reader["ID"].ToString(),
+                                Text = string.Join(" | ", values)
                             });
                         }
                     }

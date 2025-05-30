@@ -16,13 +16,14 @@
         <div class="col-md-6">
             <label for="reportid" class="form-label">Select Report</label>
             <select name="reportid" id="reportid" class="form-select" onchange="this.form.submit()">
+                <option value="">-- Select a Report --</option>
                 @foreach (var item in reportsDropdown)
                 {
                     var isSelected = item.Value == reportid?.ToString();
-                    <option value="@item.Value" selected="@(isSelected)"> @item.Text </option>
+                    <option value="@item.Value" selected="@(isSelected ? "selected" : null)"> @item.Text </option>
                 }
-
             </select>
+
         </div>
         <div class="col-md-6 text-end">
             @if (reportid.HasValue)

@@ -31,6 +31,19 @@ namespace FreschOne.Controllers
             var stepDetailsMap = GetStepDetailsForProcess(processid.Value);
             ViewBag.StepDetailsMap = stepDetailsMap;
 
+            if (processid != null)
+            {
+                using (var conn = GetConnection())
+                {
+                    var cmd = new SqlCommand("SELECT ProcessName FROM foProcess WHERE ID = @ProcessID", conn);
+                    cmd.Parameters.AddWithValue("@ProcessID", processid);
+                    conn.Open();
+                    var processName = cmd.ExecuteScalar();
+                    ViewBag.ProcessName = processName;
+
+                }
+            }
+
             return View(steps);
         }
 
@@ -57,6 +70,16 @@ namespace FreschOne.Controllers
                 conn.Open();
                 var result = cmd.ExecuteScalar();
                 nextStepNo = Convert.ToDecimal(result);
+            }
+
+            using (var conn = GetConnection())
+            {
+                var cmd = new SqlCommand("SELECT ProcessName FROM foProcess WHERE ID = @ProcessID", conn);
+                cmd.Parameters.AddWithValue("@ProcessID", processid);
+                conn.Open();
+                var processName = cmd.ExecuteScalar();
+                ViewBag.ProcessName = processName;
+
             }
 
             var model = new foProcessSteps
@@ -168,6 +191,19 @@ namespace FreschOne.Controllers
                         UserName = reader["UserName"]?.ToString(),
                         Active = reader["Active"] != DBNull.Value && (bool)reader["Active"]
                     };
+                }
+            }
+
+            if (model != null)
+            {
+                using (var conn = GetConnection())
+                {
+                    var cmd = new SqlCommand("SELECT ProcessName FROM foProcess WHERE ID = @ProcessID", conn);
+                    cmd.Parameters.AddWithValue("@ProcessID", model.ProcessID);
+                    conn.Open();
+                    var processName = cmd.ExecuteScalar();
+                    ViewBag.ProcessName = processName;
+
                 }
             }
 

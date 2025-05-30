@@ -4,7 +4,7 @@
     ViewData["Title"] = "Data Management";
     var groupedTables = Model.Item1;
     var tablePrefixes = Model.Item2;
-    var fkChildTables = ViewBag.ForeignKeyChildTables as HashSet<string> ?? new();
+    var childParentMappings = ViewBag.ChildParentMappings as Dictionary<string, string> ?? new();
 }
 
 <partial name="_Sidebar" />
@@ -35,9 +35,9 @@
                                 displayName = access.TableName.Replace(prefix.Prefix, "").Replace("_", " ");
                             }
 
-                            bool isFKChild = fkChildTables.Contains(access.TableName);
-                            var controller = isFKChild ? "TableY" : "TableX";
-                            var action = isFKChild ? "SelectParent" : "Index";
+                            bool isChildTable = childParentMappings.ContainsKey(access.TableName);
+                            var controller = isChildTable ? "TableY" : "TableX";
+                            var action = isChildTable ? "SelectParent" : "Index";
 
                             <div class="col-md-6 col-lg-4 mb-3">
                                 <div class="card shadow-sm h-100">
@@ -45,7 +45,7 @@
                                         <div>
                                             <h6 class="card-title d-flex align-items-center">
                                                 @displayName
-                                                @if (isFKChild)
+                                                @if (isChildTable)
                                                 {
                                                     <span class="badge bg-info text-dark ms-2" title="This table requires a parent selection.">
                                                         FK
@@ -57,7 +57,7 @@
                                         <a class="btn btn-outline-primary mt-2"
                                            href="@Url.Action(action, controller, new { userid = access.UserID, tablename = access.TableName })">
                                             Manage Data
-                                            @if (isFKChild)
+                                            @if (isChildTable)
                                             {
                                                 <i class="bi bi-diagram-3-fill ms-1"></i>
                                             }

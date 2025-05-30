@@ -6,6 +6,7 @@ using System.Data;
 using System.Text.Json;
 using System;
 using System.Security.AccessControl;
+using System.Diagnostics;
 
 namespace FreschOne.Controllers
 {
@@ -25,6 +26,33 @@ namespace FreschOne.Controllers
 
             ViewBag.SelectedProcessId = processId;
             ViewBag.SelectedStepId = stepId;
+
+            if (processId != null)
+            {
+                using (var conn = GetConnection())
+                {
+                    var cmd = new SqlCommand("SELECT ProcessName FROM foProcess WHERE ID = @ProcessID", conn);
+                    cmd.Parameters.AddWithValue("@ProcessID", processId);
+                    conn.Open();
+                    var processName = cmd.ExecuteScalar();
+                    ViewBag.ProcessName = processName;
+
+                }
+            }
+
+            if (stepId != null)
+            {
+                using (var conn = GetConnection())
+                {
+                    var cmd = new SqlCommand("SELECT StepDescription FROM foProcessSteps WHERE ID = @StepID", conn);
+                    cmd.Parameters.AddWithValue("@StepID", stepId);
+                    conn.Open();
+                    var StepDescription = cmd.ExecuteScalar();
+                    ViewBag.StepDescription = StepDescription;
+
+                }
+            }
+
 
             var list = new List<foProcessDetail>();
 
@@ -53,6 +81,26 @@ namespace FreschOne.Controllers
 
             ViewBag.TablePrefixes = GetTablePrefixes(); // For the radio buttons
 
+           
+                using (var conn = GetConnection())
+                {
+                    var cmd = new SqlCommand("SELECT ProcessName FROM foProcess WHERE ID = @ProcessID", conn);
+                    cmd.Parameters.AddWithValue("@ProcessID", processId);
+                    conn.Open();
+                    var processName = cmd.ExecuteScalar();
+                    ViewBag.ProcessName = processName;
+
+                }
+                using (var conn = GetConnection())
+                {
+                    var cmd = new SqlCommand("SELECT StepDescription FROM foProcessSteps WHERE ID = @StepID", conn);
+                    cmd.Parameters.AddWithValue("@StepID", stepId);
+                    conn.Open();
+                    var StepDescription = cmd.ExecuteScalar();
+                    ViewBag.StepDescription = StepDescription;
+
+                }
+            
 
             return View(new foProcessDetail
             {
@@ -196,6 +244,28 @@ namespace FreschOne.Controllers
                 }
             }
 
+            using (var conn = GetConnection())
+            {
+                var cmd = new SqlCommand("SELECT ProcessName FROM foProcess WHERE ID = @ProcessID", conn);
+                cmd.Parameters.AddWithValue("@ProcessID", processId);
+                conn.Open();
+                var processName = cmd.ExecuteScalar();
+                ViewBag.ProcessName = processName;
+
+            }
+
+            if (detail != null)
+            {
+                using (var conn = GetConnection())
+                {
+                    var cmd = new SqlCommand("SELECT StepDescription FROM foProcessSteps WHERE ID = @StepID", conn);
+                    cmd.Parameters.AddWithValue("@StepID", detail.StepID);
+                    conn.Open();
+                    var StepDescription = cmd.ExecuteScalar();
+                    ViewBag.StepDescription = StepDescription;
+
+                }
+            }
 
             ViewBag.ValidTables = GetPrefixedTableNames();
             ViewBag.ValidmdTables = GetPrefixedmdTableNames();

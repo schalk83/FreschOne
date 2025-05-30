@@ -2,8 +2,6 @@
 using FreschOne.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-
 
 namespace FreschOne.Controllers
 {
@@ -14,70 +12,74 @@ namespace FreschOne.Controllers
         private List<foUserTable> GetUserTables(int userid)
         {
             var query = "SELECT * FROM dbo.foUserTable WHERE UserID = @UserID";
-            var userAccessList = _dbHelper.ExecuteQuery<foUserTable>(query, new { UserID = userid });
-            return userAccessList;
+            return _dbHelper.ExecuteQuery<foUserTable>(query, new { UserID = userid });
         }
 
         public IActionResult Index(int userid)
         {
             SetUserAccess(userid);
 
-            // Retrieve user's access data where Active = 1
+            // Get user access tables (Active = 1)
             var userAccessList = GetUserTables(userid).Where(x => x.Active).ToList();
 
-            // Get the table prefixes and their descriptions
+            // Get prefixes
             var tablePrefixes = GetTablePrefixes();
 
-            // Group the user access list by prefix using the descriptions
+            // Group user tables by prefix description
             var groupedAccess = userAccessList
                 .GroupBy(x =>
                 {
-                    // Find the matching prefix by checking if the TableName starts with any prefix
-                    var matchingPrefix = tablePrefixes.FirstOrDefault(p => x.TableName.StartsWith(p.Prefix));
-                    if (matchingPrefix != null)
-                    {
-                        // Return the description associated with the prefix
-                        return matchingPrefix.Description;
-                    }
-                    return "Other"; // If no match found, group under "Unknown"
+                    var prefix = tablePrefixes.FirstOrDefault(p => x.TableName.StartsWith(p.Prefix));
+                    return prefix != null ? prefix.Description : "Other";
                 })
                 .ToDictionary(g => g.Key, g => g.ToList());
 
+            // Build FK child-parent mappings (tbl_tran_* only)
+            var childParentMappings = GetChildParentMappings();
 
-            // Find child tables that reference a tbl_tran_ parent
-            var fkChildToTranParent = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            string query = @"
-SELECT DISTINCT child.name
-FROM sys.foreign_keys fk
-INNER JOIN sys.tables child ON fk.parent_object_id = child.object_id
-INNER JOIN sys.tables parent ON fk.referenced_object_id = parent.object_id
-WHERE parent.name LIKE 'tbl_tran_%'";
+            // Pass mappings and data to view
+            ViewBag.ChildParentMappings = childParentMappings;
+
+            return View(new Tuple<Dictionary<string, List<foUserTable>>, List<foTablePrefix>>(groupedAccess, tablePrefixes));
+        }
+
+        private Dictionary<string, string> GetChildParentMappings()
+        {
+            var childParentMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 conn.Open();
+
+                string query = @"
+                    SELECT parent.name AS ParentTable, child.name AS ChildTable
+                    FROM sys.foreign_keys fk
+                    INNER JOIN sys.tables child ON fk.parent_object_id = child.object_id
+                    INNER JOIN sys.tables parent ON fk.referenced_object_id = parent.object_id
+                    WHERE parent.name LIKE 'tbl_tran_%'";
+
                 using var cmd = new SqlCommand(query, conn);
                 using var reader = cmd.ExecuteReader();
                 while (reader.Read())
                 {
-                    fkChildToTranParent.Add(reader.GetString(0));
+                    var parentTable = reader["ParentTable"].ToString();
+                    var childTable = reader["ChildTable"].ToString();
+
+                    // Check if child table name contains parent table name (partial match logic)
+                    if (childTable.Contains(parentTable, StringComparison.OrdinalIgnoreCase))
+                    {
+                        childParentMap[childTable] = parentTable;
+                    }
                 }
             }
 
-            // Store FK table info in ViewBag
-            ViewBag.ForeignKeyChildTables = fkChildToTranParent;
-
-
-            // Pass both grouped data and the table prefixes to the view
-            return View(new Tuple<Dictionary<string, List<foUserTable>>, List<foTablePrefix>>(groupedAccess, tablePrefixes));
+            return childParentMap;
         }
-
 
         private List<foTablePrefix> GetTablePrefixes()
         {
             var query = "SELECT * FROM dbo.foTablePrefixes WHERE Active = 1";
-            var prefixes = _dbHelper.ExecuteQuery<foTablePrefix>(query);
-            return prefixes;
+            return _dbHelper.ExecuteQuery<foTablePrefix>(query);
         }
     }
 }

@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "iS7s6ag7wWrhprMXNMS4Jc7wY8xhJkMJVhfyelKDoxQ=",
+  "Hash": "hgVLA9KCEHkFtKxGYbesstUDknmKvO7pPkmMJFWLWiM=",
   "Source": "FreschOne",
   "BasePath": "_content/FreschOne",
   "Mode": "Default",
@@ -94,8 +94,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "kvs20lysh1",
-      "Integrity": "sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B+ynORS/Q2LRtXs=",
+      "Fingerprint": "8dl5yzpl94",
+      "Integrity": "bJk8j4k7JbpbbDmgeZIHwHBM6P7cKqEMn9J9BqVJp+c=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\css\\site.css"
@@ -1445,6 +1445,51 @@
       ]
     },
     {
+      "Route": "css/site.8dl5yzpl94.css",
+      "AssetFile": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\wwwroot\\css\\site.css",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "10922"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "text/css"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"bJk8j4k7JbpbbDmgeZIHwHBM6P7cKqEMn9J9BqVJp+c=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Thu, 29 May 2025 12:36:03 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "8dl5yzpl94"
+        },
+        {
+          "Name": "label",
+          "Value": "css/site.css"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-bJk8j4k7JbpbbDmgeZIHwHBM6P7cKqEMn9J9BqVJp+c="
+        }
+      ]
+    },
+    {
       "Route": "css/site.css",
       "AssetFile": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\wwwroot\\css\\site.css",
       "Selectors": [],
@@ -1455,7 +1500,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "10047"
+          "Value": "10922"
         },
         {
           "Name": "Content-Type",
@@ -1463,11 +1508,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B+ynORS/Q2LRtXs=\""
+          "Value": "\"bJk8j4k7JbpbbDmgeZIHwHBM6P7cKqEMn9J9BqVJp+c=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Tue, 27 May 2025 12:14:21 GMT"
+          "Value": "Thu, 29 May 2025 12:36:03 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -1477,52 +1522,7 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B+ynORS/Q2LRtXs="
-        }
-      ]
-    },
-    {
-      "Route": "css/site.kvs20lysh1.css",
-      "AssetFile": "C:\\Users\\Schalk.vandermerwe\\source\\repos\\FreschOne_V1UAT\\FreschOne\\FreschOne\\wwwroot\\css\\site.css",
-      "Selectors": [],
-      "ResponseHeaders": [
-        {
-          "Name": "Accept-Ranges",
-          "Value": "bytes"
-        },
-        {
-          "Name": "Content-Length",
-          "Value": "10047"
-        },
-        {
-          "Name": "Content-Type",
-          "Value": "text/css"
-        },
-        {
-          "Name": "ETag",
-          "Value": "\"sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B+ynORS/Q2LRtXs=\""
-        },
-        {
-          "Name": "Last-Modified",
-          "Value": "Tue, 27 May 2025 12:14:21 GMT"
-        },
-        {
-          "Name": "Cache-Control",
-          "Value": "max-age=31536000, immutable"
-        }
-      ],
-      "EndpointProperties": [
-        {
-          "Name": "fingerprint",
-          "Value": "kvs20lysh1"
-        },
-        {
-          "Name": "label",
-          "Value": "css/site.css"
-        },
-        {
-          "Name": "integrity",
-          "Value": "sha256-sJKVZ5EH3Ukd6FtZx0em/mXd6uK7B+ynORS/Q2LRtXs="
+          "Value": "sha256-bJk8j4k7JbpbbDmgeZIHwHBM6P7cKqEMn9J9BqVJp+c="
         }
       ]
     },

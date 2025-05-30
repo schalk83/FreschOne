@@ -15,7 +15,7 @@
 
 <partial name="_Sidebar" />
 
-<h2>Create Step Detail</h2>
+<h2>Create Step Detail for @ViewBag.ProcessName : @ViewBag.StepDescription</h2>
 
 @if (ViewBag.StepDetailList is List<FreschOne.Models.foProcessDetail> stepDetails && stepDetails.Any())
 {
@@ -185,7 +185,6 @@
     <a href="@Url.Action("Index", new { processId = processId, stepId = stepId, userid = userid })" class="btn btn-secondary">Cancel</a>
 </form>
 
-
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
@@ -204,7 +203,12 @@
                 "columnCalcsContainer"
             ];
 
-            // ✅ Hide or show fields based on TableName
+            const columnInput = document.querySelector('[name="ColumnQuery"]');
+            const fkSelect = document.getElementById("FKColumnSelect");
+            const columnCalcsInput = document.getElementById("ColumnCalcs");
+            const currentValue = "@Model.FKColumn";
+
+            // Toggle field visibility
             function toggleFields() {
                 const show = tableDropdown.value.trim() !== "";
                 formFieldsToHide.forEach(id => {
@@ -216,36 +220,115 @@
                 });
             }
 
+            // Handle FormType change
+            function handleFormTypeChange() {
+                const formType = document.getElementById("FormType").value;
+                const columnCalcsContainer = document.getElementById("columnCalcsContainer");
+                const listTableContainer = document.getElementById("listTableContainer");
+                const columnCountInput = document.getElementById("ColumnCount");
+
+                if (formType === "T") {
+                    columnCountInput.value = 0;
+                    columnCountInput.setAttribute("readonly", "readonly");
+                    columnCalcsContainer.style.display = "block";
+                    listTableContainer.style.display = "block";
+                } else {
+                    columnCountInput.removeAttribute("readonly");
+                    columnCalcsContainer.style.display = "none";
+                    listTableContainer.style.display = "none";
+                    document.getElementById("mdTableNameDropdown").value = "";
+                }
+            }
+
+            // Toggle FK column dropdown
+            function toggleFKDropdown() {
+                const isParent = document.querySelector('[name="Parent"]').value === "true";
+                const fkGroup = document.getElementById('fkColumnGroup');
+
+                fkGroup.style.display = isParent ? "none" : "block";
+                fkSelect.value = "";
+                if (isParent) {
+                    fkSelect.removeAttribute("required");
+                } else {
+                    fkSelect.setAttribute("required", "required");
+                }
+            }
+
+            // ColumnCalcs validation
+            function validateColumnCalcs() {
+                const pattern = /^\s*(Count|Sum)\(\s*\w+\s*\)\s*(,\s*(Count|Sum)\(\s*\w+\s*\)\s*)*$/i;
+                const error = document.getElementById("columnCalcsError");
+                if (!columnCalcsInput.value.trim() || pattern.test(columnCalcsInput.value.trim())) {
+                    error.style.display = "none";
+                } else {
+                    error.style.display = "block";
+                }
+            }
+
+            // Check Test Query visibility
+            function checkTestQueryVisibility() {
+                const tableName = tableDropdown.value.trim();
+                const columnQuery = columnInput.value.trim();
+                const section = document.getElementById("testQuerySection");
+                section.style.display = (tableName && columnQuery) ? "block" : "none";
+            }
+
+            // Load FK columns dynamically
+            function loadFKColumns(tableName, selectedColumn = null) {
+                if (!tableName) return;
+                fetch(`/foProcessDetail/GetFKColumns?tableName=${encodeURIComponent(tableName)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        fkSelect.innerHTML = '<option value=""></option>';
+                        data.forEach(col => {
+                            const opt = document.createElement("option");
+                            opt.value = col;
+                            opt.text = col;
+                            if (selectedColumn && col === selectedColumn) {
+                                opt.selected = true;
+                            }
+                            fkSelect.appendChild(opt);
+                        });
+                    });
+            }
+
+            // Test Query logic
+            function testQuery() {
+                const tableName = tableDropdown.value;
+                const columnQuery = columnInput.value;
+
+                fetch('/foProcessDetail/TestQuery', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tableName, columnQuery })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        const resultDiv = document.getElementById("queryResult");
+                        if (data.success) {
+                            resultDiv.innerHTML = "<span class='text-success'>✅ Query is valid!</span>";
+                        } else {
+                            resultDiv.innerHTML = `<span class='text-danger'>❌ ${data.message}</span>`;
+                        }
+                    })
+                    .catch(err => {
+                        document.getElementById("queryResult").innerHTML =
+                            `<span class='text-danger'>❌ Error: ${err.message}</span>`;
+                    });
+            }
+
+            // Event bindings
             tableDropdown.addEventListener("change", () => {
                 toggleFields();
                 checkTestQueryVisibility();
                 loadFKColumns(tableDropdown.value);
             });
 
-            // Initial run in case TableName is pre-filled
-            toggleFields();
-
-            // ✅ FormType logic (existing)
             document.getElementById("FormType").addEventListener("change", handleFormTypeChange);
-            handleFormTypeChange();
-
-            // ✅ Parent logic (existing)
             document.querySelector('[name="Parent"]').addEventListener("change", toggleFKDropdown);
-            toggleFKDropdown();
-
-            // ✅ ColumnCalcs validation
-            const columnCalcsInput = document.getElementById("ColumnCalcs");
-            if (columnCalcsInput) {
-                columnCalcsInput.addEventListener("input", validateColumnCalcs);
-                validateColumnCalcs();
-            }
-
-            // ✅ Test Query visibility logic
-            const columnInput = document.querySelector('[name="ColumnQuery"]');
             columnInput.addEventListener("input", checkTestQueryVisibility);
-            checkTestQueryVisibility();
+            columnCalcsInput?.addEventListener("input", validateColumnCalcs);
 
-            // ✅ Prefix filter logic
             document.querySelectorAll(".prefix-filter").forEach(radio => {
                 radio.addEventListener("change", function () {
                     const selectedPrefix = this.value;
@@ -260,19 +343,16 @@
                 });
             });
 
-            // ✅ FK Columns prefill
-            const currentValue = "@Model.FKColumn";
-            if (tableDropdown.value) {
-                loadFKColumns(tableDropdown.value, currentValue);
-            }
-        });
+            // Initial runs
+            toggleFields();
+            handleFormTypeChange();
+            toggleFKDropdown();
+            validateColumnCalcs();
+            checkTestQueryVisibility();
+            if (tableDropdown.value) loadFKColumns(tableDropdown.value, currentValue);
 
-        // 🔁 Existing functions remain unchanged
-        function handleFormTypeChange() { /* unchanged */ }
-        function toggleFKDropdown() { /* unchanged */ }
-        function validateColumnCalcs() { /* unchanged */ }
-        function checkTestQueryVisibility() { /* unchanged */ }
-        function loadFKColumns(tableName, selectedColumn = null) { /* unchanged */ }
-        function testQuery() { /* unchanged */ }
+            // Expose testQuery to global
+            window.testQuery = testQuery;
+        });
     </script>
 }

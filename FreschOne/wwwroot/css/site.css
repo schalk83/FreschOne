@@ -503,5 +503,53 @@ body {
             font-size: 0.85rem;
         }
 
+.archived-container {
+    min-height: 600px; /* Adjust to your content */
+    padding-bottom: 20px;
+}
+
+.archived-table {
+    width: 100%;
+    table-layout: fixed; /* Ensure column widths align */
+}
+
+.pagination-container {
+    width: 100%;
+}
+
+.pagination {
+    margin: 0;
+}
+
+form#searchForm table {
+    margin-bottom: 0;
+}
+
+form#searchForm .btn {
+    margin-left: 5px;
+}
+
+/* Force Process No to be narrow */
+th[data-column="ProcessInstanceID"],
+td[data-column="ProcessInstanceID"]{
+    width: 80px;
+    max-width: 80px;
+    text-align: center;
+}
+
+/* Force other columns to have similar widths */
+th,
+td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Keep the filter row inputs from stretching too much */
+form#searchForm input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+}
+
 
 

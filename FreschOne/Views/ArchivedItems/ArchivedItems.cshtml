@@ -4,6 +4,7 @@
     ViewData["Title"] = "Archived Items";
     int userId = ViewBag.UserID;
     var fullName = ViewBag.FullName;
+    var searchVisible = ViewBag.SearchVisible as bool? ?? false;
 }
 
 <partial name="_Sidebar" />
@@ -11,34 +12,61 @@
 <h2 class="mb-3">Archived Items for @fullName</h2>
 
 <div class="d-flex justify-content-end mb-2">
-    <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">+ Show Search</button>
+    <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">
+        @(searchVisible ? "- Hide Search" : "+ Show Search")
+    </button>
 </div>
 
-<table id="archivedTable" class="table table-bordered table-hover align-middle">
+<form id="searchForm" method="get" asp-action="ArchivedItems" asp-controller="ArchivedItems" style="display:@(searchVisible ? "block" : "none");">
+    <input type="hidden" name="userId" value="@userId" />
+
+    <table class="table table-bordered table-hover align-middle" style="table-layout: fixed; width: 100%;">
+        <thead class="table-light">
+            <tr>
+                <th>PID</th>
+                <th>Process Name</th>
+                <th>Step Description</th>
+                <th>Completed by</th>
+                <th>Date Completed</th>
+                <th style="width: 120px;"></th>
+
+            </tr>
+            <tr>
+                <th><input type="text" name="processnumberFilter" class="form-control form-control-sm" placeholder="Search Process No" value="@(ViewContext.HttpContext.Request.Query["processnumberFilter"])" /></th>
+                <th><input type="text" name="processNameFilter" class="form-control form-control-sm" placeholder="Search Process Name" value="@(ViewContext.HttpContext.Request.Query["processNameFilter"])" /></th>
+                <th><input type="text" name="stepDescriptionFilter" class="form-control form-control-sm" placeholder="Search Step Description" value="@(ViewContext.HttpContext.Request.Query["stepDescriptionFilter"])" /></th>
+                <th><input type="text" name="assignedToFilter" class="form-control form-control-sm" placeholder="Search Completed By" value="@(ViewContext.HttpContext.Request.Query["assignedToFilter"])" /></th>
+                <th><input type="text" name="dateFilter" class="form-control form-control-sm" placeholder="Search Date Completed" value="@(ViewContext.HttpContext.Request.Query["dateFilter"])" /></th>
+                <th>
+                    <button type="submit" class="btn btn-sm btn-primary">Apply Filters</button>
+                </th>
+            </tr>
+        </thead>
+    </table>
+
+
+</form>
+
+<table id="archivedTable" class="table table-bordered table-hover align-middle" style="table-layout: fixed; width: 100%;">
     <thead class="table-light">
         <tr>
-            <th data-column="ProcessInstanceID">Process Number</th>
-            <th data-column="StepNo">Step No</th>
+            <th data-column="ProcessInstanceID">PID</th>
+            <th data-column="ProcessName">Process Name</th>
             <th data-column="StepDescription">Step Description</th>
             <th data-column="AssignedTo">Completed by</th>
             <th data-column="DateAssigned">Date Completed</th>
-        </tr>
-        <tr id="searchRow" style="display: none;">
-            <th><input type="text" class="form-control column-search" data-column="ProcessInstanceID" placeholder="Search Process Number" /></th>
-            <th><input type="text" class="form-control column-search" data-column="StepNo" placeholder="Search Step No" /></th>
-            <th><input type="text" class="form-control column-search" data-column="StepDescription" placeholder="Search Step Description" /></th>
-            <th><input type="text" class="form-control column-search" data-column="AssignedTo" placeholder="Search Completed by" /></th>
-            <th><input type="text" class="form-control column-search" data-column="DateAssigned" placeholder="Search Date Completed" /></th>
+            <th style="width: 120px;"></th>
+
         </tr>
     </thead>
-    <tbody id="tableBody">
+    <tbody>
         @foreach (var item in Model)
         {
             <tr>
-                <td data-column="ProcessInstanceID">@item.ProcessInstanceID</td>
-                <td data-column="StepNo">@item.StepNo</td>
-                <td data-column="StepDescription">@item.StepDescription</td>
-                <td data-column="AssignedTo">
+                <td>@item.ProcessInstanceID</td>
+                <td>@item.ProcessName</td>
+                <td>@item.StepDescription</td>
+                <td>
                     @if (item.UserID.HasValue)
                     {
                         <span>@item.FullName</span>
@@ -48,73 +76,77 @@
                         <span>@item.GroupDescription</span>
                     }
                 </td>
-                <td data-column="DateAssigned" data-sort="@item.DateAssigned.Ticks">@item.DateAssigned.ToString("yyyy-MM-dd HH:mm")</td>
+                <td data-sort="@item.DateAssigned.Ticks">@item.DateAssigned.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>View</td>
             </tr>
         }
     </tbody>
 </table>
 
-<script>
-    document.querySelectorAll("#archivedTable th[data-column]").forEach(header => {
-        header.style.cursor = "pointer";
-        header.addEventListener("click", () => {
-            const table = header.closest("table");
-            const tbody = table.querySelector("tbody");
-            const rows = Array.from(tbody.querySelectorAll("tr"));
-            const columnIndex = Array.from(header.parentNode.children).indexOf(header);
-            const sortAsc = !header.classList.contains("asc");
+<!-- Pagination Controls -->
+<div class="pagination-container d-flex justify-content-center mt-3">
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            @if (ViewBag.pageNumber > 1)
+            {
+                <li class="page-item"><a class="page-link" href="@Url.Action("ArchivedItems", new { userId = userId, pageNumber = 1 })">First</a></li>
+                <li class="page-item"><a class="page-link" href="@Url.Action("ArchivedItems", new { userId = userId, pageNumber = ViewBag.pageNumber - 1 })">&laquo; Prev</a></li>
+            }
+            @for (var i = Math.Max(1, ViewBag.pageNumber - 2); i <= Math.Min(ViewBag.totalPages, ViewBag.pageNumber + 2); i++)
+            {
+                <li class="page-item @(i == ViewBag.pageNumber ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("ArchivedItems", new { userId = userId, pageNumber = i })">@i</a>
+                </li>
+            }
+            @if (ViewBag.pageNumber < ViewBag.totalPages)
+            {
+                <li class="page-item"><a class="page-link" href="@Url.Action("ArchivedItems", new { userId = userId, pageNumber = ViewBag.pageNumber + 1 })">Next &raquo;</a></li>
+                <li class="page-item"><a class="page-link" href="@Url.Action("ArchivedItems", new { userId = userId, pageNumber = ViewBag.pageNumber + 1 })">Last</a></li>
+            }
+        </ul>
+    </nav>
+</div>
 
-            rows.sort((a, b) => {
-                let cellA = a.children[columnIndex];
-                let cellB = b.children[columnIndex];
 
-                let valueA = cellA.getAttribute("data-sort") || cellA.textContent.trim();
-                let valueB = cellB.getAttribute("data-sort") || cellB.textContent.trim();
+@section Scripts {
+    <script>
 
-                if (!isNaN(valueA) && !isNaN(valueB)) {
-                    return sortAsc ? valueA - valueB : valueB - valueA;
-                }
+            document.querySelectorAll("#archivedTable th[data-column]").forEach(header => {
+            header.style.cursor = "pointer";
+            header.addEventListener("click", () => {
+                const table = header.closest("table");
+                const tbody = table.querySelector("tbody");
+                const rows = Array.from(tbody.querySelectorAll("tr"));
+                const columnIndex = Array.from(header.parentNode.children).indexOf(header);
+                const sortAsc = !header.classList.contains("asc");
 
-                return sortAsc
-                    ? valueA.localeCompare(valueB, undefined, { numeric: true })
-                    : valueB.localeCompare(valueA, undefined, { numeric: true });
+                rows.sort((a, b) => {
+                    let cellA = a.children[columnIndex];
+                    let cellB = b.children[columnIndex];
+                    let valueA = cellA.getAttribute("data-sort") || cellA.textContent.trim();
+                    let valueB = cellB.getAttribute("data-sort") || cellB.textContent.trim();
+                    if (!isNaN(valueA) && !isNaN(valueB)) {
+                        return sortAsc ? valueA - valueB : valueB - valueA;
+                    }
+                    return sortAsc ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+                table.querySelectorAll("th").forEach(th => th.classList.remove("asc", "desc"));
+                header.classList.add(sortAsc ? "asc" : "desc");
             });
-
-            rows.forEach(row => tbody.appendChild(row));
-            table.querySelectorAll("th").forEach(th => th.classList.remove("asc", "desc"));
-            header.classList.add(sortAsc ? "asc" : "desc");
         });
-    });
 
-    function toggleSearch() {
-        const row = document.getElementById("searchRow");
-        const btn = document.getElementById("toggleSearchBtn");
-        row.style.display = row.style.display === "none" ? "table-row" : "none";
-        btn.innerText = row.style.display === "none" ? "+ Show Search" : "- Hide Search";
-    }
 
-    function filterTable() {
-        const inputs = document.querySelectorAll('.column-search');
-        const rows = document.querySelectorAll("#tableBody tr");
-        rows.forEach(row => {
-            let visible = true;
-            inputs.forEach(input => {
-                const col = input.getAttribute("data-column");
-                const val = input.value.toLowerCase();
-                const cell = row.querySelector(`td[data-column="${col}"]`);
-                if (cell && val && !cell.innerText.toLowerCase().includes(val)) {
-                    visible = false;
-                }
-            });
-            row.style.display = visible ? "" : "none";
-        });
-    }
-
-    document.querySelectorAll('.column-search').forEach(input => {
-        input.addEventListener("keyup", filterTable);
-        input.addEventListener("change", filterTable);
-    });
-</script>
+        function toggleSearch() {
+            const form = document.getElementById("searchForm");
+            const btn = document.getElementById("toggleSearchBtn");
+            const isVisible = form.style.display !== "none";
+            form.style.display = isVisible ? "none" : "block";
+            btn.innerText = isVisible ? "+ Show Search" : "- Hide Search";
+        }
+    </script>
+}
 
 <style>
     th.asc::after {
@@ -127,3 +159,6 @@
         font-size: 0.8em;
     }
 </style>
+
+
+    
