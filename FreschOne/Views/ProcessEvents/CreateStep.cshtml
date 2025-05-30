@@ -199,10 +199,30 @@
                                             }
                                             else if (foreignKeys != null && foreignKeys.ContainsKey(tableName) && foreignKeys[tableName].Any(fk => fk.ColumnName == column))
                                             {
-                                                <label for="@fieldName" class="fw-bold">@label</label>
                                                 var foreignKey = foreignKeys[tableName].First(fk => fk.ColumnName == column);
+                                                var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
                                                 var options = foreignKeyOptions.ContainsKey(foreignKey.TableName) ? foreignKeyOptions[foreignKey.TableName] : new List<SelectListItem>();
-                                                @Html.DropDownList(fieldName, new SelectList(options, "Value", "Text", columnValue), "", new { @class = "form-select" })
+
+                                                string fkFieldId = fieldName; // e.g., "PropertyID"
+                                                string fkDisplayId = $"{fieldName}_Display"; // e.g., "PropertyID_Display"
+
+                                                <label for="@fkFieldId" class="fw-bold">@label</label>
+
+                                                if (isMaintenance)
+                                                {
+                                                    @Html.DropDownList(fkFieldId, new SelectList(options, "Value", "Text", columnValue), "", new { @class = "form-select", id = fkFieldId })
+                                                }
+                                                else
+                                                {
+                                                    var displayValue = row.ContainsKey($"{column}_Display") ? row[$"{column}_Display"]?.ToString() : "";
+                                                    <div class="input-group">
+                                                        <input type="hidden" name="@fkFieldId" id="@fkFieldId" value="@columnValue" />
+                                                        <input type="text" id="@fkDisplayId" value="@displayValue" class="form-control" readonly placeholder="Search..." />
+                                                        <button type="button" class="btn btn-outline-secondary" onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fkFieldId')">
+                                                            <i class="bi bi-search"></i>
+                                                        </button>
+                                                    </div>
+                                                }
                                             }
                                             else if (columnType == "varchar" && columnLength > 255)
                                             {
@@ -550,7 +570,6 @@
                 }
             );
         }
-
 
 
     </script>
