@@ -18,9 +18,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          branch: sync-uat-to-main        # <--- TEMP branch name (not 'UAT')
+          branch: sync-uat-to-main   # <--- Avoid pushing to 'UAT'
           title: '🚀 Auto Merge: UAT → Main'
-          body: 'Auto-merge from UAT to Main'
+          body: 'Auto-sync from UAT to Main'
           commit-message: 'Sync UAT to main'
           delete-branch: true
           labels: automerge
