@@ -14,8 +14,22 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: UAT
+          fetch-depth: 0  # Fetch all history to compare branches
 
+      # Check if UAT has changes not in main
+      - name: Check for differences between UAT and main
+        id: diff
+        run: |
+          git fetch origin main:main
+          if git diff origin/main..UAT | grep .; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Create PR only if there are changes
       - name: Create Pull Request from UAT to Main
+        if: steps.diff.outputs.has_changes == 'true'
         id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
@@ -28,20 +42,21 @@ jobs:
           delete-branch: true
           labels: automerge
 
-      # Add a conditional check to ensure PR was created
+      # Log if PR was created
       - name: Check PR Creation
-        if: steps.cpr.outputs.pull-request-number != ''
+        if: steps.diff.outputs.has_changes == 'true' && steps.cpr.outputs.pull-request-number != ''
         run: echo "Pull Request created: ${{ steps.cpr.outputs.pull-request-number }}"
 
-      # Add a slight delay to ensure PR is ready (optional)
-      - name: Wait for PR to be ready
-        if: steps.cpr.outputs.pull-request-number != ''
-        run: sleep 5
-
+      # Auto-merge PR only if PR was created
       - name: Auto-merge PR
-        if: steps.cpr.outputs.pull-request-number != ''
+        if: steps.diff.outputs.has_changes == 'true' && steps.cpr.outputs.pull-request-number != ''
         uses: pascalgn/automerge-action@v0.15.3
         with:
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Log if no changes were found
+      - name: Log if no changes
+        if: steps.diff.outputs.has_changes == 'false'
+        run: echo "No changes to merge from UAT to main."
