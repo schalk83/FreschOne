@@ -13,14 +13,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Create PR to main-backup
+      - name: Create Pull Request to main-backup
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main-backup
-          branch: main
+          branch: sync-to-backup
           title: '🔁 Backup: main → main-backup'
-          body: 'Auto-sync backup of main to main-backup'
+          body: 'Auto-sync from main to main-backup'
+          commit-message: 'Backup commit'
+          delete-branch: true
 
       - name: Auto-approve PR
         uses: hmarr/auto-approve-action@v3
@@ -31,4 +33,3 @@ jobs:
         uses: pascalgn/automerge-action@v0.15.3
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-
