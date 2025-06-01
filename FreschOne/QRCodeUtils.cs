@@ -3,6 +3,7 @@ using QRCoder;
 
 namespace FreschOne.Helpers
 {
+    //test
     public static class QRCodeUtils
     {
         public static string GenerateQrCode(string content)
