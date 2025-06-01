@@ -16,14 +16,14 @@ jobs:
           ref: UAT
 
       - name: Create Pull Request from UAT to Main
-        id: cpr
+        id: cpr   # ✅ This is required for the output PR number
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
           branch: sync-uat-to-main-${{ github.run_id }}
           title: '🚀 Auto Merge: UAT → Main'
-          body: 'This pull request was automatically created to sync UAT into main.'
+          body: 'Automatically syncing UAT into main.'
           commit-message: 'Auto-sync from UAT to main'
           delete-branch: true
           labels: automerge
