@@ -16,7 +16,7 @@ jobs:
           ref: UAT
 
       - name: Create Pull Request from UAT to Main
-        id: cpr  # ✅ REQUIRED so we can refer to outputs.cpr.*
+        id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -28,9 +28,20 @@ jobs:
           delete-branch: true
           labels: automerge
 
+      # Add a conditional check to ensure PR was created
+      - name: Check PR Creation
+        if: steps.cpr.outputs.pull-request-number != ''
+        run: echo "Pull Request created: ${{ steps.cpr.outputs.pull-request-number }}"
+
+      # Add a slight delay to ensure PR is ready (optional)
+      - name: Wait for PR to be ready
+        if: steps.cpr.outputs.pull-request-number != ''
+        run: sleep 5
+
       - name: Auto-merge PR
+        if: steps.cpr.outputs.pull-request-number != ''
         uses: pascalgn/automerge-action@v0.15.3
         with:
-          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}  # ✅ THE FIX
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
