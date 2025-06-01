@@ -42,10 +42,15 @@ jobs:
           delete-branch: true
           labels: automerge
 
-      # Log if PR was created
+      # Log if PR was created, only if cpr step ran
       - name: Check PR Creation
-        if: steps.diff.outputs.has_changes == 'true' && steps.cpr.outputs.pull-request-number != ''
-        run: echo "Pull Request created: ${{ steps.cpr.outputs.pull-request-number }}"
+        if: steps.diff.outputs.has_changes == 'true' && (steps.cpr.outputs.pull-request-number != '' || steps.cpr.outputs.pull-request-number == '')
+        run: |
+          if [ -n "${{ steps.cpr.outputs.pull-request-number }}" ]; then
+            echo "Pull Request created: ${{ steps.cpr.outputs.pull-request-number }}"
+          else
+            echo "No Pull Request was created."
+          fi
 
       # Auto-merge PR only if PR was created
       - name: Auto-merge PR
