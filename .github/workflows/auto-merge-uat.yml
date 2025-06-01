@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout UAT branch
-        uses: actions/checkout@v3
+        uses: actions/checkout evita@v3
         with:
           ref: UAT
           fetch-depth: 0  # Fetch all history to compare branches
@@ -27,12 +27,25 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
 
+      # Log the result of the diff check
+      - name: Log diff result
+        run: echo "Has changes: ${{ steps.diff.outputs.has_changes }}"
+
+      # Delete the temporary branch if it exists to avoid conflicts
+      - name: Delete temporary branch if exists
+        if: steps.diff.outputs.has_changes == 'true'
+        run: |
+          git push origin --delete sync-uat-to-main-${{ github.run_id }} || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # Check for existing PRs to avoid conflicts
       - name: Check for existing PRs
         if: steps.diff.outputs.has_changes == 'true'
         id: check_pr
         run: |
           PR_NUMBER=$(gh pr list --base main --head sync-uat-to-main-${{ github.run_id }} --state open --json number -q '.[0].number // ""')
+          echo "Found existing PR: $PR_NUMBER"
           echo "existing_pr=$PR_NUMBER" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -54,7 +67,7 @@ jobs:
 
       # Log if PR was created
       - name: Check PR Creation
-        if: steps.diff.outputs.has_changes == 'true' && (steps.cpr.outputs.pull-request-number != '' || steps.cpr.outputs.pull-request-number == '')
+        if: steps.diff.outputs.has_changes == 'true'
         run: |
           if [ -n "${{ steps.cpr.outputs.pull-request-number }}" ]; then
             echo "Pull Request created: ${{ steps.cpr.outputs.pull-request-number }}"
