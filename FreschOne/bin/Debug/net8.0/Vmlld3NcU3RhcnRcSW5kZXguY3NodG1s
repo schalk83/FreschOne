@@ -1,0 +1,40 @@
+﻿
+
+ @model Dictionary<string, List<dynamic>>
+
+<div class="container">
+    <h2>All Tables Data</h2>
+    <div id="accordion">
+        @foreach (var group in Model)
+        {
+            <div class="card">
+                <div class="card-header" id="heading-@group.Key">
+                    <h5 class="mb-0">
+                        <button class="btn btn-default btn-block" data-toggle="collapse" data-target="#collapse-@group.Key" aria-expanded="true" aria-controls="collapse-@group.Key">
+                            @if (group.Key == "tbl_md")
+                                {
+                                    <div>Maintenance</div>
+                                }
+                                else
+                                {
+                                    <div>Transaction</div>
+                                }
+                        </button>
+                    </h5>
+                </div>
+
+                <div id="collapse-@group.Key" class="collapse" aria-labelledby="heading-@group.Key" data-parent="#accordion">
+                    <div class="card-body">
+                        @foreach (var table in group.Value)
+                        {
+                             <a asp-controller="TableX" asp-action="Index" asp-route-tablename="@table.Name" asp-route-PKColumn="@table.PKColumn" class="btn btn-info">
+                                @table.Name.Replace("tbl_md_", "").Replace("tbl_tran_", "")
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>  
+

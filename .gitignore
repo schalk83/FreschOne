@@ -1,6 +1,5 @@
 ################################################################################
-# Visual Studio .gitignore
-# Tailored for .NET, ASP.NET, VS Code, Rider, and MSBuild artifacts
+# Visual Studio Git Ignore
 ################################################################################
 
 # User-specific files
@@ -22,11 +21,6 @@
 *.exe
 *.dll
 
-# Explicit build folders (if already tracked previously)
-FreschOne/bin/
-FreschOne/obj/
-.vs/
-
 # Visual Studio folders
 .vs/
 .vscode/
@@ -41,7 +35,7 @@ _ReSharper*/
 *.DotSettings.user
 *.DotSettings
 
-# JetBrains Rider
+# Rider
 .idea/
 
 # VS Code settings
@@ -59,6 +53,7 @@ artifacts/
 *.tmp
 *.bak
 *.swp
+*.sln.docstates
 *.orig
 
 # Entity Framework
@@ -73,7 +68,14 @@ out/
 .vs/config/
 *.iisexpress*
 
-# Diagnostic and profiling tools
+# Logs
+*.log
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Others
 *.tlog
 *.psess
 *.vsp
@@ -86,6 +88,5 @@ out/
 *.iobj
 *.ipdb
 
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
+# JetBrains Rider
+.idea/
