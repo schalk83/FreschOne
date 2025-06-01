@@ -24,9 +24,16 @@ jobs:
           body: 'Auto-sync from main to main-backup'
           commit-message: 'Backup commit'
           delete-branch: true
-          labels: automerge
 
-      - name: Auto-merge PR
-        uses: pascalgn/automerge-action@v0.15.3
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Get Pull Request Number
+        id: pr
+        run: |
+          echo "PR_URL=${{ steps.cpr.outputs.pull-request-url }}" >> $GITHUB_ENV
+
+      - name: Auto-merge via GitHub API
+        run: |
+          PR_API_URL="${PR_URL/github.com/api.github.com\/repos}"
+          curl -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "$PR_API_URL/merge"
