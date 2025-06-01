@@ -1,0 +1,38 @@
+name: Auto Backup Main to main-backup
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  backup-main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Create Pull Request to main-backup
+        id: create_pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main-backup
+          branch: sync-to-backup
+          title: '🔁 Backup: main → main-backup'
+          body: 'Auto-sync from main to main-backup'
+          commit-message: 'Backup commit'
+          delete-branch: true
+
+      - name: Extract PR number from output
+        id: get_pr_number
+        run: |
+          echo "PR_NUMBER=$(echo ${{ steps.create_pr.outputs.pull-request-url }} | grep -oE '[0-9]+$')" >> $GITHUB_ENV
+
+      - name: Auto-merge via GitHub API
+        run: |
+          curl -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}/merge
