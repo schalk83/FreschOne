@@ -24,10 +24,9 @@ jobs:
           body: 'Auto-sync from main to main-backup'
           commit-message: 'Backup commit'
           delete-branch: true
+          labels: automerge
 
-      - name: Auto-merge PR to main-backup
+      - name: Auto-merge PR
         uses: pascalgn/automerge-action@v0.15.3
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        with:
-          pull-request-title: '🔁 Backup: main → main-backup'
