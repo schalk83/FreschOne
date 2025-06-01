@@ -3,3 +3,38 @@
 ################################################################################
 
 /.vs/FreschOne/FileContentIndex
+# Ignore Visual Studio files
+.vs/
+*.user
+*.suo
+*.sln.docstates
+*.userosscache
+
+# Build output
+[Bb]in/
+[Oo]bj/
+*.dll
+*.exe
+*.log
+*.pdb
+*.cache
+
+# Rider & VS Code
+.idea/
+.vscode/
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Misc
+*.tmp
+*.bak
+*.db
+*.psess
+*.tlog
+*.ipdb
+*.iobj
+*.ilk
+*.map
