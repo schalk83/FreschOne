@@ -1,5 +1,92 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+# Visual Studio Git Ignore
 ################################################################################
 
-/.vs/FreschOne/FileContentIndex
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+*.log
+*.cache
+*.dbmdl
+*.pdb
+*.mdb
+*.exe
+*.dll
+
+# Visual Studio folders
+.vs/
+.vscode/
+.idea/
+
+# Test results
+TestResults/
+*.trx
+
+# ASP.NET temporary files
+_ReSharper*/
+*.DotSettings.user
+*.DotSettings
+
+# Rider
+.idea/
+
+# VS Code settings
+.vscode/
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Backup and transient files
+*.tmp
+*.bak
+*.swp
+*.sln.docstates
+*.orig
+
+# Entity Framework
+*.mdf
+*.ldf
+
+# Publish output
+publish/
+out/
+
+# IIS Express
+.vs/config/
+*.iisexpress*
+
+# Logs
+*.log
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Others
+*.tlog
+*.psess
+*.vsp
+*.vspscc
+*.vssscc
+*.ncb
+*.aps
+*.ilk
+*.map
+*.iobj
+*.ipdb
+
+# JetBrains Rider
+.idea/
