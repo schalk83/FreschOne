@@ -27,9 +27,19 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
 
-      # Create PR only if there are changes
-      - name: Create Pull Request from UAT to Main
+      # Check for existing PRs to avoid conflicts
+      - name: Check for existing PRs
         if: steps.diff.outputs.has_changes == 'true'
+        id: check_pr
+        run: |
+          PR_NUMBER=$(gh pr list --base main --head sync-uat-to-main-${{ github.run_id }} --state open --json number -q '.[0].number // ""')
+          echo "existing_pr=$PR_NUMBER" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Create PR only if there are changes and no existing PR
+      - name: Create Pull Request from UAT to Main
+        if: steps.diff.outputs.has_changes == 'true' && steps.check_pr.outputs.existing_pr == ''
         id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
@@ -42,7 +52,7 @@ jobs:
           delete-branch: true
           labels: automerge
 
-      # Log if PR was created, only if cpr step ran
+      # Log if PR was created
       - name: Check PR Creation
         if: steps.diff.outputs.has_changes == 'true' && (steps.cpr.outputs.pull-request-number != '' || steps.cpr.outputs.pull-request-number == '')
         run: |
