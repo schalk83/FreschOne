@@ -11,12 +11,11 @@ jobs:
 
     steps:
       - name: Checkout UAT branch
-        uses: actions/checkout evita@v3
+        uses: actions/checkout@v3
         with:
           ref: UAT
           fetch-depth: 0  # Fetch all history to compare branches
 
-      # Check if UAT has changes not in main
       - name: Check for differences between UAT and main
         id: diff
         run: |
@@ -27,11 +26,9 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
 
-      # Log the result of the diff check
       - name: Log diff result
         run: echo "Has changes: ${{ steps.diff.outputs.has_changes }}"
 
-      # Delete the temporary branch if it exists to avoid conflicts
       - name: Delete temporary branch if exists
         if: steps.diff.outputs.has_changes == 'true'
         run: |
@@ -39,7 +36,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Check for existing PRs to avoid conflicts
       - name: Check for existing PRs
         if: steps.diff.outputs.has_changes == 'true'
         id: check_pr
@@ -50,7 +46,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Create PR only if there are changes and no existing PR
       - name: Create Pull Request from UAT to Main
         if: steps.diff.outputs.has_changes == 'true' && steps.check_pr.outputs.existing_pr == ''
         id: cpr
@@ -65,7 +60,6 @@ jobs:
           delete-branch: true
           labels: automerge
 
-      # Log if PR was created
       - name: Check PR Creation
         if: steps.diff.outputs.has_changes == 'true'
         run: |
@@ -75,7 +69,6 @@ jobs:
             echo "No Pull Request was created."
           fi
 
-      # Auto-merge PR only if PR was created
       - name: Auto-merge PR
         if: steps.diff.outputs.has_changes == 'true' && steps.cpr.outputs.pull-request-number != ''
         uses: pascalgn/automerge-action@v0.15.3
@@ -84,7 +77,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Log if no changes were found
       - name: Log if no changes
         if: steps.diff.outputs.has_changes == 'false'
         run: echo "No changes to merge from UAT to main."
