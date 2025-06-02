@@ -436,51 +436,105 @@ namespace FreschOne.Controllers
         }
         public IActionResult ExportToExcel(int userid, int reportid, string tablename)
         {
+            // Step 1: Get columns and data
             bool hasQR;
             var columns = GetTableColumns(tablename, reportid, out hasQR);
             var data = GetTableData(tablename, reportid, hasQR);
 
+            // Step 2: Get foreign key metadata
+            var foreignKeys = GetForeignKeyColumns(tablename);
+
+            // Step 3: Create Excel workbook
             using var workbook = new ClosedXML.Excel.XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Export");
 
-            // Header row
+            // Step 4: Header row (rename FK headers if needed)
             for (int i = 0; i < columns.Count; i++)
-                worksheet.Cell(1, i + 1).Value = columns[i];
+            {
+                string colName = columns[i];
+                var fk = foreignKeys.FirstOrDefault(f => f.ColumnName.Equals(colName, StringComparison.OrdinalIgnoreCase));
 
-            // Data rows
+                if (fk != null)
+                {
+                    // Rename column from e.g. "AssettypeID" to "Assettype"
+                    worksheet.Cell(1, i + 1).Value = fk.ColumnDescription;
+                }
+                else
+                {
+                    worksheet.Cell(1, i + 1).Value = colName;
+                }
+            }
+
+            // Step 5: Data rows
             for (int row = 0; row < data.Count; row++)
             {
                 for (int col = 0; col < columns.Count; col++)
                 {
-                    worksheet.Cell(row + 2, col + 1).Value = data[row].ContainsKey(columns[col]) ? data[row][columns[col]]?.ToString() : "";
+                    string colName = columns[col];
+                    object value = data[row].ContainsKey(colName) ? data[row][colName] : "";
+
+                    // Replace FK ID with description
+                    var fk = foreignKeys.FirstOrDefault(f => f.ColumnName.Equals(colName, StringComparison.OrdinalIgnoreCase));
+                    if (fk != null && value != null && value != DBNull.Value)
+                    {
+                        value = GetForeignKeyDescription(fk.TableName, value);
+                    }
+
+                    worksheet.Cell(row + 2, col + 1).Value = value?.ToString() ?? "";
                 }
             }
 
+            // Step 6: Return Excel file with clean filename
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
             stream.Position = 0;
-            return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{CleanTableName(tablename)}.xlsx");
+
+            string cleanedName = CleanTableName(tablename);
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"{cleanedName}.xlsx");
         }
+
         public IActionResult ExportSingleToExcel(int reportid, int id, string tablename)
         {
             bool hasQR;
             var columns = GetTableColumns(tablename, reportid, out hasQR);
             var row = GetRecordById(tablename, id);
+            var foreignKeys = GetForeignKeyColumns(tablename);
 
             using var workbook = new ClosedXML.Excel.XLWorkbook();
             var worksheet = workbook.Worksheets.Add("Record");
 
+            // Header and single row
             for (int i = 0; i < columns.Count; i++)
             {
-                worksheet.Cell(1, i + 1).Value = columns[i];
-                worksheet.Cell(2, i + 1).Value = row.ContainsKey(columns[i]) ? row[columns[i]]?.ToString() : "";
+                string colName = columns[i];
+
+                // Column header: use FK description if applicable
+                var fk = foreignKeys.FirstOrDefault(f => f.ColumnName.Equals(colName, StringComparison.OrdinalIgnoreCase));
+                string header = fk != null ? fk.ColumnDescription : colName;
+                worksheet.Cell(1, i + 1).Value = header;
+
+                // Cell value: convert FK ID to description
+                object value = row.ContainsKey(colName) ? row[colName] : "";
+                if (fk != null && value != null && value != DBNull.Value)
+                {
+                    value = GetForeignKeyDescription(fk.TableName, value);
+                }
+
+                worksheet.Cell(2, i + 1).Value = value?.ToString() ?? "";
             }
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
             stream.Position = 0;
-            return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",$"{CleanTableName(tablename)}.xlsx");
+
+            string cleanedName = CleanTableName(tablename);
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"{cleanedName}.xlsx");
         }
+
         private string CleanTableName(string rawName)
         {
             if (rawName.StartsWith("tbl_tran_", StringComparison.OrdinalIgnoreCase))
