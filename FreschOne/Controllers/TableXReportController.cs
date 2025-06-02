@@ -434,5 +434,64 @@ namespace FreschOne.Controllers
             }
             return primaryKeyColumn;
         }
+        public IActionResult ExportToExcel(int userid, int reportid, string tablename)
+        {
+            bool hasQR;
+            var columns = GetTableColumns(tablename, reportid, out hasQR);
+            var data = GetTableData(tablename, reportid, hasQR);
+
+            using var workbook = new ClosedXML.Excel.XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Export");
+
+            // Header row
+            for (int i = 0; i < columns.Count; i++)
+                worksheet.Cell(1, i + 1).Value = columns[i];
+
+            // Data rows
+            for (int row = 0; row < data.Count; row++)
+            {
+                for (int col = 0; col < columns.Count; col++)
+                {
+                    worksheet.Cell(row + 2, col + 1).Value = data[row].ContainsKey(columns[col]) ? data[row][columns[col]]?.ToString() : "";
+                }
+            }
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+            return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{CleanTableName(tablename)}.xlsx");
+        }
+        public IActionResult ExportSingleToExcel(int reportid, int id, string tablename)
+        {
+            bool hasQR;
+            var columns = GetTableColumns(tablename, reportid, out hasQR);
+            var row = GetRecordById(tablename, id);
+
+            using var workbook = new ClosedXML.Excel.XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Record");
+
+            for (int i = 0; i < columns.Count; i++)
+            {
+                worksheet.Cell(1, i + 1).Value = columns[i];
+                worksheet.Cell(2, i + 1).Value = row.ContainsKey(columns[i]) ? row[columns[i]]?.ToString() : "";
+            }
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+            return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",$"{CleanTableName(tablename)}.xlsx");
+        }
+        private string CleanTableName(string rawName)
+        {
+            if (rawName.StartsWith("tbl_tran_", StringComparison.OrdinalIgnoreCase))
+                return rawName.Replace("tbl_tran_", "").Replace("_", " ");
+            if (rawName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase))
+                return rawName.Replace("tbl_md_", "").Replace("_", " ");
+            if (rawName.StartsWith("tbl_", StringComparison.OrdinalIgnoreCase))
+                return rawName.Replace("tbl_", "").Replace("_", " ");
+            return rawName.Replace("_", " ");
+        }
+
+
     }
 }
