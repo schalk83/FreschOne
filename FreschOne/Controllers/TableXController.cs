@@ -13,6 +13,9 @@ namespace FreschOne.Controllers
     {
         public TableXController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
 
+        private SqlConnection GetConnection() => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
+
         public IActionResult Index(int userid, string tablename, int pageNumber = 1, string searchText = "")
         {
 
@@ -422,81 +425,65 @@ namespace FreschOne.Controllers
             {
                 connection.Open();
 
-                // 🔍 Check if this is a Maintenance table (tbl_md_) or not
-                string prefixQuery = "SELECT Description FROM foTablePrefixes WHERE @TableName LIKE Prefix + '%' AND Active = 1";
-                string tableType = null;
-                using (var prefixCmd = new SqlCommand(prefixQuery, connection))
+                var ignoredColumns = GetIgnoredColumns(connection);
+                var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
+
+                var fkColumns = GetForeignKeyColumns(tableName).ToList();
+                var fkLookup = fkColumns.ToDictionary(fk => fk.ColumnName, fk => fk.TableName, StringComparer.OrdinalIgnoreCase);
+
+                // Get available columns for display
+                var columnsQuery = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
+                var displayColumns = new List<string>();
+                using (var cmd = new SqlCommand(columnsQuery, connection))
                 {
-                    prefixCmd.Parameters.AddWithValue("@TableName", tableName);
-                    tableType = prefixCmd.ExecuteScalar()?.ToString();
-                }
-
-                if (tableType == "Maintenance")
-                {
-                    // ✅ Maintenance table: use [ID], [Description]
-                    string query = $"SELECT ID, Description FROM {tableName} WHERE Active = 1";
-                    using (var command = new SqlCommand(query, connection))
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            options.Add(new SelectListItem
-                            {
-                                Value = reader["ID"].ToString(),
-                                Text = reader["Description"].ToString()
-                            });
-                        }
-                    }
-                }
-                else
-                {
-                    // 🔶 Transaction table: Dynamically build multi-column display text
-                    var ignoredColumns = GetIgnoredColumns(connection);
-                    var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
-
-                    // Get available columns (skip ID, Active, etc.)
-                    var columnsQuery = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
-                    var displayColumns = new List<string>();
-                    using (var cmd = new SqlCommand(columnsQuery, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@TableName", tableName);
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                var col = reader["COLUMN_NAME"].ToString();
-                                if (!col.Equals("ID", StringComparison.OrdinalIgnoreCase) && !col.EndsWith("ID", StringComparison.OrdinalIgnoreCase) && !ignoredSet.Contains(col))
-                                {
-                                    displayColumns.Add(col);
-                                }
-                            }
-                        }
-                    }
-
-                    if (displayColumns.Count == 0)
-                        displayColumns.Add("ID"); // Fallback
-
-                    // Build SELECT query
-                    var selectColumns = "ID, " + string.Join(", ", displayColumns);
-                    string query = $"SELECT {selectColumns} FROM {tableName} WHERE Active = 1";
-
-                    using (var cmd = new SqlCommand(query, connection))
+                    cmd.Parameters.AddWithValue("@TableName", tableName);
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var values = new List<string>();
-                            foreach (var col in displayColumns)
+                            var col = reader["COLUMN_NAME"].ToString();
+                            if (!col.Equals("ID", StringComparison.OrdinalIgnoreCase) && !ignoredSet.Contains(col))
                             {
-                                values.Add(reader[col]?.ToString());
+                                displayColumns.Add(col);
+                            }
+                        }
+                    }
+                }
+
+                if (displayColumns.Count == 0)
+                    displayColumns.Add("ID"); // Fallback
+
+                // Build SELECT query
+                var selectColumns = "ID, " + string.Join(", ", displayColumns);
+                var query = $"SELECT {selectColumns} FROM {tableName} WHERE Active = 1";
+
+                using (var cmd = new SqlCommand(query, connection))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var displayParts = new List<string>();
+                        foreach (var col in displayColumns)
+                        {
+                            var val = reader[col]?.ToString();
+                            if (!string.IsNullOrEmpty(val) && fkLookup.ContainsKey(col))
+                            {
+                                // Foreign key column: Resolve FK description
+                                var fkTable = fkLookup[col];
+                                var fkOptions = GetForeignKeyOptions(fkTable);
+                                var match = fkOptions.FirstOrDefault(x => x.Value == val);
+                                if (match != null)
+                                    val = match.Text;
                             }
 
-                            options.Add(new SelectListItem
-                            {
-                                Value = reader["ID"].ToString(),
-                                Text = string.Join(" | ", values)
-                            });
+                            displayParts.Add(val);
                         }
+
+                        options.Add(new SelectListItem
+                        {
+                            Value = reader["ID"].ToString(),
+                            Text = string.Join(" | ", displayParts)
+                        });
                     }
                 }
             }
@@ -504,8 +491,95 @@ namespace FreschOne.Controllers
             return options;
         }
 
+        //private List<SelectListItem> GetForeignKeyOptions(string tableName)
+        //{
+        //    var options = new List<SelectListItem>();
 
+        //    using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        //    {
+        //        connection.Open();
 
+        //         🔍 Check if this is a Maintenance table(tbl_md_) or not
+        //        string prefixQuery = "SELECT Description FROM foTablePrefixes WHERE @TableName LIKE Prefix + '%' AND Active = 1";
+        //        string tableType = null;
+        //        using (var prefixCmd = new SqlCommand(prefixQuery, connection))
+        //        {
+        //            prefixCmd.Parameters.AddWithValue("@TableName", tableName);
+        //            tableType = prefixCmd.ExecuteScalar()?.ToString();
+        //        }
+
+        //        if (tableType == "Maintenance")
+        //        {
+        //             ✅ Maintenance table: use[ID], [Description]
+        //            string query = $"SELECT ID, Description FROM {tableName} WHERE Active = 1";
+        //            using (var command = new SqlCommand(query, connection))
+        //            using (var reader = command.ExecuteReader())
+        //            {
+        //                while (reader.Read())
+        //                {
+        //                    options.Add(new SelectListItem
+        //                    {
+        //                        Value = reader["ID"].ToString(),
+        //                        Text = reader["Description"].ToString()
+        //                    });
+        //                }
+        //            }
+        //        }
+        //        else
+        //        {
+        //             🔶 Transaction table: Dynamically build multi - column display text
+        //            var ignoredColumns = GetIgnoredColumns(connection);
+        //            var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
+
+        //            Get available columns(skip ID, Active, etc.)
+        //            var columnsQuery = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
+        //            var displayColumns = new List<string>();
+        //            using (var cmd = new SqlCommand(columnsQuery, connection))
+        //            {
+        //                cmd.Parameters.AddWithValue("@TableName", tableName);
+        //                using (var reader = cmd.ExecuteReader())
+        //                {
+        //                    while (reader.Read())
+        //                    {
+        //                        var col = reader["COLUMN_NAME"].ToString();
+        //                        if (!col.Equals("ID", StringComparison.OrdinalIgnoreCase) && !col.EndsWith("ID", StringComparison.OrdinalIgnoreCase) && !ignoredSet.Contains(col))
+        //                        {
+        //                            displayColumns.Add(col);
+        //                        }
+        //                    }
+        //                }
+        //            }
+
+        //            if (displayColumns.Count == 0)
+        //                displayColumns.Add("ID"); // Fallback
+
+        //            Build SELECT query
+        //           var selectColumns = "ID, " + string.Join(", ", displayColumns);
+        //            string query = $"SELECT {selectColumns} FROM {tableName} WHERE Active = 1";
+
+        //            using (var cmd = new SqlCommand(query, connection))
+        //            using (var reader = cmd.ExecuteReader())
+        //            {
+        //                while (reader.Read())
+        //                {
+        //                    var values = new List<string>();
+        //                    foreach (var col in displayColumns)
+        //                    {
+        //                        values.Add(reader[col]?.ToString());
+        //                    }
+
+        //                    options.Add(new SelectListItem
+        //                    {
+        //                        Value = reader["ID"].ToString(),
+        //                        Text = string.Join(" | ", values)
+        //                    });
+        //                }
+        //            }
+        //        }
+        //    }
+
+        //    return options;
+        //}
 
         public IActionResult Edit(int id, string tablename, int userid, int pageNumber)
         {
@@ -518,13 +592,34 @@ namespace FreschOne.Controllers
 
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
-
-            // Retrieve the record for the specified id
             var record = GetRecordById(tablename, id);
 
-            // Get columns and their types for the table
             var columns = GetTableColumns(tablename);
             var foreignKeys = GetForeignKeyColumns(tablename);
+
+            // 🔥 Add this block
+            var fkOptions = new Dictionary<string, List<SelectListItem>>();
+            foreach (var fk in foreignKeys)
+            {
+                fkOptions[fk.ColumnName] = GetForeignKeyOptions(fk.TableName);
+            }
+            foreach (var fk in foreignKeys)
+            {
+                if (record.ContainsKey(fk.ColumnName))
+                {
+                    var rawValue = record[fk.ColumnName]?.ToString();
+                    var options = fkOptions[fk.ColumnName];
+                    var match = options.FirstOrDefault(o => o.Value == rawValue);
+                    if (match != null)
+                    {
+                        record[$"{fk.ColumnName}_Display"] = match.Text;
+                    }
+                    else
+                    {
+                        record[$"{fk.ColumnName}_Display"] = "";
+                    }
+                }
+            }
 
             var relatedTables = GetRelatedTables(tablename, userid);
             ViewBag.RelatedTables = relatedTables;
@@ -824,49 +919,7 @@ namespace FreschOne.Controllers
             return RedirectToAction("Index", new { userid, tablename, pageNumber });
         }
 
-        [HttpPost]
-        public IActionResult Delete(int id, string tablename, int userid)
-        {
-            // Construct the SQL query to update the record
-            var setClauses = new List<string>
-    {
-        "Active = 0",  // Set Active to false
-        "DeletedUserID = @UserID",  // Set the DeletedUserID
-        "DeletedDate = GETDATE()"  // Set the DeletedDate to current date
-    };
-
-            var query = $"UPDATE {tablename} SET {string.Join(", ", setClauses)} WHERE ID = @Id";
-
-            // Execute the SQL query
-            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                connection.Open();
-                using (var command = new SqlCommand(query, connection))
-                {
-                    // Add parameters to prevent SQL injection
-                    command.Parameters.AddWithValue("@Id", id);
-                    command.Parameters.AddWithValue("@UserID", userid);
-
-                    // Execute the query
-                    var rowsAffected = command.ExecuteNonQuery();
-
-                    if (rowsAffected > 0)
-                    {
-                        // Optionally, add a message or log here if needed
-                        TempData["Message"] = "Record deactivated successfully.";
-                    }
-                    else
-                    {
-                        // Handle the case where no rows were updated (e.g., record not found)
-                        TempData["ErrorMessage"] = "Record not found or already deactivated.";
-                    }
-                }
-            }
-
-            // Redirect or return a result based on your needs
-            return RedirectToAction("Index", new { userid, tablename });
-        }
-
+        
 
         public IActionResult Create(int userid, string tablename, string readwriteaccess) 
         {
@@ -1280,6 +1333,50 @@ namespace FreschOne.Controllers
         }
 
         [HttpPost]
+        public IActionResult Delete(int id, string tablename, int userid)
+        {
+            // Construct the SQL query to update the record
+            var setClauses = new List<string>
+    {
+        "Active = 0",  // Set Active to false
+        "DeletedUserID = @UserID",  // Set the DeletedUserID
+        "DeletedDate = GETDATE()"  // Set the DeletedDate to current date
+    };
+
+            var query = $"UPDATE {tablename} SET {string.Join(", ", setClauses)} WHERE ID = @Id";
+
+            // Execute the SQL query
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    // Add parameters to prevent SQL injection
+                    command.Parameters.AddWithValue("@Id", id);
+                    command.Parameters.AddWithValue("@UserID", userid);
+
+                    // Execute the query
+                    var rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                    {
+                        // Optionally, add a message or log here if needed
+                        TempData["Message"] = "Record deactivated successfully.";
+                    }
+                    else
+                    {
+                        // Handle the case where no rows were updated (e.g., record not found)
+                        TempData["ErrorMessage"] = "Record not found or already deactivated.";
+                    }
+                }
+            }
+
+            // Redirect or return a result based on your needs
+            return RedirectToAction("Index", new { userid, tablename });
+        }
+
+
+        [HttpPost]
         public IActionResult DeleteAttachment(int attachmentId, string tablename, long PKID, int userid)
         {
             string query = "DELETE FROM foTableAttachments WHERE ID = @ID";
@@ -1297,7 +1394,70 @@ namespace FreschOne.Controllers
             return RedirectToAction("Edit", new { id = PKID, tablename = tablename, userid = userid });
         }
 
+        [HttpGet]
+        public IActionResult GetSearchOptions(string tableName, string columnName)
+        {
+            var result = new List<Dictionary<string, object>>();
+            try
+            {
+                using (var conn = GetConnection())
+                {
+                    conn.Open();
 
+                    var ignoredColumns = GetIgnoredColumns(conn);
+                    var fkColumns = GetForeignKeyColumns(tableName).ToList();
+                    var fkOptions = new Dictionary<string, List<SelectListItem>>();
+
+                    foreach (var fk in fkColumns)
+                    {
+                        if (!fkOptions.ContainsKey(fk.TableName))
+                        {
+                            fkOptions[fk.TableName] = GetForeignKeyOptions(fk.TableName);
+                        }
+                    }
+
+                    var cmd = new SqlCommand($"SELECT * FROM {tableName} WHERE Active = 1", conn);
+                    using var reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        var row = new Dictionary<string, object>();
+                        row["ID"] = reader["ID"].ToString();
+
+                        var displayParts = new List<string>();
+
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            var name = reader.GetName(i);
+
+                            if (!ignoredColumns.Contains(name) && !name.Equals("ID", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var value = reader[name]?.ToString();
+                                var fkMatch = fkColumns.FirstOrDefault(x => x.ColumnName == name);
+
+                                if (fkMatch != null && !string.IsNullOrEmpty(value))
+                                {
+                                    var displayValue = fkOptions[fkMatch.TableName]
+                                        .FirstOrDefault(x => x.Value == value)?.Text ?? value;
+                                    displayParts.Add(displayValue);
+                                }
+                                else
+                                {
+                                    displayParts.Add(value);
+                                }
+                            }
+                        }
+
+                        row["Display"] = string.Join(" | ", displayParts);
+                        result.Add(row);
+                    }
+                }
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
 
     }
 }

@@ -551,5 +551,46 @@ form#searchForm input[type="text"] {
     box-sizing: border-box;
 }
 
+.attachment-section {
+    background-color: #f9f9f9;
+}
+
+.attachment-section .form-control {
+    font-size: 0.85rem;
+    padding: 4px 8px;
+}
+
+.attachment-section .btn-sm {
+    font-size: 0.85rem;
+    padding: 2px 6px;
+}
+
+.attachment-group {
+    margin-bottom: 4px;
+}
+
+.attachment-section .form-control {
+    font-size: 0.85rem;
+    padding: 4px 8px;
+}
+
+.attachment-section .btn-sm {
+    font-size: 0.8rem;
+    padding: 2px 6px;
+}
+
+.attachment-section h6 {
+    margin-bottom: 0.5rem;
+}
+
+.list-group-sm .list-group-item {
+    padding: 4px 8px;
+}
+
+#existingAttachments,
+#attachmentForm {
+    display: none;
+}
+
 
 

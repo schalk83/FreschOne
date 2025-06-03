@@ -11,373 +11,146 @@
 
 <partial name="_Sidebar" />
 
-<h1>@ReportName</h1>
-@* <i>Please select record to populate report</i> *@
-<!-- Data Table -->
-<div class="mb-2">
-    <a class="btn btn-warning" href="@Url.Action("ExportToExcel", "TableXReport", new { userid = ViewBag.userid, reportid = ViewBag.ReportID, tablename = ViewBag.tablename })">
+
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-3">📊 @ReportName</h2>
+    <a class="btn btn-sm btn-gold shadow-sm" href="@Url.Action("ExportToExcel", "TableXReport", new { userid = userid, reportid = reportid, tablename = tablename })">
         📥 Download All to Excel
     </a>
 </div>
 
-<table class="table table-bordered" id="dataTable">
-    <thead>
-        <tr>
-            @foreach (var column in Model.Columns)
-            {
-                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+<div class="d-flex justify-content-end mb-2">
+    <button id="toggleSearchBtn" class="btn btn-sm btn-outline-secondary" onclick="toggleSearch()">+ Show Search</button>
+</div>
 
-                <th class="fixed-width">
-                    @if (column.StartsWith("attachment_"))
-                    {
-                        formattedColumn = column.Replace("attachment_", ""); // Remove prefix
-                        formattedColumn = System.Text.RegularExpressions.Regex.Replace(formattedColumn, "(?<=.)([A-Z])", " $1");
-
-                    }
-                    @if (column.StartsWith("geo_"))
-                    {
-                        formattedColumn = column.Replace("geo_", ""); // Remove prefix
-                        formattedColumn = System.Text.RegularExpressions.Regex.Replace(formattedColumn, "(?<=.)([A-Z])", " $1");
-
-                    }
-
-                    @if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
-                    {
-                        @column.Replace("ID", "")
-                    }
-                    else
-                    {
-                        @if (column == "ID")
-                        {
-                            @column
-                        }
-                        else
-                        {
-                            @formattedColumn
-                        }
-
-                    }
-                </th>
-            }
-            <th class="actions-column">Actions</th>
-        </tr>
-
-        <!-- Search Inputs Row (Initially Hidden) -->
-        <tr id="searchRow" style="display: none;">
-            @foreach (var column in Model.Columns)
-            {
-                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
-
-                <th class="fixed-width">
-                    @if (column.StartsWith("attachment_"))
-                    {
-                        <select class="form-control column-search" data-column="@column" onchange="filterTable()" style="width: 100%;">
-                            <option value="">All</option>
-                            <option value="true">With Attachment</option>
-                            <option value="false">No Attachment</option>
-                        </select>
-                    }
-                    else
-                    {
-                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @formattedColumn" onkeyup="filterTable()" style="width: 100%;">
-                    }
-                </th>
-            }
-        </tr>
-    </thead>
-    <tbody id="tableBody">
-        @foreach (var row in Model.TableData)
-        {
+<div class="table-responsive border rounded shadow-sm">
+    <table class="table table-hover table-sm align-middle" id="dataTable">
+        <thead class="table-light">
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    <td class="fixed-width" data-column="@column" data-description="@row[column]">
+                    string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+                    <th class="text-nowrap">@formattedColumn</th>
+                }
+                <th class="text-center">Actions</th>
+            </tr>
+
+            <!-- Search Row -->
+            <tr id="searchRow" style="display: none;">
+                @foreach (var column in Model.Columns)
+                {
+                    <th>
                         @if (column.StartsWith("attachment_"))
                         {
-                            <div class="text-center">
-                                @{
-                                    var val = row[column]?.ToString() ?? "";
-                                    if (val.Contains(";"))
-                                    {
-                                        var parts = val.Split(';');
-                                        var desc = parts[0].Trim();
-                                        var url = parts.Length > 1 ? parts[1].Trim().Replace("\\", "/") : "";
-
-                                        if (!string.IsNullOrWhiteSpace(url))
-                                        {
-                                            <a href="@Url.Content("~/" + url)" target="_blank">@desc</a>
-                                        }
-                                        else
-                                        {
-                                            @desc
-                                        }
-                                    }
-                                    else
-                                    {
-                                        @val
-                                    }
-                                }
-                            </div>
+                            <select class="form-select form-select-sm column-search" data-column="@column">
+                                <option value="">All</option>
+                                <option value="true">With Attachment</option>
+                                <option value="false">No Attachment</option>
+                            </select>
                         }
                         else
                         {
-                            @row[column]
+                            <input type="text" class="form-control form-control-sm column-search" data-column="@column" placeholder="Search..." />
                         }
-                    </td>
+                    </th>
                 }
-                <td class="text-center action-buttons">
-                    <a href="@Url.Action("GenerateReport", "DynamicReport", new { reportid = reportid, PKID = row["ID"], userId = userid })"
-                       class="btn btn-success btn-sm">View Report</a>
-                    <a class="btn btn-outline-primary btn-sm" href="@Url.Action("ExportSingleToExcel", "TableXReport", new { reportid = reportid, id = row["ID"], tablename = tablename })">
-                        📄 Download
-                    </a>
-                </td>
-               
+                <th></th>
             </tr>
-        }
+        </thead>
 
-    </tbody>
-</table>
+        <tbody id="tableBody">
+            @foreach (var row in Model.TableData)
+            {
+                <tr>
+                    @foreach (var column in Model.Columns)
+                    {
+                        <td class="text-nowrap" data-column="@column" data-description="@row[column]">
+                            @row[column]
+                        </td>
+                    }
+                    <td class="text-center">
+                        <a href="@Url.Action("GenerateReport", "DynamicReport", new { reportid = reportid, PKID = row["ID"], userId = userid })" class="btn btn-sm btn-green shadow-sm">View Report</a>
+                        <a href="@Url.Action("ExportSingleToExcel", "TableXReport", new { reportid = reportid, id = row["ID"], tablename = tablename })" class="btn btn-sm btn-outline-primary">📄 Download</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 
-
-
-<!-- Pagination Controls (Bootstrap Pagination) -->
+<!-- Pagination and Scripts (unchanged) -->
 <div class="d-flex justify-content-center mt-3">
     <nav aria-label="Page navigation">
         <ul class="pagination">
             @if (ViewBag.pageNumber > 1)
             {
                 <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = 1 })">
-                        First
-                    </a>
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = 1 })">First</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.pageNumber - 1 })">
-                        &laquo; Prev
-                    </a>
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = ViewBag.pageNumber - 1 })">&laquo; Prev</a>
                 </li>
             }
 
             @for (var i = Math.Max(1, ViewBag.pageNumber - 2); i <= Math.Min(ViewBag.totalPages, ViewBag.pageNumber + 2); i++)
             {
                 <li class="page-item @(i == ViewBag.pageNumber ? "active" : "")">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = i })">
-                        @i
-                    </a>
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = i })">@i</a>
                 </li>
             }
 
             @if (ViewBag.pageNumber < ViewBag.totalPages)
             {
                 <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.pageNumber + 1 })">
-                        Next &raquo;
-                    </a>
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = ViewBag.pageNumber + 1 })">Next &raquo;</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = ViewBag.userid, tablename = ViewBag.tablename, pageNumber = ViewBag.totalPages })">
-                        Last
-                    </a>
+                    <a class="page-link" href="@Url.Action("Index", "TableX", new { userid = userid, tablename = tablename, pageNumber = ViewBag.totalPages })">Last</a>
                 </li>
             }
         </ul>
     </nav>
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div class="modal" tabindex="-1" id="deleteModal" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Confirm Deactivation</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to deactivate this record? This action cannot be undone.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirm</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="popup" class="popup" style="display:none;">
-    <div id="popup-content" class="popup-content"></div>
-</div>
-
 @section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
     <script>
-        function showPopup(event, tablename, id) {
-            console.log('showPopup called with tablename:', tablename, 'and id:', id); // Debugging line
-
-            // Get the current URL before navigating
-            let currentUrl = window.location.href;
-
-            fetch(`/TableX/ForeignTables_Index?tablename=${tablename}&userid=${@ViewBag.userid}&isAjax=true`)
-                .then(response => response.json())
-                .then(data => {
-                    let popup = document.getElementById('popup');
-                    let popupContent = document.getElementById('popup-content');
-
-                    if (data.length > 0) {
-                        let content = `
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Related Table</th>
-                                        <th style="width: 30px; text-align: right;">
-                                            <span class="popup-close" onclick="document.getElementById('popup').style.display='none'">&times;</span>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>`;
-
-                        data.forEach(record => {
-                            const url = `/TableY/Index?&userid=${@ViewBag.userid}&tablename=${record.ChildTable}&PKID=${id}&PKColumn=${record.PKColumn}&returnUrl=${encodeURIComponent(currentUrl)}`;
-
-                            // Make the row clickable
-                            content += `<tr class="clickable-row" data-url="${url}" style="cursor: pointer;">
-                                            <td>${record.ChildTableDescription}</td>
-                                            <td></td> <!-- Empty cell to balance layout -->
-                                        </tr>`;
-                        });
-
-                        content += '</tbody></table>';
-                        popupContent.innerHTML = content;
-
-                        // Attach click event to each row AFTER the content is set
-                        document.querySelectorAll(".clickable-row").forEach(row => {
-                            row.addEventListener("click", function () {
-                                window.location.href = this.getAttribute("data-url");
-                            });
-                        });
-
-                    } else {
-                        popupContent.innerHTML = '<p>No related records available.</p>';
-                    }
-
-                    popup.style.display = 'block';
-
-                    // Position the popup near the clicked button
-                    var rect = event.target.getBoundingClientRect();
-                    var left = rect.left + window.scrollX + rect.width / 2 - popup.offsetWidth / 2;
-                    var top = rect.top + window.scrollY + rect.height + 10;
-
-                    let maxRight = window.innerWidth - popup.offsetWidth - 10;
-                    let maxBottom = window.innerHeight - popup.offsetHeight - 10;
-
-                    if (left < 10) left = 10;
-                    if (left > maxRight) left = maxRight;
-                    if (top > maxBottom) top = rect.top + window.scrollY - popup.offsetHeight - 10;
-
-                    popup.style.left = left + 'px';
-                    popup.style.top = top + 'px';
-                })
-                .catch(error => {
-                    console.error('Error fetching related tables:', error);
-                });
-        }
-
-
-        // Close popup when clicking outside
-        document.addEventListener('click', function (event) {
-            var popup = document.getElementById('popup');
-            if (popup.style.display === 'block' && !popup.contains(event.target) && event.target.tagName !== 'TD') {
-                popup.style.display = 'none';
+        function toggleSearch() {
+            let searchRow = document.getElementById("searchRow");
+            let toggleBtn = document.getElementById("toggleSearchBtn");
+            if (searchRow.style.display === "none") {
+                searchRow.style.display = "table-row";
+                toggleBtn.innerText = "- Hide Search";
+            } else {
+                searchRow.style.display = "none";
+                toggleBtn.innerText = "+ Show Search";
             }
-        });
+        }
 
         function filterTable() {
-            console.log("🔍 Filtering table..."); // ✅ Debugging log
+            let inputs = document.querySelectorAll('.column-search');
+            let rows = document.querySelectorAll('#tableBody tr');
 
-            let inputs = document.querySelectorAll('.column-search'); // Get all search input fields
-            let tableRows = document.querySelectorAll("#tableBody tr"); // Get all table rows
-
-            tableRows.forEach(row => {
-                let showRow = true; // Default to showing the row
-
+            rows.forEach(row => {
+                let show = true;
                 inputs.forEach(input => {
-                    let columnName = input.getAttribute('data-column'); // Get column name
-                    let searchValue = input.value.trim().toLowerCase(); // Get search text
-
-                    let cell = row.querySelector(`td[data-column="${columnName}"]`); // Find correct column
-
+                    let column = input.getAttribute('data-column');
+                    let value = input.value.toLowerCase();
+                    let cell = row.querySelector(`td[data-column="${column}"]`);
                     if (cell) {
-                        let cellText = cell.innerText.trim().toLowerCase();
-
-                        // 🔹 Handle attachment search via dropdown (Has attachment / No attachment)
-                        if (columnName.startsWith("attachment_")) {
-                            let hasAttachment = cell.querySelector("span") !== null; // ✅ Check if it has ✅ icon
-
-                            if ((searchValue === "true" && !hasAttachment) || (searchValue === "false" && hasAttachment)) {
-                                showRow = false;
-                            }
-                        }
-                        else if (searchValue) {
-                            // 🔹 Normal text search
-                            if (!cellText.includes(searchValue)) {
-                                showRow = false;
-                            }
-                        }
+                        let cellText = cell.innerText.toLowerCase();
+                        if (value && !cellText.includes(value)) show = false;
                     }
                 });
-
-                row.style.display = showRow ? "" : "none"; // ✅ Show or hide row
+                row.style.display = show ? "" : "none";
             });
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            // Attach event listeners properly
-            document.querySelectorAll('.column-search').forEach(input => {
-                input.addEventListener("keyup", filterTable); // Text inputs
-                input.addEventListener("change", filterTable); // Select dropdowns
-            });
-
-            console.log("✅ Search filter initialized!"); // ✅ Debugging log
+        document.querySelectorAll('.column-search').forEach(input => {
+            input.addEventListener('keyup', filterTable);
+            input.addEventListener('change', filterTable);
         });
-
-
-
-        function confirmDelete(recordId, tableName) {
-            $('#deleteModal').modal('show');
-
-            $('#confirmDeleteBtn').off('click').on('click', function() {
-                $('#deleteModal').modal('hide');
-
-                $.ajax({
-                    url: '@Url.Action("Delete", "TableX")',  // Correct the controller name here
-                    method: 'POST',
-                    data: {
-                        id: recordId,
-                        tablename: tableName,
-                        userid: @userid
-                    },
-                    success: function(response) {
-                        alert('Record deactivated successfully');
-                                        location.reload();
-
-                    },
-                    error: function() {
-                        alert('Error deactivating record');
-                    }
-                });
-            });
-        }
-
-        function toggleSearch() {
-                    let searchRow = document.getElementById("searchRow");
-                    let toggleLink = document.getElementById("toggleSearchBtn");
-
-                    if (searchRow.style.display === "none") {
-                        searchRow.style.display = "table-row";  // Show search row
-                        toggleLink.innerText = "- Hide Search"; // Change text
-                    } else {
-                        searchRow.style.display = "none";  // Hide search row
-                        toggleLink.innerText = "+ Show Search"; // Change text
-                    }
-                }
     </script>
 }

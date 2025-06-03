@@ -156,14 +156,32 @@
                 else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                 {
                     var foreignKey = Model.ForeignKeys.First(fk => fk.ColumnName == column);
-                    @Html.DropDownList(
-                             foreignKey.ColumnName,
-                             new SelectList(
-                             Model.ForeignKeyOptions[foreignKey.ColumnName],
-                             "Value", "Text", columnValue),
-                             "Select...",
-                             new { @class = "form-control" })
+                    var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
+                    var displayValue = Model.Record.ContainsKey($"{column}_Display") ? Model.Record[$"{column}_Display"]?.ToString() : "";
+
+                    <label for="@column" class="fw-bold">@column.Replace("ID", "")</label>
+
+                    @if (isMaintenance)
+                    {
+                        @Html.DropDownList(column,
+                                 new SelectList(Model.ForeignKeyOptions[foreignKey.ColumnName], "Value", "Text", columnValue),
+                                 "Select...",
+                                 new { @class = "form-select" })
+                    }
+                    else
+                    {
+                        <div class="input-group">
+                            <input type="hidden" name="@column" value="@columnValue" />
+                            <input type="text" id="@column" value="@displayValue" class="form-control" readonly placeholder="Search..."
+                                   onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@column')" />
+                            <button type="button" class="btn btn-outline-secondary"
+                                    onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@column')">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    }
                 }
+
                 else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
                 {
                     if (@column == PKColumn)
@@ -310,49 +328,51 @@
 </form>
 
 <!-- 🗂 Existing Attachments -->
-<div class="attachment-section p-3 mb-4 rounded">
-    <h4 class="d-flex justify-content-between align-items-center">
-        Existing Attachments
-        <button type="button" id="toggleExistingAttachments" class="btn btn-link" style="font-size: 1.2em;">
-            <i class="fas fa-chevron-down" id="existingIcon"></i>
-        </button>
-    </h4>
+<div class="attachment-section p-2 mb-3 rounded border">
+    <h6 class="d-flex justify-content-between align-items-center small fw-bold mb-2 toggle-attachments" data-target="existingAttachments" style="cursor: pointer;">
+        <span>Existing Attachments</span>
+        <i class="fas fa-chevron-down toggle-icon" id="existingIcon"></i>
+    </h6>
 
-    <div id="existingAttachments" style="margin-bottom: 10px; display: none;">
-        <ul class="list-group">
-            @foreach (var attachment in attachments)
-            {
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>
-                        <a href="@attachment["Attachment"]" target="_blank">@attachment["AttachmentDescription"]</a>
-                    </span>
-                    <label>@attachment["DateAdded"]</label>
-                    <label>@attachment["UserAdded"]</label>
-                    <form asp-action="DeleteAttachment" method="post" class="d-inline" onsubmit="return confirmDelete();">
-                        <input type="hidden" name="attachmentId" value="@attachment["ID"]" />
-                        <input type="hidden" name="tablename" value="@ViewBag.tablename" />
-                        <input type="hidden" name="PKColumn" value="@ViewBag.PKColumn" />
-                        <input type="hidden" name="id" value="@Model.Record["ID"]" />
-                        <input type="hidden" name="PKID" value="@PKID" />
-                        <input type="hidden" name="userid" value="@userid" />
-                        <button type="submit" class="btn btn-link text-danger" title="Delete Attachment">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </form>
-                </li>
-            }
-        </ul>
+    <div id="existingAttachments" style="margin-bottom: 8px; display: none;">
+        @if (attachments != null && attachments.Any())
+        {
+            <ul class="list-group list-group-sm">
+                @foreach (var attachment in attachments)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center p-2">
+                        <div class="d-flex flex-column small">
+                            <a href="@attachment["Attachment"]" target="_blank">@attachment["AttachmentDescription"]</a>
+                            <span class="text-muted">@attachment["DateAdded"] | @attachment["UserAdded"]</span>
+                        </div>
+                        <form asp-action="DeleteAttachment" method="post" class="d-inline" onsubmit="return confirmDelete();">
+                            <input type="hidden" name="attachmentId" value="@attachment["ID"]" />
+                            <input type="hidden" name="tablename" value="@ViewBag.tablename" />
+                            <input type="hidden" name="PKColumn" value="@ViewBag.PKColumn" />
+                            <input type="hidden" name="id" value="@Model.Record["ID"]" />
+                            <input type="hidden" name="PKID" value="@PKID" />
+                            <input type="hidden" name="userid" value="@userid" />
+                            <button type="submit" class="btn btn-sm btn-link text-danger" title="Delete Attachment">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p class="text-muted small">No attachments available.</p>
+        }
     </div>
 </div>
 
-<!-- Add Attachments -->
-<div class="attachment-section p-3 mb-4 rounded">
-    <h4 class="d-flex justify-content-between align-items-center">
-        Add Attachments
-        <button type="button" id="toggleAttachmentForm" class="btn btn-link p-0" style="font-size: 1.2em;">
-            <i class="fas fa-chevron-down" id="toggleIcon"></i>
-        </button>
-    </h4>
+<!-- ➕ Add Attachments -->
+<div class="attachment-section p-2 mt-3 rounded border">
+    <h6 class="d-flex justify-content-between align-items-center small fw-bold mb-2 toggle-attachments" data-target="attachmentForm" style="cursor: pointer;">
+        <span>Add Attachments</span>
+        <i class="fas fa-chevron-down toggle-icon" id="toggleIcon"></i>
+    </h6>
 
     <form asp-action="AddAttachments" method="post" enctype="multipart/form-data" id="attachmentForm" style="display: none;">
         <input type="hidden" name="tablename" value="@ViewBag.tablename" />
@@ -361,152 +381,80 @@
         <input type="hidden" name="PKColumn" value="@ViewBag.PKColumn" />
         <input type="hidden" name="PKID" value="@PKID" />
 
-        <div id="attachmentContainer">
-            <div class="row w-100 mb-2">
-                <div class="col-md-6">
-                    <input type="text" name="AttachmentDescriptions[]" placeholder="Description" class="form-control" required />
-                </div>
-                <div class="col-md-5">
-                    <input type="file" name="Attachments[]" class="form-control" required />
-                </div>
-                <div class="col-md-1 d-flex align-items-center justify-content-end">
-                    <button type="button" class="btn btn-link text-danger removeAttachmentButton" title="Remove Attachment">
-                        <i class="bi bi-trash-fill fs-5"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
+        <div id="attachmentContainer" class="mb-2"></div>
 
-        <button type="button" id="addAttachmentButton" class="custom-button btn-green btn-sm mt-3 d-flex align-items-center">
+        <button type="button" id="addAttachmentButton" class="btn btn-sm btn-outline-success d-flex align-items-center">
             <i class="bi bi-plus-circle me-1"></i> Add
         </button>
-
     </form>
 </div>
 
 
-
 @section Scripts {
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
 
-<!-- Include Font Awesome -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
-<script>
-        document.addEventListener("DOMContentLoaded", function () {
+        // 🔁 Toggle Attachments Sections
+        document.querySelectorAll('.toggle-attachments').forEach(header => {
+            header.addEventListener('click', function () {
+                const targetId = this.dataset.target;
+                const target = document.getElementById(targetId);
+                const icon = this.querySelector('.toggle-icon');
 
-        // Toggle Existing Attachments
-        document.getElementById('toggleExistingAttachments')?.addEventListener('click', function () {
-            var section = document.getElementById('existingAttachments');
-            var icon = document.getElementById('existingIcon');
-
-            if (section.style.display === 'none' || section.style.display === '') {
-                section.style.display = 'block';
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-            } else {
-                section.style.display = 'none';
-                icon.classList.remove('fa-chevron-up');
-                icon.classList.add('fa-chevron-down');
-            }
-        });
-
-        // Toggle Add Attachments Form
-        document.getElementById('toggleAttachmentForm')?.addEventListener('click', function () {
-            var form = document.getElementById('attachmentForm');
-            var icon = document.getElementById('toggleIcon');
-
-            if (form.style.display === 'none') {
-                form.style.display = 'block';
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-            } else {
-                form.style.display = 'none';
-                icon.classList.remove('fa-chevron-up');
-                icon.classList.add('fa-chevron-down');
-            }
-        });
-
-        // Function to update hidden input field with attachment data
-        function updateAttachmentField(columnName) {
-            let descInput = document.getElementById("desc_" + columnName);
-            let fileInput = document.getElementById("file_" + columnName);
-            let hiddenInput = document.getElementById("hidden_" + columnName);
-
-            let newDescription = descInput.value.trim();
-            let filePath = fileInput.files.length > 0 ? fileInput.files[0].name : "";
-
-            // ✅ Get the existing file path from hidden input
-            let existingValue = hiddenInput.value.split(";");
-            let existingFilePath = existingValue.length > 1 ? existingValue[1].trim() : "";
-
-            // ✅ If no new file is selected, keep only the previous **file path**
-            if (filePath === "") {
-                filePath = existingFilePath;
-            }
-
-            // ✅ Ensure we replace the previous value completely, without appending
-            hiddenInput.value = `${newDescription};${filePath}`;
-            console.log(`📌 Updated Hidden Input: ${hiddenInput.value}`);
-        }
-
-        // Ensure the description change updates the hidden field
-        document.querySelectorAll("[id^=desc_]").forEach(descField => {
-            descField.addEventListener("input", function () {
-                let columnName = this.id.replace("desc_", "");
-                updateAttachmentField(columnName);
+                if (target.style.display === 'none' || target.style.display === '') {
+                    target.style.display = 'block';
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                } else {
+                    target.style.display = 'none';
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                }
             });
         });
 
-        // Add another attachment dynamically
+        // ➕ Add Attachment Row
         document.getElementById('addAttachmentButton').addEventListener('click', function () {
             var container = document.getElementById('attachmentContainer');
-
-            // Generate a unique ID for each new field
-            var uniqueId = new Date().getTime();
 
             var attachmentGroup = document.createElement('div');
             attachmentGroup.classList.add('attachment-group', 'd-flex', 'align-items-center', 'mt-2');
 
             attachmentGroup.innerHTML = `
-                <div style="flex-grow: 1;">
-                    <div class="form-group">
-                        <label for="desc_${uniqueId}">Attachment Description</label>
-                        <input type="text" id="desc_${uniqueId}" name="AttachmentDescriptions[]" class="form-control" required />
+                <div class="row w-100">
+                    <div class="col-md-6">
+                        <input type="text" name="AttachmentDescriptions" placeholder="Description" class="form-control attachment-field" required />
                     </div>
-                    <div class="form-group">
-                        <label for="file_${uniqueId}">Upload Attachment</label>
-                        <input type="file" id="file_${uniqueId}" name="Attachments[]" class="form-control" required />
+                    <div class="col-md-5">
+                        <input type="file" name="Attachments" class="form-control attachment-field" required />
                     </div>
-                </div>
-                <div class="trash-container" style="display: flex; align-items: center; padding-left: 10px;">
-                    <button type="button" class="btn btn-link text-danger removeAttachmentButton" style="font-size: 1.5em;" title="Remove Attachment">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                    <div class="col-md-1 d-flex align-items-center justify-content-end">
+                        <button type="button" class="btn btn-link text-danger removeAttachmentButton" title="Remove Attachment">
+                            <i class="bi bi-trash-fill fs-5"></i>
+                        </button>
+                    </div>
                 </div>
             `;
 
             container.appendChild(attachmentGroup);
+
+            // Attach remove logic for new row
+            attachmentGroup.querySelector('.removeAttachmentButton').addEventListener('click', function () {
+                attachmentGroup.remove();
+            });
         });
 
-        // Event delegation for dynamically added remove buttons
-        document.getElementById('attachmentContainer').addEventListener('click', function (e) {
-            if (e.target.closest('.removeAttachmentButton')) {
-                e.target.closest('.attachment-group').remove();
-            }
-        });
-
-        // Confirmation before deleting an attachment
-        function confirmDelete() {
+        // Confirm Delete
+        window.confirmDelete = function () {
             return confirm("Are you sure you want to delete this attachment?");
-        }
+        };
 
-    });
-
-        function getLocation(fieldId) {
+        // Geo Location (keep as is)
+        window.getLocation = function (fieldId) {
             if (!navigator.geolocation) {
                 alert("Geolocation is not supported by your browser.");
                 return;
             }
-
             navigator.geolocation.getCurrentPosition(
                 position => {
                     const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
@@ -517,8 +465,8 @@
                     console.error("Geolocation error:", error);
                 }
             );
-        }
+        };
 
-
+    });
 </script>
 }

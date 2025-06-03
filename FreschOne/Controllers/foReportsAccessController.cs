@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using FreschOne.Models;
-using System.Data;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace FreschOne.Controllers
@@ -13,120 +12,148 @@ namespace FreschOne.Controllers
 
         private SqlConnection GetConnection() => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-        public IActionResult Index(int userid, long reportid)
+        public IActionResult Index(int userid, long reportid = 0)
         {
             SetUserAccess(userid);
             ViewBag.userid = userid;
             ViewBag.reportid = reportid;
 
+            ViewBag.Users = GetFilteredUsersForDropdown(reportid);
+            ViewBag.Groups = GetFilteredGroupsForDropdown(reportid);
+            ViewBag.Reports = GetReportsForDropdown(reportid);
+
             var accessList = new List<foReportAccess>();
 
-            using (var conn = GetConnection())
+            if (reportid > 0)
             {
-                var cmd = new SqlCommand(@"
-                    SELECT ID, ReportID, UserID, GroupID, Active 
-                    FROM foReportAccess 
-                    WHERE Active = 1 AND ReportID = @reportid", conn);
-                cmd.Parameters.AddWithValue("@reportid", reportid);
-
-                conn.Open();
-                using (var reader = cmd.ExecuteReader())
+                using (var conn = GetConnection())
                 {
-                    while (reader.Read())
+                    var cmd = new SqlCommand(@"
+                        SELECT a.ID, a.ReportID, a.UserID, 
+                               u.FirstName + ' ' + u.LastName AS UserName,
+                               a.GroupID, g.Description AS GroupName, a.Active
+                        FROM foReportAccess a
+                        LEFT JOIN foUsers u ON a.UserID = u.ID
+                        LEFT JOIN foGroups g ON a.GroupID = g.ID
+                        WHERE a.Active = 1 AND a.ReportID = @reportid", conn);
+
+                    cmd.Parameters.AddWithValue("@reportid", reportid);
+
+                    conn.Open();
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        accessList.Add(new foReportAccess
+                        while (reader.Read())
                         {
-                            ID = (long)reader["ID"],
-                            ReportID = (long)reader["ReportID"],
-                            UserID = reader["UserID"] as long?,
-                            GroupID = reader["GroupID"] as long?,
-                            Active = (bool)reader["Active"]
-                        });
+                            accessList.Add(new foReportAccess
+                            {
+                                ID = (long)reader["ID"],
+                                ReportID = (long)reader["ReportID"],
+                                UserID = reader["UserID"] as long?,
+                                GroupID = reader["GroupID"] as long?,
+                                UserName = reader["UserName"] as string ?? "-",
+                                GroupName = reader["GroupName"] as string ?? "-",
+                                Active = (bool)reader["Active"]
+                            });
+                        }
                     }
                 }
             }
 
-            ViewBag.Users = GetUsersForDropdown();
-            ViewBag.Groups = GetGroupsForDropdown();
+            ViewBag.AccessList = accessList;
 
-            return View(accessList);
+            return View(new foReportAccess());
         }
-
-        public IActionResult Create(int userid, long reportid)
-        {
-            SetUserAccess(userid);
-            ViewBag.userid = userid;
-            ViewBag.reportid = reportid;
-
-            var model = new foReportAccess { ReportID = reportid };
-
-            ViewBag.Users = GetUsersForDropdown();
-            ViewBag.Groups = GetGroupsForDropdown();
-
-            return View(model);
-        }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(foReportAccess model, int userid, long reportid)
+        public IActionResult Create(IFormCollection form, int userid, long reportid)
         {
             SetUserAccess(userid);
             ViewBag.userid = userid;
             ViewBag.reportid = reportid;
 
-            ViewBag.Users = GetUsersForDropdown();
-            ViewBag.Groups = GetGroupsForDropdown();
+            // Extract values from form
+            long? accessUserID = string.IsNullOrEmpty(form["accessUserID"]) ? null : long.Parse(form["accessUserID"]);
+            long? groupID = string.IsNullOrEmpty(form["GroupID"]) ? null : long.Parse(form["GroupID"]);
 
-            // Load AccessList (this is your existing logic!)
+            ViewBag.Users = GetFilteredUsersForDropdown(reportid, accessUserID);
+            ViewBag.Groups = GetFilteredGroupsForDropdown(reportid, groupID);
+            ViewBag.Reports = GetReportsForDropdown(reportid);
+
             var accessList = new List<foReportAccess>();
-            using (var conn = GetConnection())
-            {
-                var cmd = new SqlCommand(@"SELECT ID, UserID, GroupID, Active FROM foReportAccess WHERE Active = 1 AND ReportID = @reportid", conn);
-                cmd.Parameters.AddWithValue("@reportid", reportid);
 
-                conn.Open();
-                using (var reader = cmd.ExecuteReader())
+            if (reportid > 0)
+            {
+                using (var conn = GetConnection())
                 {
-                    while (reader.Read())
+                    var cmd = new SqlCommand(@"
+                        SELECT a.ID, a.UserID, u.FirstName + ' ' + u.LastName AS UserName,
+                               a.GroupID, g.Description AS GroupName, a.Active
+                        FROM foReportAccess a
+                        LEFT JOIN foUsers u ON a.UserID = u.ID
+                        LEFT JOIN foGroups g ON a.GroupID = g.ID
+                        WHERE a.Active = 1 AND a.ReportID = @reportid", conn);
+
+                    cmd.Parameters.AddWithValue("@reportid", reportid);
+
+                    conn.Open();
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        accessList.Add(new foReportAccess
+                        while (reader.Read())
                         {
-                            ID = (long)reader["ID"],
-                            ReportID = reportid,
-                            UserID = reader["UserID"] as long?,
-                            GroupID = reader["GroupID"] as long?,
-                            Active = (bool)reader["Active"]
-                        });
+                            accessList.Add(new foReportAccess
+                            {
+                                ID = (long)reader["ID"],
+                                ReportID = reportid,
+                                UserID = reader["UserID"] as long?,
+                                GroupID = reader["GroupID"] as long?,
+                                UserName = reader["UserName"] as string ?? "-",
+                                GroupName = reader["GroupName"] as string ?? "-",
+                                Active = (bool)reader["Active"]
+                            });
+                        }
                     }
                 }
             }
+
             ViewBag.AccessList = accessList;
 
-            model.ReportID = reportid;
+            if (!accessUserID.HasValue && !groupID.HasValue)
+            {
+                ModelState.AddModelError(string.Empty, "Please select either a User or a Group.");
+            }
+
+            if (reportid == 0)
+            {
+                ModelState.AddModelError("ReportID", "Please select a Report.");
+            }
 
             if (!ModelState.IsValid)
             {
-                return View("Index", model);
+                var formModel = new foReportAccess
+                {
+                    ReportID = reportid,
+                    UserID = accessUserID,
+                    GroupID = groupID
+                };
+                return View("Index", formModel);
             }
 
             using (var conn = GetConnection())
             {
                 conn.Open();
                 var cmd = new SqlCommand(@"
-        INSERT INTO foReportAccess (ReportID, UserID, GroupID, Active) 
-        VALUES (@ReportID, @UserID, @GroupID, 1)", conn);
+                    INSERT INTO foReportAccess (ReportID, UserID, GroupID, Active) 
+                    VALUES (@ReportID, @UserID, @GroupID, 1)", conn);
                 cmd.Parameters.AddWithValue("@ReportID", reportid);
-                cmd.Parameters.AddWithValue("@UserID", (object)model.UserID ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@GroupID", (object)model.GroupID ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@UserID", (object)accessUserID ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@GroupID", (object)groupID ?? DBNull.Value);
                 cmd.ExecuteNonQuery();
             }
 
             TempData["ReportAccessMessage"] = "Access added successfully.";
             return RedirectToAction("Index", new { userid, reportid });
         }
-
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -147,10 +174,32 @@ namespace FreschOne.Controllers
             return RedirectToAction("Index", new { userid, reportid });
         }
 
-
-        private List<SelectListItem> GetUsersForDropdown()
+        private List<SelectListItem> GetFilteredUsersForDropdown(long reportid, long? selectedUserId = null)
         {
-            var list = new List<SelectListItem>();
+            var assignedUserIds = new HashSet<long>();
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("SELECT DISTINCT UserID FROM foReportAccess WHERE Active = 1 AND ReportID = @reportid AND UserID IS NOT NULL", conn))
+                {
+                    cmd.Parameters.AddWithValue("@reportid", reportid);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            assignedUserIds.Add((long)reader["UserID"]);
+                        }
+                    }
+                }
+            }
+
+            if (selectedUserId.HasValue)
+            {
+                assignedUserIds.Remove(selectedUserId.Value);
+            }
+
+            var users = new List<SelectListItem>();
             using (var conn = GetConnection())
             {
                 conn.Open();
@@ -159,20 +208,48 @@ namespace FreschOne.Controllers
                 {
                     while (reader.Read())
                     {
-                        list.Add(new SelectListItem
+                        var id = (long)reader["ID"];
+                        if (!assignedUserIds.Contains(id))
                         {
-                            Value = reader["ID"].ToString(),
-                            Text = reader["FullName"].ToString()
-                        });
+                            users.Add(new SelectListItem
+                            {
+                                Value = id.ToString(),
+                                Text = reader["FullName"].ToString(),
+                                Selected = (selectedUserId.HasValue && id == selectedUserId)
+                            });
+                        }
                     }
                 }
             }
-            return list;
+            return users;
         }
 
-        private List<SelectListItem> GetGroupsForDropdown()
+        private List<SelectListItem> GetFilteredGroupsForDropdown(long reportid, long? selectedGroupId = null)
         {
-            var list = new List<SelectListItem>();
+            var assignedGroupIds = new HashSet<long>();
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("SELECT DISTINCT GroupID FROM foReportAccess WHERE Active = 1 AND ReportID = @reportid AND GroupID IS NOT NULL", conn))
+                {
+                    cmd.Parameters.AddWithValue("@reportid", reportid);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            assignedGroupIds.Add((long)reader["GroupID"]);
+                        }
+                    }
+                }
+            }
+
+            if (selectedGroupId.HasValue)
+            {
+                assignedGroupIds.Remove(selectedGroupId.Value);
+            }
+
+            var groups = new List<SelectListItem>();
             using (var conn = GetConnection())
             {
                 conn.Open();
@@ -181,15 +258,46 @@ namespace FreschOne.Controllers
                 {
                     while (reader.Read())
                     {
-                        list.Add(new SelectListItem
+                        var id = (long)reader["ID"];
+                        if (!assignedGroupIds.Contains(id))
                         {
-                            Value = reader["ID"].ToString(),
-                            Text = reader["Description"].ToString()
+                            groups.Add(new SelectListItem
+                            {
+                                Value = id.ToString(),
+                                Text = reader["Description"].ToString(),
+                                Selected = (selectedGroupId.HasValue && id == selectedGroupId)
+                            });
+                        }
+                    }
+                }
+            }
+            return groups;
+        }
+
+        private List<SelectListItem> GetReportsForDropdown(long selectedReportId = 0)
+        {
+            var reports = new List<SelectListItem>();
+
+            using (var conn = GetConnection())
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("SELECT ID, ReportName FROM foReports WHERE Active = 1", conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var reportId = (long)reader["ID"];
+                        reports.Add(new SelectListItem
+                        {
+                            Value = reportId.ToString(),
+                            Text = reader["ReportName"].ToString(),
+                            Selected = (reportId == selectedReportId)
                         });
                     }
                 }
             }
-            return list;
+
+            return reports;
         }
     }
 }

@@ -12,6 +12,9 @@ namespace FreschOne.Models
         public long? UserID { get; set; }
         public long? GroupID { get; set; }
 
+        public string? UserName { get; set; }
+        public string? GroupName { get; set; }
+
         public bool Active { get; set; } = true;
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

@@ -15,7 +15,20 @@
 
 <form asp-action="Create" method="post" id="accessForm">
     <input type="hidden" name="userid" value="@userid" />
-    <input type="hidden" name="reportid" value="@reportid" />
+
+    @if (reportid > 0)
+    {
+        <input type="hidden" name="reportid" value="@reportid" />
+        <p><strong>Report ID:</strong> @reportid</p>
+    }
+    else
+    {
+        <div class="mb-3">
+            <label for="reportid" class="form-label">Select Report</label>
+            @Html.DropDownList("reportid", ViewBag.Reports as List<SelectListItem>, "-- Select Report --", new { @class = "form-select" })
+            <span asp-validation-for="ReportID" class="text-danger"></span>
+        </div>
+    }
 
     <div class="mb-3">
         <label asp-for="UserID" class="form-label">Select User</label>
@@ -31,6 +44,7 @@
 
     <button type="submit" class="btn btn-green">Add Access</button>
 </form>
+
 
 
 <hr />
@@ -57,8 +71,9 @@
             {
                 <tr>
                     <td>@item.ID</td>
-                    <td>@(item.UserID.HasValue ? users.FirstOrDefault(u => u.Value == item.UserID.ToString())?.Text ?? "N/A" : "-")</td>
-                    <td>@(item.GroupID.HasValue ? groups.FirstOrDefault(g => g.Value == item.GroupID.ToString())?.Text ?? "N/A" : "-")</td>
+                    <td>@item.UserName</td>
+                    <td>@item.GroupName</td>
+
                     <td>
                         <form asp-action="Delete" method="post" style="display:inline;">
                             <input type="hidden" name="id" value="@item.ID" />

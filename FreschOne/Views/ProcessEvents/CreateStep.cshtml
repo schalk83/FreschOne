@@ -217,7 +217,7 @@
                                                     var displayValue = row.ContainsKey($"{column}_Display") ? row[$"{column}_Display"]?.ToString() : "";
                                                     <div class="input-group">
                                                         <input type="hidden" name="@fkFieldId" id="@fkFieldId" value="@columnValue" />
-                                                        <input type="text" id="@fkDisplayId" value="@displayValue" class="form-control" readonly placeholder="Search..." />
+                                                        <input type="text" id="@fkDisplayId" value="@displayValue" class="form-control" readonly placeholder="Search..." onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@column')" />
                                                         <button type="button" class="btn btn-outline-secondary" onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fkFieldId')">
                                                             <i class="bi bi-search"></i>
                                                         </button>

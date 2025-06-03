@@ -15,7 +15,7 @@ namespace FreschOne.Controllers
         public IActionResult Index(int userid)
         {
             SetUserAccess(userid);
-            ViewBag.userid = userid;
+            ViewBag.userid = userid; 
 
             var reports = new List<foReports>();
 

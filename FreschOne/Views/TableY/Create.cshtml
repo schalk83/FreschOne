@@ -157,15 +157,32 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
             else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
             {
                 var foreignKey = Model.ForeignKeys.First(fk => fk.ColumnName == column);
+                var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
+                var displayValue = Model.Record.ContainsKey($"{column}_Display") ? Model.Record[$"{column}_Display"]?.ToString() : "";
 
-                @Html.DropDownList(
-                         foreignKey.ColumnName,
-                         new SelectList(
-                         Model.ForeignKeyOptions[foreignKey.ColumnName],
-                         "Value", "Text", columnValue),
-                         "Select...",
-                         new { @class = "form-control" })
+                <label for="@column" class="fw-bold">@column.Replace("ID", "")</label>
+
+                @if (isMaintenance)
+                {
+                    @Html.DropDownList(column,
+                             new SelectList(Model.ForeignKeyOptions[foreignKey.ColumnName], "Value", "Text", columnValue),
+                             "Select...",
+                             new { @class = "form-select" })
+                }
+                else
+                {
+                    <div class="input-group">
+                        <input type="hidden" name="@column" value="@columnValue" />
+                        <input type="text" id="@column" value="@displayValue" class="form-control" readonly placeholder="Search..."
+                               onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@column')" />
+                        <button type="button" class="btn btn-outline-secondary"
+                                onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@column')">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                }
             }
+
             else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
             {
                 if (@column == PKColumn)
@@ -196,35 +213,22 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
         </div>
     }
 
-    <!-- Attachments Section -->
-    <div class="attachment-section p-3 mt-4 rounded">
-        <h4 class="d-flex justify-content-between align-items-center">
-            Add Attachments
-            <button type="button" id="toggleAttachmentForm" class="btn btn-link p-0" style="font-size: 1.2em;">
-                <i class="fas fa-chevron-down" id="toggleIcon"></i>
-            </button>
-        </h4>
+    <!-- ➕ Add Attachments (Compact) -->
+    <div class="attachment-section p-2 mt-3 rounded border">
+        <h6 class="d-flex justify-content-between align-items-center small fw-bold mb-2 toggle-attachments" data-target="attachmentForm" style="cursor: pointer;">
+            <span>Add Attachments</span>
+            <i class="fas fa-chevron-down toggle-icon" id="toggleIcon"></i>
+        </h6>
 
         <div id="attachmentForm" style="display: none;">
-            <div id="attachmentContainer"></div>
+            <div id="attachmentContainer" class="mb-2"></div>
 
-            <button type="button" id="addAttachmentButton" class="custom-button btn-green btn-sm mt-3 d-flex align-items-center">
+            <button type="button" id="addAttachmentButton" class="btn btn-sm btn-outline-success d-flex align-items-center">
                 <i class="bi bi-plus-circle me-1"></i> Add
             </button>
         </div>
     </div>
 
-
-    @* @if (ViewBag.DataManagementBreadcrumbY != null)
-    {
-        <a href="@Url.Action("Index", new {
-        tablename = ViewBag.DataManagementBreadcrumbY.Parameters["tablename"],
-        userid = ViewBag.DataManagementBreadcrumbY.Parameters["userid"],
-        PKID = ViewBag.DataManagementBreadcrumbY.Parameters["PKID"],
-        PKColumn = ViewBag.DataManagementBreadcrumbY.Parameters["PKColumn"],
-        pageNumber = ViewBag.DataManagementBreadcrumbY.Parameters["pageNumber"]
-    })  " class="text-decoration-none">← Back</a>
-    } *@
     @if (!string.IsNullOrEmpty(Context.Request.Query["returnUrl"]))
     {
         <a href="@Context.Request.Query["returnUrl"]" class="text-decoration-none">← Back</a>
@@ -236,114 +240,112 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
         </button>
     </div>
 
-    <br />
-    <hr />
 </form>
 
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
-<script>
-    document.getElementById('toggleAttachmentForm').addEventListener('click', function () {
-        var form = document.getElementById('attachmentForm');
-        var icon = document.getElementById('toggleIcon');
-        var attachmentFields = document.querySelectorAll('.attachment-field');
+            // 🔄 Toggle Sections (like TableX)
+            document.querySelectorAll('.toggle-attachments').forEach(header => {
+                header.addEventListener('click', function () {
+                    const targetId = this.dataset.target;
+                    const target = document.getElementById(targetId);
+                    const icon = this.querySelector('.toggle-icon');
 
-        if (form.style.display === 'none') {
-            form.style.display = 'block';
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
-            attachmentFields.forEach(field => field.setAttribute('required', 'required'));
-        } else {
-            form.style.display = 'none';
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-            attachmentFields.forEach(field => field.removeAttribute('required'));
-        }
-    });
+                    if (target.style.display === 'none' || target.style.display === '') {
+                        target.style.display = 'block';
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-up');
+                    } else {
+                        target.style.display = 'none';
+                        icon.classList.remove('fa-chevron-up');
+                        icon.classList.add('fa-chevron-down');
+                    }
+                });
+            });
 
-     // Function to update hidden input field with attachment data
-        function updateAttachmentField(columnName) {
-            let descInput = document.getElementById("desc_" + columnName);
-            let fileInput = document.getElementById("file_" + columnName);
-            let hiddenInput = document.getElementById("hidden_" + columnName);
+            // 🔁 Update hidden input when attachment fields change
+            document.querySelectorAll("[id^=desc_]").forEach(descField => {
+                descField.addEventListener("input", function () {
+                    let columnName = this.id.replace("desc_", "");
+                    updateAttachmentField(columnName);
+                });
+            });
 
-            let newDescription = descInput.value.trim();
-            let filePath = fileInput.files.length > 0 ? fileInput.files[0].name : "";
+            function updateAttachmentField(columnName) {
+                let descInput = document.getElementById("desc_" + columnName);
+                let fileInput = document.getElementById("file_" + columnName);
+                let hiddenInput = document.getElementById("hidden_" + columnName);
 
-            // ✅ Get the existing file path from hidden input
-            let existingValue = hiddenInput.value.split(";");
-            let existingFilePath = existingValue.length > 1 ? existingValue[1].trim() : "";
+                let newDescription = descInput.value.trim();
+                let filePath = fileInput.files.length > 0 ? fileInput.files[0].name : "";
 
-            // ✅ If no new file is selected, keep only the previous **file path**
-            if (filePath === "") {
-                filePath = existingFilePath;
+                let existingValue = hiddenInput.value.split(";");
+                let existingFilePath = existingValue.length > 1 ? existingValue[1].trim() : "";
+
+                if (filePath === "") filePath = existingFilePath;
+
+                hiddenInput.value = `${newDescription};${filePath}`;
+                console.log(`📌 Updated Hidden Input: ${hiddenInput.value}`);
             }
 
-            // ✅ Ensure we replace the previous value completely, without appending
-            hiddenInput.value = `${newDescription};${filePath}`;
-            console.log(`📌 Updated Hidden Input: ${hiddenInput.value}`);
-        }
-
-        // Ensure the description change updates the hidden field
-        document.querySelectorAll("[id^=desc_]").forEach(descField => {
-            descField.addEventListener("input", function () {
-                let columnName = this.id.replace("desc_", "");
-                updateAttachmentField(columnName);
-            });
-        });
-
-    document.getElementById('addAttachmentButton').addEventListener('click', function () {
-        var container = document.getElementById('attachmentContainer');
-        var attachmentGroup = document.createElement('div');
-        attachmentGroup.classList.add('attachment-group', 'd-flex', 'align-items-center', 'mt-2');
+            // ➕ Add new attachment group
+            document.getElementById('addAttachmentButton').addEventListener('click', function () {
+                var container = document.getElementById('attachmentContainer');
+                var attachmentGroup = document.createElement('div');
+                attachmentGroup.classList.add('attachment-group', 'd-flex', 'align-items-center', 'mt-2');
 
                 attachmentGroup.innerHTML = `
-                <div class="row w-100">
-                    <div class="col-md-6">
-                        <input type="text" name="AttachmentDescriptions" placeholder="Description" class="form-control attachment-field" required />
+                    <div class="row w-100">
+                        <div class="col-md-6">
+                            <input type="text" name="AttachmentDescriptions" placeholder="Description" class="form-control attachment-field" required />
+                        </div>
+                        <div class="col-md-5">
+                            <input type="file" name="Attachments" class="form-control attachment-field" required />
+                        </div>
+                        <div class="col-md-1 d-flex align-items-center justify-content-end">
+                            <button type="button" class="btn btn-link text-danger removeAttachmentButton" title="Remove Attachment">
+                                <i class="bi bi-trash-fill fs-5"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-md-5">
-                        <input type="file" name="Attachments" class="form-control attachment-field" required />
-                    </div>
-                    <div class="col-md-1 d-flex align-items-center justify-content-end">
-                        <button type="button" class="btn btn-link text-danger removeAttachmentButton" title="Remove Attachment">
-                            <i class="bi bi-trash-fill fs-5"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
+                `;
 
-        container.appendChild(attachmentGroup);
-    });
+                container.appendChild(attachmentGroup);
+            });
 
-    document.addEventListener('click', function (event) {
-        if (event.target.closest('.removeAttachmentButton')) {
-            event.target.closest('.attachment-group').remove();
-        }
-    });
-
-    document.getElementById('createRecordForm').addEventListener('submit', function (event) {
-        var attachmentForm = document.getElementById('attachmentForm');
-        var attachmentFields = document.querySelectorAll('.attachment-field');
-
-        if (attachmentForm.style.display !== 'none') {
-            let allFieldsFilled = true;
-            attachmentFields.forEach(function (field) {
-                if (!field.value.trim()) {
-                    allFieldsFilled = false;
+            // ❌ Remove attachment group on click
+            document.addEventListener('click', function (event) {
+                if (event.target.closest('.removeAttachmentButton')) {
+                    event.target.closest('.attachment-group').remove();
                 }
             });
 
-            if (!allFieldsFilled) {
-                alert('Please fill in all required attachment details before submitting.');
-                event.preventDefault();
-                return;
-            }
-        }
-    });
+            // ✅ Validate required fields before form submit
+            document.getElementById('createRecordForm')?.addEventListener('submit', function (event) {
+                var attachmentForm = document.getElementById('attachmentForm');
+                var attachmentFields = document.querySelectorAll('.attachment-field');
 
-         function getLocation(fieldId) {
+                if (attachmentForm.style.display !== 'none') {
+                    let allFieldsFilled = true;
+                    attachmentFields.forEach(function (field) {
+                        if (!field.value.trim()) {
+                            allFieldsFilled = false;
+                        }
+                    });
+
+                    if (!allFieldsFilled) {
+                        alert('Please fill in all required attachment details before submitting.');
+                        event.preventDefault();
+                        return;
+                    }
+                }
+            });
+
+            // 📍 Geolocation support
+            window.getLocation = function(fieldId) {
                 if (!navigator.geolocation) {
                     alert("Geolocation is not supported by your browser.");
                     return;
@@ -359,7 +361,8 @@ else if (ViewBag.DataManagementBreadcrumbY != null)
                         console.error("Geolocation error:", error);
                     }
                 );
-            }
-</script>
+            };
 
+        });
+    </script>
 }
