@@ -60,9 +60,6 @@
             {
                 <label class="fw-bold" for="@formattedColumn">@formattedColumn</label>
             }
-
-
-
             @if (column.StartsWith("attachment_"))
             {
                 string[] attachmentParts = columnValue?.ToString().Split(';') ?? new string[2];
@@ -140,8 +137,6 @@
                 var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
                 var displayValue = Model.Record.ContainsKey($"{column}_Display") ? Model.Record[$"{column}_Display"]?.ToString() : "";
 
-                <label for="@column" class="fw-bold">@column.Replace("ID", "")</label>
-
                 @if (isMaintenance)
                 {
                     @Html.DropDownList(column,
@@ -160,6 +155,7 @@
                     </div>
                 }
             }
+
             else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
             {
                 <input type="number" name="@column" value="@columnValue" class="form-control" />

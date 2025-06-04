@@ -13,123 +13,82 @@
 
 <div class="d-flex justify-content-end mb-2">
     <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">
-        @(searchVisible ? "- Hide Search" : "+ Show Search")
+        + Show Search
     </button>
 </div>
 
-    <form id="searchForm" method="get" asp-action="MergedPendingItems" asp-controller="PendingItem" style="display:@(searchVisible ? "block" : "none");">
-
+<form id="searchForm" method="get" asp-action="MergedPendingItems" asp-controller="PendingItem">
     <input type="hidden" name="userId" value="@userId" />
 
-    <table class="table table-bordered table-hover align-middle" style="table-layout: fixed; width: 100%;">
+    <table id="pendingTable" class="table table-bordered table-hover align-middle" style="table-layout: fixed; width: 100%;">
         <thead class="table-light">
             <tr>
-                <th>PID</th>
-                <th>Process Name</th>
-                <th>Step No</th>
-                <th>Step Description</th>
-                <th>Assigned To</th>
-                <th>Date Assigned</th>
+                <th data-column="ProcessInstanceID">PID</th>
+                <th data-column="ProcessName">Process Name</th>
+                <th data-column="StepNo">Step No</th>
+                <th data-column="StepDescription">Step Description</th>
+                <th data-column="AssignedTo">Assigned To</th>
+                <th data-column="DateAssigned">Date Assigned</th>
                 <th style="width: 180px;"></th>
             </tr>
-            <tr>
+            <tr class="search-row" style="display: none;">
                 <th><input type="text" name="processnumberFilter" class="form-control form-control-sm" placeholder="Search PID" value="@(ViewContext.HttpContext.Request.Query["processnumberFilter"])" /></th>
                 <th><input type="text" name="processNameFilter" class="form-control form-control-sm" placeholder="Search Process Name" value="@(ViewContext.HttpContext.Request.Query["processNameFilter"])" /></th>
                 <th><input type="text" name="stepNoFilter" class="form-control form-control-sm" placeholder="Search Step No" value="@(ViewContext.HttpContext.Request.Query["stepNoFilter"])" /></th>
                 <th><input type="text" name="stepDescriptionFilter" class="form-control form-control-sm" placeholder="Search Step Description" value="@(ViewContext.HttpContext.Request.Query["stepDescriptionFilter"])" /></th>
                 <th><input type="text" name="assignedToFilter" class="form-control form-control-sm" placeholder="Search Assigned To" value="@(ViewContext.HttpContext.Request.Query["assignedToFilter"])" /></th>
                 <th><input type="text" name="dateFilter" class="form-control form-control-sm" placeholder="Search Date Assigned" value="@(ViewContext.HttpContext.Request.Query["dateFilter"])" /></th>
-                <th>
-                    <button type="submit" class="btn btn-sm btn-primary">Apply Filters</button>
-                </th>
+                <th><button type="submit" class="btn btn-sm btn-primary">Apply Filters</button></th>
             </tr>
         </thead>
+        <tbody id="tableBody">
+            @foreach (var item in Model)
+            {
+                <tr class="@(item.IsReworkInstance ? "table-danger" : "")">
+                    <td>@item.ProcessInstanceID</td>
+                    <td>@item.ProcessName</td>
+                    <td>@item.StepNo</td>
+                    <td>@item.StepDescription</td>
+                    <td>
+                        @if (item.UserID.HasValue)
+                        {
+                            <span>@item.FullName</span>
+                        }
+                        else if (item.GroupID.HasValue)
+                        {
+                            <span>@item.GroupDescription</span>
+                        }
+                    </td>
+                    <td data-sort="@item.DateAssigned.Ticks">@item.DateAssigned.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        @if (item.UserID == null && item.GroupID != null)
+                        {
+                            <button class="btn custom-button btn-gold"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmClaimModal_@item.EventID">
+                                Claim @(item.StepType == "Approval" ? "Approval" : "Step")
+                            </button>
+                        }
+                        else
+                        {
+                            <a class="btn custom-button @(item.StepType == "Approval" ? "btn-green" : "btn-blue")"
+                               asp-action="PendingStep"
+                               asp-controller="@(item.StepType == "Approval" ? "ApprovalEvents" : "ProcessEvents")"
+                               asp-route-userId="@userId"
+                               asp-route-EventID="@item.EventID"
+                               asp-route-stepId="@item.StepID"
+                               asp-route-processInstanceId="@item.ProcessInstanceID"
+                               asp-route-processId="@item.ProcessID">
+                                Go to @(item.StepType == "Approval" ? "Approval" : "Step")
+                            </a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
     </table>
-   
 </form>
 
-<table id="pendingTable" class="table table-bordered table-hover align-middle" style="table-layout: fixed; width: 100%;">
-    <thead class="table-light">
-        <tr>
-            <th data-column="ProcessInstanceID">PID</th>
-            <th data-column="ProcessName">Process Name</th>
-            <th data-column="StepNo">Step No</th>
-            <th data-column="StepDescription">Step Description</th>
-            <th data-column="AssignedTo">Assigned To</th>
-            <th data-column="DateAssigned">Date Assigned</th>
-            <th style="width: 180px;"></th>
-        </tr>
-    </thead>
-    <tbody id="tableBody">
-        @foreach (var item in Model)
-        {
-            <tr class="@(item.IsReworkInstance ? "table-danger" : "")">
-                <td>@item.ProcessInstanceID</td>
-                <td>@item.ProcessName</td>
-                <td>@item.StepNo</td>
-                <td>@item.StepDescription</td>
-                <td>
-                    @if (item.UserID.HasValue)
-                    {
-                        <span>@item.FullName</span>
-                    }
-                    else if (item.GroupID.HasValue)
-                    {
-                        <span>@item.GroupDescription</span>
-                    }
-                </td>
-                <td data-sort="@item.DateAssigned.Ticks">@item.DateAssigned.ToString("yyyy-MM-dd HH:mm")</td>
-                <td>
-                    @if (item.UserID == null && item.GroupID != null)
-                    {
-                        <button class="btn custom-button btn-gold"
-                                data-bs-toggle="modal"
-                                data-bs-target="#confirmClaimModal_@item.EventID">
-                            Claim @(item.StepType == "Approval" ? "Approval" : "Step")
-                        </button>
-                        <!-- Modal code remains the same -->
-                    }
-                    else
-                    {
-                        <a class="btn custom-button @(item.StepType == "Approval" ? "btn-green" : "btn-blue")"
-                           asp-action="PendingStep"
-                           asp-controller="@(item.StepType == "Approval" ? "ApprovalEvents" : "ProcessEvents")"
-                           asp-route-userId="@userId"
-                           asp-route-EventID="@item.EventID"
-                           asp-route-stepId="@item.StepID"
-                           asp-route-processInstanceId="@item.ProcessInstanceID"
-                           asp-route-processId="@item.ProcessID">
-                            Go to @(item.StepType == "Approval" ? "Approval" : "Step")
-                        </a>
-                    }
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
-
-<div class="pagination-container d-flex justify-content-center mt-3">
-    <nav aria-label="Page navigation">
-        <ul class="pagination">
-            @if (ViewBag.pageNumber > 1)
-            {
-                <li class="page-item"><a class="page-link" href="@Url.Action("MergedPendingItems", new { userId = userId, pageNumber = 1 })">First</a></li>
-                <li class="page-item"><a class="page-link" href="@Url.Action("MergedPendingItems", new { userId = userId, pageNumber = ViewBag.pageNumber - 1 })">&laquo; Prev</a></li>
-            }
-            @for (var i = Math.Max(1, ViewBag.pageNumber - 2); i <= Math.Min(ViewBag.totalPages, ViewBag.pageNumber + 2); i++)
-            {
-                <li class="page-item @(i == ViewBag.pageNumber ? "active" : "")">
-                    <a class="page-link" href="@Url.Action("MergedPendingItems", new { userId = userId, pageNumber = i })">@i</a>
-                </li>
-            }
-            @if (ViewBag.pageNumber < ViewBag.totalPages)
-            {
-                <li class="page-item"><a class="page-link" href="@Url.Action("MergedPendingItems", new { userId = userId, pageNumber = ViewBag.pageNumber + 1 })">Next &raquo;</a></li>
-                <li class="page-item"><a class="page-link" href="@Url.Action("MergedPendingItems", new { userId = userId, pageNumber = ViewBag.totalPages })">Last</a></li>
-            }
-        </ul>
-    </nav>
-</div>
 
 @section Scripts {
 <script>
@@ -161,12 +120,14 @@
         });
     });
             function toggleSearch() {
-                const form = document.getElementById("searchForm");
-                const btn = document.getElementById("toggleSearchBtn");
-                const isVisible = form.style.display !== "none";
-                form.style.display = isVisible ? "none" : "block";
-                btn.innerText = isVisible ? "+ Show Search" : "- Hide Search";
-            }
+            const searchRow = document.querySelector(".search-row");
+            const btn = document.getElementById("toggleSearchBtn");
+            const isVisible = searchRow.style.display !== "none";
+
+            searchRow.style.display = isVisible ? "none" : "table-row";
+            btn.innerText = isVisible ? "+ Show Search" : "- Hide Search";
+        }
+
 
             // Debounced filter (wait 300ms after typing)
         let filterTimeout;

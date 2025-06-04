@@ -13,75 +13,67 @@
 
 <div class="d-flex justify-content-end mb-2">
     <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">
-        @(searchVisible ? "- Hide Search" : "+ Show Search")
+        + Show Search
     </button>
 </div>
 
-<form id="searchForm" method="get" asp-action="ArchivedItems" asp-controller="ArchivedItems" style="display:@(searchVisible ? "block" : "none");">
+<form method="get" asp-action="ArchivedItems" asp-controller="ArchivedItems">
     <input type="hidden" name="userId" value="@userId" />
 
-    <table class="table table-bordered table-hover align-middle" style="table-layout: fixed; width: 100%;">
+    <table id="archivedTable" class="table table-bordered table-hover align-middle" style="table-layout: fixed; width: 100%;">
         <thead class="table-light">
             <tr>
-                <th>PID</th>
-                <th>Process Name</th>
-                <th>Step Description</th>
-                <th>Completed by</th>
-                <th>Date Completed</th>
+                <th data-column="ProcessInstanceID">PID</th>
+                <th data-column="ProcessName">Process Name</th>
+                <th data-column="StepDescription">Step Description</th>
+                <th data-column="AssignedTo">Completed by</th>
+                <th data-column="DateAssigned">Date Completed</th>
                 <th style="width: 120px;"></th>
-
             </tr>
-            <tr>
-                <th><input type="text" name="processnumberFilter" class="form-control form-control-sm" placeholder="Search Process No" value="@(ViewContext.HttpContext.Request.Query["processnumberFilter"])" /></th>
+            <tr class="search-row" style="display: none;">
+                <th><input type="text" name="processnumberFilter" class="form-control form-control-sm" placeholder="Search PID" value="@(ViewContext.HttpContext.Request.Query["processnumberFilter"])" /></th>
                 <th><input type="text" name="processNameFilter" class="form-control form-control-sm" placeholder="Search Process Name" value="@(ViewContext.HttpContext.Request.Query["processNameFilter"])" /></th>
                 <th><input type="text" name="stepDescriptionFilter" class="form-control form-control-sm" placeholder="Search Step Description" value="@(ViewContext.HttpContext.Request.Query["stepDescriptionFilter"])" /></th>
                 <th><input type="text" name="assignedToFilter" class="form-control form-control-sm" placeholder="Search Completed By" value="@(ViewContext.HttpContext.Request.Query["assignedToFilter"])" /></th>
                 <th><input type="text" name="dateFilter" class="form-control form-control-sm" placeholder="Search Date Completed" value="@(ViewContext.HttpContext.Request.Query["dateFilter"])" /></th>
-                <th>
-                    <button type="submit" class="btn btn-sm btn-primary">Apply Filters</button>
-                </th>
+                <th><button type="submit" class="btn btn-sm btn-primary">Apply Filters</button></th>
             </tr>
         </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.ProcessInstanceID</td>
+                    <td>@item.ProcessName</td>
+                    <td>@item.StepDescription</td>
+                    <td>
+                        @if (item.UserID.HasValue)
+                        {
+                            <span>@item.FullName</span>
+                        }
+                        else if (item.GroupID.HasValue)
+                        {
+                            <span>@item.GroupDescription</span>
+                        }
+                    </td>
+                    <td data-sort="@item.DateAssigned.Ticks">@item.DateAssigned.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary"
+                           href="@Url.Action("ArchivedStep", "ArchivedEvents", new {
+           Eventid = item.EventID,
+           processId = item.ProcessID,
+           stepId = item.StepID,
+           processInstanceId = item.ProcessInstanceID,
+           userId = userId
+       })">
+                            View
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
     </table>
-
-
 </form>
-
-<table id="archivedTable" class="table table-bordered table-hover align-middle" style="table-layout: fixed; width: 100%;">
-    <thead class="table-light">
-        <tr>
-            <th data-column="ProcessInstanceID">PID</th>
-            <th data-column="ProcessName">Process Name</th>
-            <th data-column="StepDescription">Step Description</th>
-            <th data-column="AssignedTo">Completed by</th>
-            <th data-column="DateAssigned">Date Completed</th>
-            <th style="width: 120px;"></th>
-
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.ProcessInstanceID</td>
-                <td>@item.ProcessName</td>
-                <td>@item.StepDescription</td>
-                <td>
-                    @if (item.UserID.HasValue)
-                    {
-                        <span>@item.FullName</span>
-                    }
-                    else if (item.GroupID.HasValue)
-                    {
-                        <span>@item.GroupDescription</span>
-                    }
-                </td>
-                <td data-sort="@item.DateAssigned.Ticks">@item.DateAssigned.ToString("yyyy-MM-dd HH:mm")</td>
-                <td>View</td>
-            </tr>
-        }
-    </tbody>
-</table>
 
 <!-- Pagination Controls -->
 <div class="pagination-container d-flex justify-content-center mt-3">
@@ -107,11 +99,9 @@
     </nav>
 </div>
 
-
 @section Scripts {
     <script>
-
-            document.querySelectorAll("#archivedTable th[data-column]").forEach(header => {
+        document.querySelectorAll("#archivedTable th[data-column]").forEach(header => {
             header.style.cursor = "pointer";
             header.addEventListener("click", () => {
                 const table = header.closest("table");
@@ -137,12 +127,12 @@
             });
         });
 
-
         function toggleSearch() {
-            const form = document.getElementById("searchForm");
+            const searchRow = document.querySelector(".search-row");
             const btn = document.getElementById("toggleSearchBtn");
-            const isVisible = form.style.display !== "none";
-            form.style.display = isVisible ? "none" : "block";
+            const isVisible = searchRow.style.display !== "none";
+
+            searchRow.style.display = isVisible ? "none" : "table-row";
             btn.innerText = isVisible ? "+ Show Search" : "- Hide Search";
         }
     </script>
@@ -159,6 +149,3 @@
         font-size: 0.8em;
     }
 </style>
-
-
-    
