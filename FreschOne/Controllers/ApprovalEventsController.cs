@@ -189,9 +189,6 @@ namespace FreschOne.Controllers
                         }
                     }
 
-
-
-
                     // ✅ 6. Routing Based on Decision
                     if (decision == "Approve")
                     {
@@ -519,23 +516,72 @@ namespace FreschOne.Controllers
         private List<SelectListItem> GetForeignKeyOptions(string tableName)
         {
             var options = new List<SelectListItem>();
-            string query = $"SELECT ID, Description FROM {tableName}";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(query, connection))
+
+                var ignoredColumns = GetIgnoredColumns(connection,null);
+                var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
+
+                var fkColumns = GetForeignKeyColumns(tableName).ToList();
+                var fkLookup = fkColumns.ToDictionary(fk => fk.ColumnName, fk => fk.TableName, StringComparer.OrdinalIgnoreCase);
+
+                // Get available columns for display
+                var columnsQuery = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
+                var displayColumns = new List<string>();
+                using (var cmd = new SqlCommand(columnsQuery, connection))
                 {
-                    using (var reader = command.ExecuteReader())
+                    cmd.Parameters.AddWithValue("@TableName", tableName);
+                    using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            options.Add(new SelectListItem
+                            var col = reader["COLUMN_NAME"].ToString();
+                            if (!col.Equals("ID", StringComparison.OrdinalIgnoreCase) && !ignoredSet.Contains(col))
                             {
-                                Value = reader["ID"].ToString(),
-                                Text = reader["Description"].ToString()
-                            });
+                                displayColumns.Add(col);
+                            }
                         }
+                    }
+                }
+
+                if (displayColumns.Count == 0)
+                    displayColumns.Add("ID"); // Fallback
+
+                // Check if "Active" column exists
+                bool hasActive = displayColumns.Any(c => c.Equals("Active", StringComparison.OrdinalIgnoreCase));
+                var selectColumns = "ID, " + string.Join(", ", displayColumns);
+                var query = hasActive
+                    ? $"SELECT {selectColumns} FROM {tableName} WHERE Active = 1"
+                    : $"SELECT {selectColumns} FROM {tableName}";
+
+                using (var cmd = new SqlCommand(query, connection))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var displayParts = new List<string>();
+                        foreach (var col in displayColumns)
+                        {
+                            var val = reader[col]?.ToString();
+                            if (!string.IsNullOrEmpty(val) && fkLookup.ContainsKey(col))
+                            {
+                                var fkTable = fkLookup[col];
+                                var fkOptions = GetForeignKeyOptions(fkTable);
+                                var match = fkOptions.FirstOrDefault(x => x.Value == val);
+                                if (match != null)
+                                    val = match.Text;
+                            }
+
+                            displayParts.Add(val);
+                        }
+
+                        options.Add(new SelectListItem
+                        {
+                            Value = reader["ID"].ToString(),
+                            Text = string.Join(" | ", displayParts)
+                        });
                     }
                 }
             }
@@ -543,23 +589,24 @@ namespace FreschOne.Controllers
             return options;
         }
 
+
         private void PopulateProcessHistory(SqlConnection conn, SqlTransaction transaction, int? processInstanceId)
         {
-
-
             var ignoredColumns = GetIgnoredColumns(conn, transaction);
-
             if (!processInstanceId.HasValue) return;
 
             var history = new List<ProcessEventAuditViewModel>();
+            var approvalHistory = new List<ProcessEventAuditViewModel>();
 
+            // 🟦 PROCESS EVENTS
             var cmd = new SqlCommand(@"
-        SELECT a.id AS DetailID, ProcessEventID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, ISNULL ( StepNo,1.00) AS StepNo, c.FirstName + ' '+ c.LastName AS FullName
-    FROM foProcessEventsDetail a LEFT OUTER JOIN foProcessSteps b on a.StepID = b.ID
-    LEFT JOIN foUsers c on c.ID = a.CreatedUserID
-    WHERE ProcessInstanceID = @ProcessInstanceID
-    ORDER BY CreatedDate", conn, transaction);
-
+        SELECT a.id AS DetailID, ProcessEventID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, ISNULL(StepNo,1.00) AS StepNo,
+               c.FirstName + ' ' + c.LastName AS FullName
+        FROM foProcessEventsDetail a
+        LEFT JOIN foProcessSteps b ON a.StepID = b.ID
+        LEFT JOIN foUsers c ON c.ID = a.CreatedUserID
+        WHERE ProcessInstanceID = @ProcessInstanceID
+        ORDER BY CreatedDate", conn, transaction);
             cmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
 
             using (var reader = cmd.ExecuteReader())
@@ -568,8 +615,6 @@ namespace FreschOne.Controllers
                 {
                     var json = reader["DataSetUpdate"].ToString();
                     var rawData = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-
-                    // Filter ignored columns from the dictionary
                     var data = rawData
                         .Where(kvp => !ignoredColumns.Contains(kvp.Key))
                         .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
@@ -589,25 +634,23 @@ namespace FreschOne.Controllers
                 }
             }
 
-            // 🔹 APPROVAL EVENTS
+            // 🟨 APPROVAL EVENTS
             var approvalCmd = new SqlCommand(@"
-        SELECT  a.id AS DetailID, ApprovalEventID, StepID, 'foApproval' AS TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, ISNULL ( StepNo,1.00) AS StepNo, c.FirstName + ' '+ c.LastName AS FullName
-FROM foApprovalEventsDetail a LEFT OUTER JOIN foApprovalSteps b on a.StepID = b.ID
-LEFT JOIN foUsers c on c.ID = a.CreatedUserID
+        SELECT a.id AS DetailID, ApprovalEventID, StepID, 'foApproval' AS TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, ISNULL(StepNo,1.00) AS StepNo,
+               c.FirstName + ' ' + c.LastName AS FullName
+        FROM foApprovalEventsDetail a
+        LEFT JOIN foApprovalSteps b ON a.StepID = b.ID
+        LEFT JOIN foUsers c ON c.ID = a.CreatedUserID
         WHERE ProcessInstanceID = @ProcessInstanceID
         ORDER BY CreatedDate", conn, transaction);
-
             approvalCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
 
-            var approvalHistory = new List<ProcessEventAuditViewModel>();
             using (var reader = approvalCmd.ExecuteReader())
             {
                 while (reader.Read())
                 {
                     var json = reader["DataSetUpdate"].ToString();
                     var rawData = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-
-                    // Filter ignored columns from the dictionary
                     var data = rawData
                         .Where(kvp => !ignoredColumns.Contains(kvp.Key))
                         .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
@@ -623,23 +666,20 @@ LEFT JOIN foUsers c on c.ID = a.CreatedUserID
                         CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
                         CreatedUserID = Convert.ToInt32(reader["CreatedUserID"]),
                         FullName = reader["FullName"].ToString(),
-
                         Data = data
                     });
                 }
             }
 
-            // Now, enrich data: resolve FKs and attachments
+            // 🧠 Resolve foreign key values for all tables involved
+            var allRecords = history.Concat(approvalHistory).ToList();
+            var usedTables = allRecords.Select(h => h.TableName).Distinct();
+
             var foreignKeys = new Dictionary<string, List<ForeignKeyInfo>>();
             var foreignKeyOptions = new Dictionary<string, List<SelectListItem>>();
-            var usedTables = history.Select(h => h.TableName).Distinct();
-
             foreach (var table in usedTables)
             {
-                foreignKeys[table] = GetForeignKeyColumns(table)
-                    .Where(fk => fk.TableName.Contains("_md_"))
-                    .ToList();
-
+                foreignKeys[table] = GetForeignKeyColumns(table);
                 foreach (var fk in foreignKeys[table])
                 {
                     if (!foreignKeyOptions.ContainsKey(fk.TableName))
@@ -649,28 +689,57 @@ LEFT JOIN foUsers c on c.ID = a.CreatedUserID
                 }
             }
 
-            foreach (var record in history)
+            // 🔁 foUser lookup
+            var userLookup = new Dictionary<string, string>();
+            using (var cmd2 = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", conn, transaction))
+            using (var reader = cmd2.ExecuteReader())
             {
-                if (foreignKeys.TryGetValue(record.TableName, out var fks))
+                while (reader.Read())
+                {
+                    userLookup[reader["ID"].ToString()] = reader["FullName"].ToString();
+                }
+            }
+
+            // ✨ Resolve FK values and attachments
+            foreach (var record in allRecords)
+            {
+                var table = record.TableName;
+
+                // FK columns
+                if (foreignKeys.TryGetValue(table, out var fks))
                 {
                     foreach (var fk in fks)
                     {
-                        if (record.Data.TryGetValue(fk.ColumnName, out var fkVal) &&
-                            fkVal != null &&
-                            int.TryParse(fkVal.ToString(), out var fkId))
+                        if (record.Data.TryGetValue(fk.ColumnName, out var val) &&
+                            val != null && int.TryParse(val.ToString(), out var fkId))
                         {
                             var label = foreignKeyOptions[fk.TableName]
                                 .FirstOrDefault(o => o.Value == fkId.ToString())?.Text;
 
                             if (!string.IsNullOrWhiteSpace(label))
                             {
-                                record.Data[fk.ColumnName] = $"{label} (ID: {fkId})";
+                                record.Data[fk.ColumnName] = label;
                             }
                         }
                     }
                 }
 
-                // Resolve attachment fields
+                // foUserID_* fields
+                foreach (var kvp in record.Data.ToList())
+                {
+                    if (kvp.Key.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var userId = kvp.Value?.ToString();
+                        if (!string.IsNullOrEmpty(userId) && userLookup.TryGetValue(userId, out var name))
+                        {
+                            var newKey = kvp.Key.Replace("foUserID_", "").Replace("_", " ").Trim();
+                            record.Data[newKey] = name;
+                        }
+                        record.Data.Remove(kvp.Key);
+                    }
+                }
+
+                // attachment_ fields
                 foreach (var key in record.Data.Keys.Where(k => k.StartsWith("attachment_")).ToList())
                 {
                     var val = record.Data[key]?.ToString();
@@ -692,8 +761,8 @@ LEFT JOIN foUsers c on c.ID = a.CreatedUserID
                 }
             }
 
-            ViewBag.ProcessHistory = history;
-
+            // ✅ Final merge
+            ViewBag.ProcessHistory = allRecords;
         }
 
         private List<string> GetIgnoredColumns(SqlConnection conn, SqlTransaction transaction)

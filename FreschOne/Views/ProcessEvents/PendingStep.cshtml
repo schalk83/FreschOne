@@ -118,14 +118,26 @@
                                                     var key = field.Key;
                                                     var value = field.Value?.ToString();
 
-                                                    string prettyLabel = key
+                                                string prettyLabel;
+                                                if (key.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                                                {
+                                                    prettyLabel = key.Substring("foUserID_".Length); // e.g. foUserID_Manager => Manager
+                                                }
+                                                else
+                                                {
+                                                    prettyLabel = key
                                                     .Replace("ID", "", StringComparison.OrdinalIgnoreCase)
                                                     .Replace("attachment_", "")
                                                     .Replace("_", " ");
-                                                    prettyLabel = System.Text.RegularExpressions.Regex.Replace(prettyLabel, "(?<=.)([A-Z])", " $1").Trim();
-
-                                                    <li><strong>@prettyLabel:</strong> @Html.Raw(value)</li>
                                                 }
+
+                                                prettyLabel = System.Text.RegularExpressions.Regex.Replace(prettyLabel, "(?<=.)([A-Z])", " $1").Trim();
+
+
+
+
+                                                <li><strong>@prettyLabel:</strong> @Html.Raw(value)</li>
+                                            }
                                             </ul>
 
                                             <div class="small text-muted mt-2">
@@ -264,29 +276,44 @@
                                                     }
                                                     <input type="hidden" name="@fullColumnKey" value="@desc;@path" />
                                                 }
-                                                else if (foreignKeys.ContainsKey(tableName) && foreignKeys[tableName].Any(fk => fk.ColumnName == column))
-                                                {
-                                                    var foreignKey = foreignKeys[tableName].First(fk => fk.ColumnName == column);
-                                                    var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
-                                                    var options = foreignKeyOptions.ContainsKey(foreignKey.TableName) ? foreignKeyOptions[foreignKey.TableName] : new();
+                                            else if (
+                                            (foreignKeys != null && foreignKeys.ContainsKey(tableName) && foreignKeys[tableName].Any(fk => fk.ColumnName == column))
+                                            || column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)
+                                            )
+                                            {
+                                                var isFoUser = column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase);
+                                                var foreignKey = isFoUser
+                                                ? new ForeignKeyInfo { TableName = "foUsers", ColumnName = "ID" }
+                                                : foreignKeys[tableName].First(fk => fk.ColumnName == column);
 
-                                                    <label for="@fieldName" class="fw-bold">@label</label>
-                                                    @if (isMaintenance)
-                                                    {
-                                                        @Html.DropDownList(fieldName, new SelectList(options, "Value", "Text", columnValue), "", new { @class = "form-select" })
-                                                    }
-                                                    else
-                                                    {
-                                                        var displayValue = row.ContainsKey($"{column}_Display") ? row[$"{column}_Display"]?.ToString() : "";
-                                                        <div class="input-group">
-                                                            <input type="hidden" name="@fieldName" value="@columnValue" />
-                                                        <input type="text" id="@fieldName" value="@displayValue" class="form-control" readonly placeholder="Search..." onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fieldName')" />
-                                                            <button type="button" class="btn btn-outline-secondary" onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fieldName')">
-                                                                <i class="bi bi-search"></i>
-                                                            </button>
-                                                        </div>
-                                                    }
+                                                var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
+                                                var options = foreignKeyOptions.ContainsKey(foreignKey.TableName)
+                                                ? foreignKeyOptions[foreignKey.TableName]
+                                                : new List<SelectListItem>();
+
+                                                // ✅ Use tableName_column naming convention like in TableX
+                                                string fkFieldId = $"{tableName}_{column}";              // e.g., "tbl_tran_Property_PropertyID"
+                                                string fkDisplayId = $"{fkFieldId}_Display";             // e.g., "tbl_tran_Property_PropertyID_Display"
+                                                string displayValue = row.ContainsKey($"{column}_Display") ? row[$"{column}_Display"]?.ToString() : "";
+                                                string labelOverride = isFoUser ? column.Replace("foUserID_", "") : label;
+
+                                                <label for="@fkFieldId" class="fw-bold">@labelOverride</label>
+
+                                                if (isMaintenance)
+                                                {
+                                                    @Html.DropDownList(fkFieldId, new SelectList(options, "Value", "Text", columnValue), "", new { @class = "form-select", id = fkFieldId })
                                                 }
+                                                else
+                                                {
+                                                    <div class="input-group">
+                                                        <input type="hidden" name="@fkFieldId" id="@fkFieldId" value="@columnValue" />
+                                                        <input type="text" id="@fkDisplayId" value="@displayValue" class="form-control" readonly placeholder="Search..." onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fkFieldId')" />
+                                                        <button type="button" class="btn btn-outline-secondary" onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fkFieldId')">
+                                                            <i class="bi bi-search"></i>
+                                                        </button>
+                                                    </div>
+                                                }
+                                            }
                                                 else if (columnType == "varchar" && columnLength > 255)
                                                 {
                                                     <label for="@fieldName" class="fw-bold">@label</label>
@@ -623,29 +650,6 @@
                         console.error("Geolocation error:", error);
                     }
                 );
-            }
-
-                    function openSearchModal(tableName, columnName, targetField) {
-                // Example: Fetch and show modal data
-                fetch(`/ProcessEvents/GetSearchOptions?tableName=${tableName}&columnName=${columnName}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        // Build modal content dynamically based on `data`
-                        let content = '<div class="modal-header"><h5 class="modal-title">Select Value</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>';
-                        content += '<div class="modal-body"><ul class="list-group">';
-                        data.forEach(item => {
-                            content += `<li class="list-group-item list-group-item-action" onclick="selectSearchValue('${targetField}', '${item.value}')">${item.text}</li>`;
-                        });
-                        content += '</ul></div>';
-
-                        document.getElementById('searchModalContent').innerHTML = content;
-                        new bootstrap.Modal(document.getElementById('searchModal')).show();
-                    });
-            }
-
-            function selectSearchValue(fieldId, value) {
-                document.getElementById(fieldId).value = value;
-                bootstrap.Modal.getInstance(document.getElementById('searchModal')).hide();
             }
 
     

@@ -56,6 +56,11 @@
                     var stripped = column.Replace("geo_", "");
                     formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
                 }
+                else if (column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                {
+                    var stripped = column.Replace("foUserID_", "").Replace("_", " ");
+                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
+                }
                 else
                 {
                     formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
@@ -104,13 +109,16 @@
                 {
                     if (column == PKColumn) { continue; }
 
-                    var value = row[column]?.ToString() ?? "";
-                    <td class="fixed-width" data-column="@column" data-sort="@value">
+                    var rawValue = row[column]?.ToString() ?? "";
+                    var displayKey = $"{column}_Display";
+                    var displayValue = row.ContainsKey(displayKey) ? row[displayKey]?.ToString() : rawValue;
+
+                    <td class="fixed-width" data-column="@column" data-sort="@rawValue">
                         @if (column.StartsWith("attachment_"))
                         {
-                            var parts = value.Split(';');
-                            var desc = parts[0].Trim();
-                            var url = parts.Length > 1 ? parts[1].Trim().Replace("\\", "/") : "";
+                            var parts = rawValue.Split(';');
+                            var desc = parts.ElementAtOrDefault(0)?.Trim();
+                            var url = parts.ElementAtOrDefault(1)?.Trim().Replace("\\", "/");
 
                             if (!string.IsNullOrWhiteSpace(url))
                             {
@@ -123,13 +131,13 @@
                         }
                         else
                         {
-                            @value
+                            @Html.Raw(displayValue)
                         }
                     </td>
                 }
+
                 <td class="text-center align-middle actions-column">
                     <div class="d-flex flex-row justify-content-center align-items-center gap-2">
-
                         @if (readwriteaccess == "RW")
                         {
                             <form method="get" asp-action="Edit" class="m-0 p-0">
@@ -139,21 +147,15 @@
                                 <input type="hidden" name="tablename" value="@tablename" />
                                 <input type="hidden" name="userid" value="@userid" />
                                 <input type="hidden" name="pageNumber" value="@ViewBag.pageNumber" />
-                                <button type="submit"
-                                        class="custom-button btn-gold btn-sm d-flex align-items-center justify-content-center"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                                <button type="submit" class="custom-button btn-gold btn-sm" title="Edit">
                                     <i class="bi bi-pencil-fill"></i>
                                 </button>
                             </form>
 
-                            <button type="button"
-                                    class="custom-button btn-red btn-sm d-flex align-items-center justify-content-center"
-                                    onclick="confirmDelete(@row["ID"], '@tablename')"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
+                            <button type="button" class="custom-button btn-red btn-sm" onclick="confirmDelete(@row["ID"], '@tablename')" title="Delete">
                                 <i class="bi bi-trash-fill"></i>
                             </button>
                         }
-
                         @if (readwriteaccess == "R")
                         {
                             <form method="get" asp-action="Edit" class="m-0 p-0">
@@ -163,29 +165,17 @@
                                 <input type="hidden" name="tablename" value="@tablename" />
                                 <input type="hidden" name="userid" value="@userid" />
                                 <input type="hidden" name="pageNumber" value="@ViewBag.pageNumber" />
-                                <button type="submit"
-                                        class="custom-button btn-gold btn-sm d-flex align-items-center justify-content-center"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+                                <button type="submit" class="custom-button btn-gold btn-sm" title="View">
                                     <i class="bi bi-eye-fill"></i>
                                 </button>
                             </form>
                         }
 
-                        <button type="button"
-                                class="custom-button btn-green btn-sm d-flex align-items-center justify-content-center"
-                                onclick="showPopup(event, '@tablename', '@row["ID"]')"
-                                data-bs-toggle="tooltip" data-bs-placement="top" title="More">
+                        <button type="button" class="custom-button btn-green btn-sm" onclick="showPopup(event, '@tablename', '@row["ID"]')" title="More">
                             <i class="bi bi-link-45deg"></i>
                         </button>
                     </div>
                 </td>
-
-
-
-
-
-
-
             </tr>
         }
     </tbody>

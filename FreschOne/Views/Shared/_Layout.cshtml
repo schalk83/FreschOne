@@ -60,7 +60,7 @@
                 </div>`;
             modal.show();
 
-            fetch(`/ProcessEvents/GetSearchOptions?tableName=${encodeURIComponent(tableName)}&columnName=${encodeURIComponent(columnName)}`)
+            fetch(`/TableX/GetSearchOptions?tableName=${encodeURIComponent(tableName)}&columnName=${encodeURIComponent(columnName)}`)
                 .then(response => response.json())
                 .then(data => {
                     let content = `
@@ -97,30 +97,36 @@
                 });
         }
 
-            function selectSearchValue(fieldId, value, displayText) {
-            const hiddenInput = document.getElementById(fieldId);
-            const displayInput = document.getElementById(fieldId + "_Display");
+        function selectSearchValue(fieldId, value, displayText) {
+            // Hidden input (shared)
+            const hiddenById = document.getElementById(fieldId);
+            const hiddenByName = document.querySelector(`input[type="hidden"][name="${fieldId}"]`);
 
-            // Handle CreateStep format: separate hidden and display fields
-            if (hiddenInput && displayInput) {
-                hiddenInput.value = value;
-                displayInput.value = displayText;
+            // Display textbox: could be id=fieldId or id=fieldId_Display
+            const displayById = document.getElementById(fieldId);
+            const displayByDisplayId = document.getElementById(fieldId + "_Display");
+
+            // Prefer setting hidden values correctly
+            if (hiddenById) hiddenById.value = value;
+            if (hiddenByName) hiddenByName.value = value;
+
+            // Display field logic
+            if (displayByDisplayId) {
+                displayByDisplayId.value = displayText;
+            } else if (displayById && displayById.type !== "hidden") {
+                displayById.value = displayText;
             }
-            // Handle PendingStep format: same field ID for display, hidden input by name
-            else {
-                const displayField = document.getElementById(fieldId);
-                const hiddenInputs = document.querySelectorAll('input[type="hidden"][name="' + fieldId + '"]');
 
-                if (displayField) displayField.value = displayText;
-                hiddenInputs.forEach(input => input.value = value);
-            }
-
+            // Close modal
             const modalEl = document.getElementById('searchModal');
             const modalInstance = bootstrap.Modal.getInstance(modalEl);
             if (modalInstance) modalInstance.hide();
         }
 
 
+
     </script>
+
+
 </body>
 </html>

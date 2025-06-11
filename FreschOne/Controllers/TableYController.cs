@@ -13,6 +13,8 @@ namespace FreschOne.Controllers
     {
         public TableYController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
 
+        private SqlConnection GetConnection() => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
         public IActionResult Index(int userid, int PKID, string PKColumn, string tablename, int pageNumber = 1, string searchText = "", string returnURL = "")
         {
             // 🧭 Set breadcrumb tracking
@@ -24,7 +26,7 @@ namespace FreschOne.Controllers
             { "tablename", tablename },
             { "userid", userid.ToString() },
             { "PKID" , PKID.ToString() },
-            { "PKColumn", PKColumn.ToString() },
+            { "PKColumn", PKColumn },
             { "pageNumber", pageNumber.ToString() }
         }
             });
@@ -43,35 +45,85 @@ namespace FreschOne.Controllers
             var columns = GetTableColumns(tablename);
             var tableData = GetTableData(PKID, PKColumn, tablename);
 
-            // 🔎 Search filter
+            // 🔍 Search filter
             if (!string.IsNullOrEmpty(searchText))
             {
-                tableData = tableData.Where(row =>
-                    row.Values.Any(value => value.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase))
-                ).ToList();
+                tableData = tableData
+                    .Where(row => row.Values.Any(v => v?.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) == true))
+                    .ToList();
             }
 
-            // 🌟 FK replacement - bulk style
+            // 🎯 DB-defined foreign keys
             var foreignKeys = GetForeignKeyColumns(tablename, PKColumn);
-            var fkOptions = new Dictionary<string, List<SelectListItem>>();
 
+            // 💡 Add implicit foUserID_ columns
+            var foUserColumns = columns
+                .Where(c => c.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                .Where(c => !foreignKeys.Any(fk => fk.ColumnName == c))
+                .Select(c => new ForeignKeyInfo
+                {
+                    ColumnName = c,
+                    TableName = "foUsers",
+                    ColumnDescription = "User"
+                });
+
+            foreignKeys.AddRange(foUserColumns);
+
+            // 📦 FK options by TableName
+            var fkOptions = new Dictionary<string, List<SelectListItem>>();
             foreach (var fk in foreignKeys)
             {
-                fkOptions[fk.ColumnName] = GetForeignKeyOptions(fk.TableName);
+                if (!fkOptions.ContainsKey(fk.TableName))
+                {
+                    fkOptions[fk.TableName] = GetForeignKeyOptions(fk.TableName);
+                }
             }
 
+            // 👤 Special: Resolve foUsers into FirstName + LastName
+            var userLookup = new Dictionary<string, string>();
+            if (foreignKeys.Any(fk => fk.TableName == "foUsers"))
+            {
+                using (var conn = GetConnection())
+                {
+                    conn.Open();
+                    using (var cmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", conn))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            string id = reader["ID"].ToString();
+                            string name = reader["FullName"].ToString();
+                            userLookup[id] = name;
+                        }
+                    }
+                }
+
+                // Replace raw foUserID_* values with full names
+                foreach (var row in tableData)
+                {
+                    foreach (var column in columns.Where(c => c.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var raw = row.ContainsKey(column) ? row[column]?.ToString() : null;
+                        if (!string.IsNullOrWhiteSpace(raw) && userLookup.TryGetValue(raw, out var fullName))
+                        {
+                            row[$"{column}_Display"] = fullName;
+                        }
+                    }
+                }
+            }
+
+            // 🧠 General FK display replacement (excluding foUsers)
             foreach (var row in tableData)
             {
-                foreach (var fk in foreignKeys)
+                foreach (var fk in foreignKeys.Where(f => f.TableName != "foUsers"))
                 {
-                    if (fk.ColumnName != PKColumn && row.TryGetValue(fk.ColumnName, out object? fkValue) && fkValue != DBNull.Value)
+                    if (row.ContainsKey(fk.ColumnName))
                     {
-                        var rawValue = fkValue.ToString();
-                        var options = fkOptions[fk.ColumnName];
-                        var match = options.FirstOrDefault(o => o.Value == rawValue);
+                        var rawValue = row[fk.ColumnName]?.ToString();
+                        var match = fkOptions[fk.TableName].FirstOrDefault(o => o.Value == rawValue);
                         if (match != null)
                         {
-                            row[$"{fk.ColumnName}"] = match.Text;
+                            row[$"{fk.ColumnName}_Display"] = match.Text;
                         }
                     }
                 }
@@ -80,7 +132,7 @@ namespace FreschOne.Controllers
             // 📄 Pagination
             int pageSize = 20;
             var paginatedData = tableData.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
-            var totalPages = (int)Math.Ceiling((double)tableData.Count / pageSize);
+            int totalPages = (int)Math.Ceiling((double)tableData.Count / pageSize);
 
             ViewBag.pageNumber = pageNumber;
             ViewBag.totalPages = totalPages;
@@ -92,14 +144,10 @@ namespace FreschOne.Controllers
             ViewBag.tablename = tablename;
 
             var tablePrefixes = GetTablePrefixes();
-            var tableDescription = "";
-            foreach (var prefix in tablePrefixes)
-            {
-                if (tablename.Contains(prefix.Prefix))
-                {
-                    tableDescription = tablename.Replace(prefix.Prefix.ToString(), "");
-                }
-            }
+            var tableDescription = tablePrefixes
+                .Where(p => tablename.StartsWith(p.Prefix))
+                .Select(p => tablename.Replace(p.Prefix, ""))
+                .FirstOrDefault() ?? tablename;
             ViewBag.tableDescription = tableDescription.Replace("_", " ");
 
             var viewModel = new TableViewModel
@@ -232,7 +280,12 @@ namespace FreschOne.Controllers
         SELECT 
             c.name AS ColumnName,
             ref_tab.name AS ReferencedTableName,
-	        CASE WHEN right ( c.name, 2) = 'ID' THEN LEFT ( c.name, LEN ( c.name ) -2 ) ELSE c.NAME END AS ColumnDescription
+            REPLACE(
+                CASE 
+                    WHEN c.name LIKE 'foUserID_%' THEN REPLACE(c.name, 'foUserID_', '')
+                    WHEN c.name LIKE '%ID' THEN LEFT(c.name, LEN(c.name) - 2)
+                    ELSE c.name
+                END, '_', ' ') AS ColumnDescription
         FROM 
             sys.foreign_key_columns AS fkc
         INNER JOIN 
@@ -243,7 +296,8 @@ namespace FreschOne.Controllers
         INNER JOIN 
             sys.tables AS ref_tab ON ref_tab.object_id = fkc.referenced_object_id
         WHERE 
-            parent_tab.name = @TableName and c.name != @PKColumn
+            parent_tab.name = @TableName 
+            AND c.name != @PKColumn 
             AND c.name LIKE '%ID'";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -259,11 +313,12 @@ namespace FreschOne.Controllers
                     foreignKeys.Add(new ForeignKeyInfo
                     {
                         ColumnName = reader.GetString(0),
-                        TableName = reader.GetString(1), // Reference to the related 'tbl_md_*' table
+                        TableName = reader.GetString(1),
                         ColumnDescription = reader.GetString(2)
                     });
                 }
             }
+
             return foreignKeys;
         }
 
@@ -501,68 +556,103 @@ namespace FreschOne.Controllers
 
         public IActionResult Edit(int id, int PKID, string PKColumn, string tablename, int userid, int pageNumber, string returnURL)
         {
-
             TempData.Keep("DataManagementBreadcrumbY");
 
             if (TempData["DataManagementBreadcrumbX"] != null)
             {
                 ViewBag.DataManagementBreadcrumbX = JsonConvert.DeserializeObject<DataManagementBreadcrumbX>(TempData["DataManagementBreadcrumbX"].ToString());
             }
-
             TempData.Keep("DataManagementBreadcrumbX");
 
             if (TempData["DataManagementBreadcrumbY"] != null)
             {
                 ViewBag.DataManagementBreadcrumbY = JsonConvert.DeserializeObject<DataManagementBreadcrumbX>(TempData["DataManagementBreadcrumbY"].ToString());
             }
-
             TempData.Keep("DataManagementBreadcrumbY");
 
             SetUserAccess(userid);
             GetUserReadWriteAccess(userid, tablename);
 
-            // Retrieve the record for the specified id
             var record = GetRecordById(tablename, id);
-
-            // Get columns and their types for the table
             var columns = GetTableColumns(tablename);
             var foreignKeys = GetForeignKeyColumns(tablename, PKColumn);
 
-            // 🔥 Add this block
+            // Add implicit foUserID_ FK logic
+            var foUserColumns = columns
+                .Where(c => c.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                .Where(c => !foreignKeys.Any(fk => fk.ColumnName == c))
+                .Select(c => new ForeignKeyInfo
+                {
+                    ColumnName = c,
+                    TableName = "foUsers",
+                    ColumnDescription = "User"
+                });
+
+            foreignKeys.AddRange(foUserColumns);
+
             var fkOptions = new Dictionary<string, List<SelectListItem>>();
             foreach (var fk in foreignKeys)
             {
-                fkOptions[fk.ColumnName] = GetForeignKeyOptions(fk.TableName);
-            }
-            foreach (var fk in foreignKeys)
-            {
-                if (record.ContainsKey(fk.ColumnName))
+                if (!fkOptions.ContainsKey(fk.TableName))
                 {
-                    var rawValue = record[fk.ColumnName]?.ToString();
-                    var options = fkOptions[fk.ColumnName];
-                    var match = options.FirstOrDefault(o => o.Value == rawValue);
-                    if (match != null)
+                    fkOptions[fk.TableName] = GetForeignKeyOptions(fk.TableName);
+                }
+            }
+
+            // Special case: foUsers - preload full name lookup
+            var userLookup = new Dictionary<string, string>();
+            if (foreignKeys.Any(fk => fk.TableName == "foUsers"))
+            {
+                using (var conn = GetConnection())
+                {
+                    conn.Open();
+                    using (var cmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", conn))
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        record[$"{fk.ColumnName}_Display"] = match.Text;
+                        while (reader.Read())
+                        {
+                            var userId = reader["ID"].ToString();
+                            var fullName = reader["FullName"].ToString();
+                            userLookup[userId] = fullName;
+                        }
                     }
-                    else
+                }
+
+                foreach (var column in columns.Where(c => c.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (record.ContainsKey(column))
                     {
-                        record[$"{fk.ColumnName}_Display"] = "";
+                        var userId = record[column]?.ToString();
+                        if (!string.IsNullOrWhiteSpace(userId) && userLookup.TryGetValue(userId, out var fullName))
+                        {
+                            record[$"{column}_Display"] = fullName;
+                        }
                     }
                 }
             }
 
-            // Get column types and lengths from systypes and syscolumns
-            var columnTypes = new Dictionary<string, string>(); // Dictionary to hold column types
-            var columnLengths = new Dictionary<string, int>(); // Dictionary to hold column lengths
+            // Replace other FK values with display text (excluding foUsers)
+            foreach (var fk in foreignKeys.Where(f => f.TableName != "foUsers"))
+            {
+                if (record.ContainsKey(fk.ColumnName))
+                {
+                    var rawValue = record[fk.ColumnName]?.ToString();
+                    var options = fkOptions[fk.TableName];
+                    var match = options.FirstOrDefault(o => o.Value == rawValue);
+                    record[$"{fk.ColumnName}_Display"] = match?.Text ?? "";
+                }
+            }
+
+            var columnTypes = new Dictionary<string, string>();
+            var columnLengths = new Dictionary<string, int>();
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 string query = @"
-            SELECT c.name AS ColumnName, t.name AS ColumnType, c.length
-            FROM syscolumns c
-            JOIN systypes t ON c.xusertype = t.xusertype
-            WHERE c.id = OBJECT_ID(@TableName)";
+        SELECT c.name AS ColumnName, t.name AS ColumnType, c.length
+        FROM syscolumns c
+        JOIN systypes t ON c.xusertype = t.xusertype
+        WHERE c.id = OBJECT_ID(@TableName)";
 
                 var command = new SqlCommand(query, connection);
                 command.Parameters.AddWithValue("@TableName", tablename);
@@ -576,18 +666,14 @@ namespace FreschOne.Controllers
                 }
             }
 
-            // Create a dictionary to hold the foreign key options
             var foreignKeyOptions = new Dictionary<string, List<SelectListItem>>();
-
             foreach (var foreignKey in foreignKeys)
             {
-
                 foreignKeyOptions[foreignKey.ColumnName] = GetForeignKeyOptions(foreignKey.TableName);
             }
 
             var tablePrefixes = GetTablePrefixes();
             var tableDescription = "";
-            // Check if the ChildTable name starts with any prefix and remove it
             foreach (var prefix in tablePrefixes)
             {
                 if (tablename.Contains(prefix.Prefix))
@@ -597,19 +683,16 @@ namespace FreschOne.Controllers
             }
             ViewBag.tableDescription = tableDescription.Replace("_", " ");
 
-            // Prepare the ViewBag for additional parameters
             ViewBag.id = id;
             ViewBag.userid = userid;
             ViewBag.tablename = tablename;
-            ViewBag.ColumnTypes = columnTypes; // Pass column types to the view
-            ViewBag.ColumnLengths = columnLengths; // Pass column lengths to the view
-
+            ViewBag.ColumnTypes = columnTypes;
+            ViewBag.ColumnLengths = columnLengths;
             ViewBag.PKID = PKID;
             ViewBag.PKColumn = PKColumn;
             ViewBag.pageNumber = pageNumber;
 
-
-            // Fetch existing attachments for this record
+            // Fetch attachments
             string attachmentQuery = @"
         SELECT ID, AttachmentDescription, Attachment , DateAdded, ( select FirstName + ' ' + LastName from foUsers where ID = UserID ) AS UserAdded
         FROM foTableAttachments 
@@ -623,24 +706,22 @@ namespace FreschOne.Controllers
                 command.Parameters.AddWithValue("@tablename", tablename);
                 command.Parameters.AddWithValue("@PKID", id);
 
-
                 using var reader = command.ExecuteReader();
                 while (reader.Read())
                 {
                     attachments.Add(new Dictionary<string, object>
-                            {
-                                { "ID", reader["ID"] },
-                                { "AttachmentDescription", reader["AttachmentDescription"] },
-                                { "Attachment", reader["Attachment"] },
-                                { "DateAdded", reader["DateAdded"] },
-                                { "UserAdded", reader["UserAdded"] }
-                              });
+            {
+                { "ID", reader["ID"] },
+                { "AttachmentDescription", reader["AttachmentDescription"] },
+                { "Attachment", reader["Attachment"] },
+                { "DateAdded", reader["DateAdded"] },
+                { "UserAdded", reader["UserAdded"] }
+            });
                 }
             }
 
-            ViewBag.Attachments = attachments; // Pass attachments to the view
+            ViewBag.Attachments = attachments;
 
-            // Create the view model
             var viewModel = new TableEditViewModel
             {
                 TableName = tablename,
@@ -820,7 +901,7 @@ namespace FreschOne.Controllers
 
         }
 
-        public IActionResult Create(int userid, int PKID, string PKColumn, string tablename, string returnURL) 
+        public IActionResult Create(int userid, int PKID, string PKColumn, string tablename, string returnURL)
         {
 
             if (TempData["DataManagementBreadcrumbX"] != null)
@@ -950,7 +1031,7 @@ namespace FreschOne.Controllers
             parameters["@Active"] = "1";
 
             // Add standard columns
-            tableColumns.Add("CreatedUserID");  
+            tableColumns.Add("CreatedUserID");
             valuePlaceholders.Add("@CreatedUserID");
             parameters["@CreatedUserID"] = userid;
             tableColumns.Add("CreatedDate");
@@ -1027,7 +1108,7 @@ namespace FreschOne.Controllers
             }
 
             //return RedirectToAction("Index", new { userid = userid, tablename = tablename });
-            return RedirectToAction("Index", new {  userid,  PKID, PKColumn, tablename });
+            return RedirectToAction("Index", new { userid, PKID, PKColumn, tablename });
         }
 
         private List<SelectListItem> GetForeignKeyDropdownData(string referencedTableName)
@@ -1233,7 +1314,7 @@ namespace FreschOne.Controllers
                 }
             }
 
-                return RedirectToAction("Edit", new { id , PKID , PKColumn , tablename  , userid });
+            return RedirectToAction("Edit", new { id, PKID, PKColumn, tablename, userid });
         }
 
         [HttpPost]
@@ -1249,15 +1330,14 @@ namespace FreschOne.Controllers
                 command.ExecuteNonQuery();
             }
 
-            return RedirectToAction("Edit", new { id = PKID, tablename,  userid });
+            return RedirectToAction("Edit", new { id = PKID, tablename, userid });
         }
 
         public IActionResult SelectParent(string tablename, int userid, int pageNumber = 1, string searchText = "")
         {
             SetUserAccess(userid);
 
-            // Look up the parent table + FK column
-            var mapping = GetForeignKeyParentMapping(tablename); // e.g. { ParentTable = "tbl_tran_Student", FKColumn = "StudentID" }
+            var mapping = GetForeignKeyParentMapping(tablename); // e.g., FKColumn = "StudentID"
             var parentTable = mapping.ParentTable;
 
             ViewBag.userid = userid;
@@ -1265,10 +1345,9 @@ namespace FreschOne.Controllers
             ViewBag.ParentTable = parentTable;
             ViewBag.FKColumn = mapping.FKColumn;
 
-            // Get full data
             var fullData = GetParentTableData(parentTable);
 
-            // 🔍 Apply search
+            // 🔎 Apply search
             if (!string.IsNullOrEmpty(searchText))
             {
                 fullData = fullData
@@ -1276,7 +1355,61 @@ namespace FreschOne.Controllers
                     .ToList();
             }
 
-            // 📄 Apply pagination
+            // 🔗 Get columns and foreign keys
+            var columns = GetTableColumns(parentTable);
+            var foreignKeys = GetForeignKeyColumns(parentTable);
+
+            // 🧠 Inject foUserID_* logic
+            var foUserColumns = columns
+                .Where(c => c.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                .Where(c => !foreignKeys.Any(fk => fk.ColumnName == c))
+                .Select(c => new ForeignKeyInfo { ColumnName = c, TableName = "foUsers", ColumnDescription = "User" });
+
+            foreignKeys.AddRange(foUserColumns);
+
+            // 🧠 Build FK options
+            var fkOptions = new Dictionary<string, List<SelectListItem>>();
+            foreach (var fk in foreignKeys)
+            {
+                if (!fkOptions.ContainsKey(fk.TableName))
+                    fkOptions[fk.TableName] = GetForeignKeyOptions(fk.TableName);
+            }
+
+            // 🧠 foUsers bulk lookup
+            var userLookup = new Dictionary<string, string>();
+            if (foreignKeys.Any(fk => fk.TableName == "foUsers"))
+            {
+                using var conn = GetConnection();
+                conn.Open();
+                using var cmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", conn);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    userLookup[reader["ID"].ToString()] = reader["FullName"].ToString();
+                }
+            }
+
+            // 🔁 Replace values
+            foreach (var row in fullData)
+            {
+                foreach (var fk in foreignKeys)
+                {
+                    var rawValue = row.ContainsKey(fk.ColumnName) ? row[fk.ColumnName]?.ToString() : null;
+
+                    if (fk.TableName == "foUsers" && userLookup.ContainsKey(rawValue))
+                    {
+                        row[$"{fk.ColumnName}_Display"] = userLookup[rawValue];
+                    }
+                    else if (fk.TableName != "foUsers" && fkOptions.TryGetValue(fk.TableName, out var options))
+                    {
+                        var match = options.FirstOrDefault(o => o.Value == rawValue);
+                        if (match != null)
+                            row[$"{fk.ColumnName}_Display"] = match.Text;
+                    }
+                }
+            }
+
+            // 📄 Pagination
             int pageSize = 20;
             var pagedData = fullData.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
             int totalPages = (int)Math.Ceiling((double)fullData.Count / pageSize);
@@ -1285,14 +1418,13 @@ namespace FreschOne.Controllers
             ViewBag.totalPages = totalPages;
             ViewBag.searchText = searchText;
 
-            var columns = GetTableColumns(parentTable);
-
             return View("SelectParent", new TableViewModel
             {
                 TableName = parentTable,
                 UserId = userid,
                 Columns = columns,
-                TableData = pagedData
+                TableData = pagedData,
+                ForeignKeys = foreignKeys
             });
         }
 

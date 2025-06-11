@@ -1,74 +1,74 @@
-﻿@model FreschOne.Models.TableViewModel
-@{
-    ViewData["Title"] = "Select Parent Record";
-    var userid = ViewBag.userid;
-    var parentTable = Model.TableName;
-    var childTable = ViewBag.ChildTable;
-    var fkColumn = ViewBag.FKColumn;
-    int pageNumber = ViewBag.pageNumber;
-    int totalPages = ViewBag.totalPages;
-}
+﻿    @model FreschOne.Models.TableViewModel
+    @{
+        ViewData["Title"] = "Select Parent Record";
+        var userid = ViewBag.userid;
+        var parentTable = Model.TableName;
+        var childTable = ViewBag.ChildTable;
+        var fkColumn = ViewBag.FKColumn;
+        int pageNumber = ViewBag.pageNumber;
+        int totalPages = ViewBag.totalPages;
+    }
 
-<partial name="_Sidebar" />
+    <partial name="_Sidebar" />
 
-<h2 class="mb-4">Select a Parent Record from @parentTable</h2>
+    <h2 class="mb-4">Select a Parent Record from @parentTable</h2>
 
-<div class="d-flex justify-content-between align-items-center mb-2">
-    <div></div>
-    <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">+ Show Search</button>
-</div>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div></div>
+        <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">+ Show Search</button>
+    </div>
 
 <table class="table table-bordered table-hover align-middle" id="dataTable">
     <thead class="table-light">
         <tr>
             @foreach (var column in Model.Columns)
             {
-                string formattedColumn;
-                if (column == "ID")
-                {
-                    formattedColumn = "ID";
-                }
-                else if (column.StartsWith("attachment_"))
-                {
-                    var stripped = column.Replace("attachment_", "");
-                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
-                }
-                else if (column.StartsWith("geo_"))
-                {
-                    var stripped = column.Replace("geo_", "");
-                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
-                }
+                string label = column;
+
+                if (label.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                    label = column.Replace("foUserID_", "");
+                else if (label.StartsWith("attachment_", StringComparison.OrdinalIgnoreCase))
+                    label = column.Replace("attachment_", "");
+                else if (label.StartsWith("geo_", StringComparison.OrdinalIgnoreCase))
+                    label = column.Replace("geo_", "");
+                else if (label.EndsWith("ID", StringComparison.OrdinalIgnoreCase) && label.Length > 2)
+                    label = column[..^2];
                 else
-                {
-                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
-                }
-                <th class="fixed-width" data-column="@column">@formattedColumn</th>
+                    label = column;
+
+                label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
+
+                <th class="fixed-width" data-column="@column">@label.Trim()</th>
             }
             <th>Action</th>
         </tr>
+
         <tr id="searchRow" style="display: none;">
             @foreach (var column in Model.Columns)
             {
-                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+                string label = column;
 
-                if (column.StartsWith("geo_"))
-                {
-                    var stripped = column.Replace("geo_", "");
-                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
-                }
-                else if (column.StartsWith("attachment_"))
-                {
-                    var stripped = column.Replace("attachment_", "");
-                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
-                }
+                if (label.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                    label = column.Replace("foUserID_", "");
+                else if (label.StartsWith("attachment_", StringComparison.OrdinalIgnoreCase))
+                    label = column.Replace("attachment_", "");
+                else if (label.StartsWith("geo_", StringComparison.OrdinalIgnoreCase))
+                    label = column.Replace("geo_", "");
+                else if (label.EndsWith("ID", StringComparison.OrdinalIgnoreCase) && label.Length > 2)
+                    label = column[..^2];
+                else
+                    label = column;
+
+                label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
 
                 <th>
-                    <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @formattedColumn" />
+                    <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @label.Trim()" />
                 </th>
             }
             <th></th>
         </tr>
     </thead>
+
     <tbody id="tableBody">
         @foreach (var row in Model.TableData)
         {
@@ -76,13 +76,18 @@
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    <td class="fixed-width" data-column="@column" data-sort="@row[column]">
-                        @if (column.StartsWith("attachment_"))
+                    var rawValue = row[column]?.ToString() ?? "";
+                    var displayKey = $"{column}_Display";
+                    var displayValue = row.ContainsKey(displayKey) && !string.IsNullOrWhiteSpace(row[displayKey]?.ToString())
+                        ? row[displayKey]?.ToString()
+                        : rawValue;
+
+                    <td class="fixed-width" data-column="@column" data-sort="@rawValue">
+                        @if (column.StartsWith("attachment_", StringComparison.OrdinalIgnoreCase))
                         {
-                            var val = row[column]?.ToString() ?? "";
-                            var parts = val.Split(';');
-                            var desc = parts[0].Trim();
-                            var url = parts.Length > 1 ? parts[1].Trim().Replace("\\", "/") : "";
+                            var parts = rawValue.Split(';');
+                            var desc = parts.ElementAtOrDefault(0)?.Trim();
+                            var url = parts.ElementAtOrDefault(1)?.Trim()?.Replace("\\", "/");
 
                             if (!string.IsNullOrWhiteSpace(url))
                             {
@@ -95,10 +100,11 @@
                         }
                         else
                         {
-                            @row[column]
+                            @Html.Raw(displayValue)
                         }
                     </td>
                 }
+
                 <td>
                     <a href="@Url.Action("Index", "TableY", new {
                         userid = userid,
@@ -114,70 +120,71 @@
     </tbody>
 </table>
 
-<!-- Pagination Controls -->
-<div class="d-flex justify-content-center mt-3">
-    <nav aria-label="Page navigation">
-        <ul class="pagination">
-            @if (pageNumber > 1)
-            {
-                <li class="page-item">
-                    <a class="page-link" href="@Url.Action("SelectParent", "TableY", new { tablename = childTable, userid = userid, pageNumber = 1 })">First</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="@Url.Action("SelectParent", "TableY", new { tablename = childTable, userid = userid, pageNumber = pageNumber - 1 })">&laquo; Prev</a>
-                </li>
-            }
 
-            @for (var i = Math.Max(1, pageNumber - 2); i <= Math.Min(totalPages, pageNumber + 2); i++)
-            {
-                <li class="page-item @(i == pageNumber ? "active" : "")">
-                    <a class="page-link" href="@Url.Action("SelectParent", "TableY", new { tablename = childTable, userid = userid, pageNumber = i })">@i</a>
-                </li>
-            }
+    <!-- Pagination Controls -->
+    <div class="d-flex justify-content-center mt-3">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                @if (pageNumber > 1)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("SelectParent", "TableY", new { tablename = childTable, userid = userid, pageNumber = 1 })">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("SelectParent", "TableY", new { tablename = childTable, userid = userid, pageNumber = pageNumber - 1 })">&laquo; Prev</a>
+                    </li>
+                }
 
-            @if (pageNumber < totalPages)
-            {
-                <li class="page-item">
-                    <a class="page-link" href="@Url.Action("SelectParent", "TableY", new { tablename = childTable, userid = userid, pageNumber = pageNumber + 1 })">Next &raquo;</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="@Url.Action("SelectParent", "TableY", new { tablename = childTable, userid = userid, pageNumber = totalPages })">Last</a>
-                </li>
-            }
-        </ul>
-    </nav>
-</div>
+                @for (var i = Math.Max(1, pageNumber - 2); i <= Math.Min(totalPages, pageNumber + 2); i++)
+                {
+                    <li class="page-item @(i == pageNumber ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("SelectParent", "TableY", new { tablename = childTable, userid = userid, pageNumber = i })">@i</a>
+                    </li>
+                }
 
-@section Scripts {
-    <script>
-        function filterTable() {
-            const inputs = document.querySelectorAll('.column-search');
-            const rows = document.querySelectorAll("#tableBody tr");
+                @if (pageNumber < totalPages)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("SelectParent", "TableY", new { tablename = childTable, userid = userid, pageNumber = pageNumber + 1 })">Next &raquo;</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("SelectParent", "TableY", new { tablename = childTable, userid = userid, pageNumber = totalPages })">Last</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    </div>
 
-            rows.forEach(row => {
-                let visible = true;
-                inputs.forEach(input => {
-                    const col = input.getAttribute("data-column");
-                    const val = input.value.toLowerCase();
-                    const cell = row.querySelector(`td[data-column="${col}"]`);
-                    if (cell && val && !cell.innerText.toLowerCase().includes(val)) {
-                        visible = false;
-                    }
+    @section Scripts {
+        <script>
+            function filterTable() {
+                const inputs = document.querySelectorAll('.column-search');
+                const rows = document.querySelectorAll("#tableBody tr");
+
+                rows.forEach(row => {
+                    let visible = true;
+                    inputs.forEach(input => {
+                        const col = input.getAttribute("data-column");
+                        const val = input.value.toLowerCase();
+                        const cell = row.querySelector(`td[data-column="${col}"]`);
+                        if (cell && val && !cell.innerText.toLowerCase().includes(val)) {
+                            visible = false;
+                        }
+                    });
+                    row.style.display = visible ? "" : "none";
                 });
-                row.style.display = visible ? "" : "none";
+            }
+
+            function toggleSearch() {
+                const row = document.getElementById("searchRow");
+                const btn = document.getElementById("toggleSearchBtn");
+                row.style.display = row.style.display === "none" ? "table-row" : "none";
+                btn.innerText = row.style.display === "none" ? "+ Show Search" : "- Hide Search";
+            }
+
+            document.querySelectorAll('.column-search').forEach(input => {
+                input.addEventListener("keyup", filterTable);
+                input.addEventListener("change", filterTable);
             });
-        }
-
-        function toggleSearch() {
-            const row = document.getElementById("searchRow");
-            const btn = document.getElementById("toggleSearchBtn");
-            row.style.display = row.style.display === "none" ? "table-row" : "none";
-            btn.innerText = row.style.display === "none" ? "+ Show Search" : "- Hide Search";
-        }
-
-        document.querySelectorAll('.column-search').forEach(input => {
-            input.addEventListener("keyup", filterTable);
-            input.addEventListener("change", filterTable);
-        });
-    </script>
-}
+        </script>
+    }

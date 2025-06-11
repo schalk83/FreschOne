@@ -47,42 +47,64 @@
 
     @foreach (var column in Model.Columns)
     {
-        if (column == "ID") continue;  // Skip the ID column
+        if (column == "ID" || column == PKColumn) continue;  // Skip ID and Parent FK
 
         var columnValue = Model.Record[column];
-        var columnType = columnTypes.ContainsKey(column) ? columnTypes[column] : "string"; // Default to string if not found
-        var columnLength = columnLengths.ContainsKey(column) ? columnLengths[column] : 255; // Default length if not found
-        string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column, "(?<=.)([A-Z])", " $1"); // Create formatted column label
+        var columnType = columnTypes.ContainsKey(column) ? columnTypes[column] : "string";
+        var columnLength = columnLengths.ContainsKey(column) ? columnLengths[column] : 255;
+        var displayValue = Model.Record.ContainsKey($"{column}_Display") ? Model.Record[$"{column}_Display"]?.ToString() : columnValue?.ToString();
+
+        string label = column;
+
+        if (column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+        {
+            label = column.Replace("foUserID_", "");
+        }
+        else if (column.StartsWith("attachment_"))
+        {
+            label = column.Replace("attachment_", "");
+        }
+        else if (column.StartsWith("geo_"))
+        {
+            label = column.Replace("geo_", "");
+        }
+        else if (column.EndsWith("ID", StringComparison.OrdinalIgnoreCase))
+        {
+            label = column.Substring(0, column.Length - 2);
+        }
+        label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1").Trim();
 
         <div class="form-group">
-
-            @if (column == PKColumn)
-            {
-                <label style="display: none;" for="@column">@column</label>
-            }
-            else if (column.StartsWith("attachment_"))
-            {
-                string columnLabel = formattedColumn.Replace("attachment_", "").Replace("_", " ");
-                <label class="fw-bold">@columnLabel</label>
-            }
-            else if (column.StartsWith("geo_"))
-            {
-                string columnLabel = formattedColumn.Replace("geo_", "").Replace("_", " ");
-                <label class="fw-bold">@columnLabel</label>
-            }
-            else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
-            {
-                <label class="fw-bold" for="@column">@column.Replace("ID", "")</label>
-            }
-            else
-            {
-                <label class="fw-bold" for="@formattedColumn">@formattedColumn</label>
-            }
-
+            <label class="fw-bold" for="@column">@label</label>
 
             @if (editable)
             {
-                @if (column.StartsWith("attachment_"))
+                if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
+                {
+                    var foreignKey = Model.ForeignKeys.First(fk => fk.ColumnName == column);
+                    var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
+
+                    @if (isMaintenance)
+                    {
+                        @Html.DropDownList(column,
+                                 new SelectList(Model.ForeignKeyOptions[foreignKey.ColumnName], "Value", "Text", columnValue),
+                                 "Select...",
+                                 new { @class = "form-select" })
+                    }
+                    else
+                    {
+                        <div class="input-group">
+                            <input type="hidden" name="@column" value="@columnValue" />
+                            <input type="text" id="@column" value="@displayValue" class="form-control" readonly placeholder="Search..."
+                                   onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@column')" />
+                            <button type="button" class="btn btn-outline-secondary"
+                                    onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@column')">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    }
+                }
+                else if (column.StartsWith("attachment_"))
                 {
                     string[] attachmentParts = columnValue?.ToString().Split(';') ?? new string[2];
                     string attachmentDescription = attachmentParts.Length > 0 ? attachmentParts[0] : "";
@@ -131,76 +153,27 @@
                 }
                 else if (columnType == "varchar" && columnLength <= 255)
                 {
-                    @if (column.StartsWith("attachment_"))
-                    {
-                        <input type="text" name="@column" style="display: none;" value="@columnValue" class="form-control" />
-
-                    }
-                    else
-                    {
-                        <input type="text" name="@column" value="@columnValue" class="form-control" />
-                    }
+                    <input type="text" name="@column" value="@columnValue" class="form-control" />
                 }
                 else if (columnType == "varchar" && columnLength > 255)
                 {
-                    @if (column.StartsWith("attachment_"))
-                    {
-                        <textarea name="@column" class="form-control" style="display: none;">@columnValue</textarea>
-
-                    }
-                    else
-                    {
-                        <textarea name="@column" class="form-control">@columnValue</textarea>
-                    }
+                    <textarea name="@column" class="form-control">@columnValue</textarea>
                 }
-                else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
-                {
-                    var foreignKey = Model.ForeignKeys.First(fk => fk.ColumnName == column);
-                    var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
-                    var displayValue = Model.Record.ContainsKey($"{column}_Display") ? Model.Record[$"{column}_Display"]?.ToString() : "";
-
-                    <label for="@column" class="fw-bold">@column.Replace("ID", "")</label>
-
-                    @if (isMaintenance)
-                    {
-                        @Html.DropDownList(column,
-                                 new SelectList(Model.ForeignKeyOptions[foreignKey.ColumnName], "Value", "Text", columnValue),
-                                 "Select...",
-                                 new { @class = "form-select" })
-                    }
-                    else
-                    {
-                        <div class="input-group">
-                            <input type="hidden" name="@column" value="@columnValue" />
-                            <input type="text" id="@column" value="@displayValue" class="form-control" readonly placeholder="Search..."
-                                   onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@column')" />
-                            <button type="button" class="btn btn-outline-secondary"
-                                    onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@column')">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
-                    }
-                }
-
                 else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
                 {
-                    if (@column == PKColumn)
+                    if (column == PKColumn)
                     {
                         <input type="hidden" name="@column" value="@columnValue" class="form-control" />
                     }
                     else
                     {
                         <input type="number" name="@column" value="@columnValue" class="form-control" />
-
                     }
                 }
                 else if (columnType == "bit")
                 {
                     <input type="checkbox" name="@column" value="true" class="form-check-input"
-                    @if (columnValue != DBNull.Value && (bool)columnValue)
-                    {
-                        <text>checked</text>
-                    } />
+                    @(columnValue != DBNull.Value && (bool)columnValue ? "checked" : "") />
                 }
                 else if (columnType == "datetime")
                 {
@@ -208,104 +181,16 @@
                     ? dateValue.ToString("yyyy-MM-dd") : "" : "";
                     <input type="date" name="@column" value="@formattedDate" class="form-control" />
                 }
-                
             }
             else
             {
-                @if (column.StartsWith("attachment_"))
-                {
-                    string[] attachmentParts = columnValue?.ToString().Split(';') ?? new string[2];
-                    string attachmentDescription = attachmentParts.Length > 0 ? attachmentParts[0] : "";
-                    string attachmentFilePath = attachmentParts.Length > 1 ? attachmentParts[1] : "";
-
-                    <label>Attachment Description</label>
-                    <input type="text" id="desc_@column" value="@attachmentDescription" class="form-control" />
-
-                    <label>Upload Attachment</label>
-                    <input type="file" name="file_@column" id="file_@column" class="form-control" onchange="updateAttachmentField('@column')" />
-
-                    <!-- ✅ This hidden input ensures only ONE field (attachment_StudentPass) is sent -->
-                    <input type="hidden" name="@column" id="hidden_@column" value="@attachmentDescription;@attachmentFilePath" />
-
-                    @if (!string.IsNullOrEmpty(attachmentFilePath))
-                    {
-                        string fileUrl = attachmentFilePath.StartsWith("Attachments/")
-                        ? Url.Content("~/" + attachmentFilePath)
-                        : Url.Content("~/Attachments/" + attachmentFilePath);
-
-                        <p>Current File: <a href="@fileUrl" target="_blank">@System.IO.Path.GetFileName(attachmentFilePath)</a></p>
-                    }
-                }
-                <!-- Read-only rendering (using readonly attribute for form elements) -->
-                <!-- Read-only rendering (using readonly attribute for form elements) -->
-                @if (columnType == "varchar" && columnLength <= 255)
-                {
-                    @if (column.StartsWith("attachment_"))
-                    {
-                        <input type="text" name="@column" style="display: none;" value="@columnValue" class="form-control" />
-
-                    }
-                    else
-                    {
-                        <input type="text" name="@column" value="@columnValue" class="form-control" />
-                    }
-                }
-                else if (columnType == "varchar" && columnLength > 255)
-                {
-                    @if (column.StartsWith("attachment_"))
-                    {
-                        <textarea name="@column" class="form-control" style="display: none;">@columnValue</textarea>
-
-                    }
-                    else
-                    {
-                        <textarea name="@column" class="form-control">@columnValue</textarea>
-                    }
-                }
-                else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
-                {
-                    var foreignKey = Model.ForeignKeys.First(fk => fk.ColumnName == column);
-                    @Html.DropDownList(
-                             foreignKey.ColumnName,
-                             new SelectList(
-                             Model.ForeignKeyOptions[foreignKey.ColumnName],
-                             "Value", "Text", columnValue),
-                             "Select...",
-                             new { @class = "form-control", disabled = "disabled" })
-                }
-                else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
-                {
-                    if (@column == PKColumn)
-                    {
-                        <input type="hidden" name="@column" value="@columnValue" class="form-control" />
-                    }
-                    else
-                    {
-                        <input type="number" name="@column" value="@columnValue" class="form-control" />
-
-                    }
-                }
-                else if (columnType == "bit")
-                {
-                    <input type="checkbox" name="@column" value="true" class="form-check-input"
-                    @if (columnValue != DBNull.Value && (bool)columnValue)
-                    {
-                        <text>checked</text>
-                    } disabled />
-                }
-                else if (columnType == "datetime")
-                {
-                    string formattedDate = columnValue != null ? DateTime.TryParse(columnValue.ToString(), out var dateValue)
-                    ? dateValue.ToString("yyyy-MM-dd") : "" : "";
-                    <input type="date" name="@column" value="@formattedDate" class="form-control" readonly />
-                }
-               
+                <input type="text" value="@displayValue" class="form-control" readonly />
             }
         </div>
     }
 
     <br />
-    
+
     @if (ViewBag.DataManagementBreadcrumbY != null)
     {
         <a href="@Url.Action("Index", new {
@@ -315,11 +200,10 @@
         PKColumn = ViewBag.DataManagementBreadcrumbY.Parameters["PKColumn"],
         pageNumber = ViewBag.DataManagementBreadcrumbY.Parameters["pageNumber"]
     })" class="text-decoration-none">← Back</a>
-
     }
-    @if (editable)  
+
+    @if (editable)
     {
-        <!-- Only show Save button if editable -->
         <div class="form-group text-center">
             <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>

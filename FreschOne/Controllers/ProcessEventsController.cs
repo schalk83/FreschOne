@@ -374,11 +374,11 @@ namespace FreschOne.Controllers
                     if (table.FormType == "F")
                     {
                         var latestCmd = new SqlCommand(@"
-                    SELECT ProcessEventID, RecordID, DataSetUpdate
-                    FROM foProcessEventsDetail
-                    WHERE ProcessInstanceID = @InstanceID 
-                      AND TableName = @TableName 
-                      AND Active = 1 ORDER BY 1 DESC", conn);
+        SELECT ProcessEventID, RecordID, DataSetUpdate
+        FROM foProcessEventsDetail
+        WHERE ProcessInstanceID = @InstanceID 
+          AND TableName = @TableName 
+          AND Active = 1 ORDER BY 1 DESC", conn);
                         latestCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
                         latestCmd.Parameters.AddWithValue("@TableName", table.TableName);
 
@@ -392,6 +392,18 @@ namespace FreschOne.Controllers
 
                                 filtered["RecordID"] = reader["RecordID"]?.ToString();
                                 ReplaceFKValues(filtered, foreignKeys[table.TableName], foreignKeyOptions);
+
+                                foreach (var key in filtered.Keys.Where(k => k.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)).ToList())
+                                {
+                                    var rawValue = filtered[key]?.ToString();
+                                    if (!string.IsNullOrEmpty(rawValue))
+                                    {
+                                        var userOptions = foreignKeyOptions.ContainsKey("foUsers") ? foreignKeyOptions["foUsers"] : GetForeignKeyOptions("foUsers");
+                                        var display = userOptions.FirstOrDefault(o => o.Value == rawValue)?.Text ?? "";
+                                        filtered[$"{key}_Display"] = display;
+                                    }
+                                }
+
                                 rows.Add(filtered);
                             }
                         }
@@ -399,18 +411,18 @@ namespace FreschOne.Controllers
                     else if (table.FormType == "T")
                     {
                         var allRowsCmd = new SqlCommand(@"
-                    SELECT a.ProcessEventID, a.RecordID, a.DataSetUpdate
-                    FROM foProcessEventsDetail a
-                    INNER JOIN (
-                        SELECT MAX(ID) AS MaxID
-                        FROM foProcessEventsDetail
-                        WHERE ProcessInstanceID = @InstanceID
-                          AND StepID = @StepID
-                          AND TableName = @TableName
-                          AND Active = 1
-                        GROUP BY RecordID
-                    ) b ON a.ID = b.MaxID
-                    ORDER BY a.ID", conn);
+        SELECT a.ProcessEventID, a.RecordID, a.DataSetUpdate
+        FROM foProcessEventsDetail a
+        INNER JOIN (
+            SELECT MAX(ID) AS MaxID
+            FROM foProcessEventsDetail
+            WHERE ProcessInstanceID = @InstanceID
+              AND StepID = @StepID
+              AND TableName = @TableName
+              AND Active = 1
+            GROUP BY RecordID
+        ) b ON a.ID = b.MaxID
+        ORDER BY a.ID", conn);
 
                         allRowsCmd.Parameters.AddWithValue("@InstanceID", processInstanceId);
                         allRowsCmd.Parameters.AddWithValue("@StepID", stepId);
@@ -426,6 +438,18 @@ namespace FreschOne.Controllers
 
                                 filtered["RecordID"] = reader["RecordID"]?.ToString();
                                 ReplaceFKValues(filtered, foreignKeys[table.TableName], foreignKeyOptions);
+
+                                foreach (var key in filtered.Keys.Where(k => k.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)).ToList())
+                                {
+                                    var rawValue = filtered[key]?.ToString();
+                                    if (!string.IsNullOrEmpty(rawValue))
+                                    {
+                                        var userOptions = foreignKeyOptions.ContainsKey("foUsers") ? foreignKeyOptions["foUsers"] : GetForeignKeyOptions("foUsers");
+                                        var display = userOptions.FirstOrDefault(o => o.Value == rawValue)?.Text ?? "";
+                                        filtered[$"{key}_Display"] = display;
+                                    }
+                                }
+
                                 rows.Add(filtered);
                             }
                         }
@@ -442,8 +466,42 @@ namespace FreschOne.Controllers
                     prefilledValues[table.TableName] = rows;
                 }
 
+                // 🧠 Bulk lookup for all foUserID_ values across tables
+                var userLookup = new Dictionary<string, string>();
+                using (var userConn = GetConnection())
+                {
+                    userConn.Open();
+                    var userCmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", userConn);
+                    using (var reader = userCmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var uid = reader["ID"].ToString();
+                            var name = reader["FullName"].ToString();
+                            userLookup[uid] = name;
+                        }
+                    }
+                }
+
+                // ✨ Apply display name resolution for foUserID_ fields
+                foreach (var table in tableData.Keys)
+                {
+                    foreach (var row in tableData[table])
+                    {
+                        foreach (var key in row.Keys.Where(k => k.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)).ToList())
+                        {
+                            var userIdValue = row[key]?.ToString();
+                            if (!string.IsNullOrEmpty(userIdValue) && userLookup.TryGetValue(userIdValue, out var fullName))
+                            {
+                                row[$"{key}_Display"] = fullName;
+                            }
+                        }
+                    }
+                }
+
                 ViewBag.PrefilledValues = prefilledValues;
                 PopulateProcessHistory(conn, null, processInstanceId);
+
             }
 
             // Rework Comment
@@ -1817,7 +1875,6 @@ namespace FreschOne.Controllers
         }
 
 
-
         private void PopulateProcessHistory(SqlConnection conn, SqlTransaction transaction, int? processInstanceId)
         {
             var ignoredColumns = GetIgnoredColumns(conn);
@@ -1825,79 +1882,84 @@ namespace FreschOne.Controllers
 
             var history = new List<ProcessEventAuditViewModel>();
 
-            var cmd = new SqlCommand(@"
-        SELECT a.id AS DetailID, ProcessEventID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, StepNo, c.FirstName + ' '+ c.LastName AS FullName
-        FROM foProcessEventsDetail a 
-        LEFT OUTER JOIN foProcessSteps b ON a.StepID = b.ID
-        LEFT JOIN foUsers c ON c.ID = a.CreatedUserID
-        WHERE ProcessInstanceID = @ProcessInstanceID
-        ORDER BY CreatedDate", conn, transaction);
+            string mainQuery = @"
+SELECT a.id AS DetailID, ProcessEventID, StepID, TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, StepNo, 
+       c.FirstName + ' ' + c.LastName AS FullName
+FROM foProcessEventsDetail a
+LEFT JOIN foProcessSteps b ON a.StepID = b.ID
+LEFT JOIN foUsers c ON c.ID = a.CreatedUserID
+WHERE ProcessInstanceID = @ProcessInstanceID
+ORDER BY CreatedDate";
 
-            cmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-
-            using (var reader = cmd.ExecuteReader())
+            using (var cmd = new SqlCommand(mainQuery, conn, transaction))
             {
-                while (reader.Read())
+                cmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                using (var reader = cmd.ExecuteReader())
                 {
-                    var json = reader["DataSetUpdate"].ToString();
-                    var rawData = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-                    var data = rawData
-                        .Where(kvp => !ignoredColumns.Contains(kvp.Key))
-                        .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-
-                    history.Add(new ProcessEventAuditViewModel
+                    while (reader.Read())
                     {
-                        DetailID = Convert.ToInt32(reader["DetailID"]),
-                        ProcessEventID = Convert.ToInt32(reader["ProcessEventID"]),
-                        StepNo = Convert.ToDecimal(reader["StepNo"]),
-                        TableName = reader["TableName"].ToString(),
-                        RecordID = Convert.ToInt32(reader["RecordID"]),
-                        CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
-                        CreatedUserID = Convert.ToInt32(reader["CreatedUserID"]),
-                        FullName = reader["FullName"].ToString(),
-                        Data = data
-                    });
+                        var json = reader["DataSetUpdate"].ToString();
+                        var rawData = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                        var data = rawData
+                            .Where(kvp => !ignoredColumns.Contains(kvp.Key))
+                            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+                        history.Add(new ProcessEventAuditViewModel
+                        {
+                            DetailID = Convert.ToInt32(reader["DetailID"]),
+                            ProcessEventID = Convert.ToInt32(reader["ProcessEventID"]),
+                            StepNo = Convert.ToDecimal(reader["StepNo"]),
+                            TableName = reader["TableName"].ToString(),
+                            RecordID = Convert.ToInt32(reader["RecordID"]),
+                            CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
+                            CreatedUserID = Convert.ToInt32(reader["CreatedUserID"]),
+                            FullName = reader["FullName"].ToString(),
+                            Data = data
+                        });
+                    }
                 }
             }
 
-            // 🔹 Approval Events
-            var approvalCmd = new SqlCommand(@"
-        SELECT a.id AS DetailID, ApprovalEventID, StepID, 'foApproval' AS TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, ISNULL(StepNo, '1.00') AS StepNo, c.FirstName + ' '+ c.LastName AS FullName
-        FROM foApprovalEventsDetail a 
-        LEFT OUTER JOIN foApprovalSteps b ON a.StepID = b.ID
-        LEFT JOIN foUsers c ON c.ID = a.CreatedUserID
-        WHERE ProcessInstanceID = @ProcessInstanceID
-        ORDER BY CreatedDate", conn, transaction);
+            string approvalQuery = @"
+SELECT a.id AS DetailID, ApprovalEventID, StepID, 'foApproval' AS TableName, RecordID, DataSetUpdate, CreatedDate, CreatedUserID, 
+       ISNULL(StepNo, '1.00') AS StepNo, c.FirstName + ' ' + c.LastName AS FullName
+FROM foApprovalEventsDetail a
+LEFT JOIN foApprovalSteps b ON a.StepID = b.ID
+LEFT JOIN foUsers c ON c.ID = a.CreatedUserID
+WHERE ProcessInstanceID = @ProcessInstanceID
+ORDER BY CreatedDate";
 
-            approvalCmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
-
-            using (var reader = approvalCmd.ExecuteReader())
+            using (var cmd = new SqlCommand(approvalQuery, conn, transaction))
             {
-                while (reader.Read())
+                cmd.Parameters.AddWithValue("@ProcessInstanceID", processInstanceId);
+                using (var reader = cmd.ExecuteReader())
                 {
-                    var json = reader["DataSetUpdate"].ToString();
-                    var rawData = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-                    var data = rawData
-                        .Where(kvp => !ignoredColumns.Contains(kvp.Key))
-                        .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-                    data["StepType"] = "Approval";
-
-                    history.Add(new ProcessEventAuditViewModel
+                    while (reader.Read())
                     {
-                        DetailID = Convert.ToInt32(reader["DetailID"]),
-                        ProcessEventID = Convert.ToInt32(reader["ApprovalEventID"]),
-                        StepNo = Convert.ToDecimal(reader["StepNo"]),
-                        TableName = reader["TableName"].ToString(),
-                        RecordID = Convert.ToInt32(reader["RecordID"]),
-                        CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
-                        CreatedUserID = Convert.ToInt32(reader["CreatedUserID"]),
-                        FullName = reader["FullName"].ToString(),
-                        Data = data
-                    });
+                        var json = reader["DataSetUpdate"].ToString();
+                        var rawData = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                        var data = rawData
+                            .Where(kvp => !ignoredColumns.Contains(kvp.Key))
+                            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                        data["StepType"] = "Approval";
+
+                        history.Add(new ProcessEventAuditViewModel
+                        {
+                            DetailID = Convert.ToInt32(reader["DetailID"]),
+                            ProcessEventID = Convert.ToInt32(reader["ApprovalEventID"]),
+                            StepNo = Convert.ToDecimal(reader["StepNo"]),
+                            TableName = reader["TableName"].ToString(),
+                            RecordID = Convert.ToInt32(reader["RecordID"]),
+                            CreatedDate = Convert.ToDateTime(reader["CreatedDate"]),
+                            CreatedUserID = Convert.ToInt32(reader["CreatedUserID"]),
+                            FullName = reader["FullName"].ToString(),
+                            Data = data
+                        });
+                    }
                 }
             }
 
-            // 🔹 Resolve FKs for All Tables
+            // 🔍 Prepare FK metadata
             var foreignKeys = new Dictionary<string, List<ForeignKeyInfo>>();
             var foreignKeyOptions = new Dictionary<string, List<SelectListItem>>();
             var usedTables = history.Select(h => h.TableName).Distinct();
@@ -1908,77 +1970,89 @@ namespace FreschOne.Controllers
                 foreach (var fk in foreignKeys[table])
                 {
                     if (!foreignKeyOptions.ContainsKey(fk.TableName))
-                    {
                         foreignKeyOptions[fk.TableName] = GetForeignKeyOptions(fk.TableName);
-                    }
                 }
             }
 
+            // 🔁 Bulk foUsers lookup
+            var userLookup = new Dictionary<string, string>();
+            using (var cmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", conn, transaction))
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    userLookup[reader["ID"].ToString()] = reader["FullName"].ToString();
+                }
+            }
+
+            // 🧠 Transform data
             foreach (var record in history)
             {
-                if (foreignKeys.TryGetValue(record.TableName, out var fks))
-                {
-                    foreach (var fk in fks)
-                    {
-                        if (record.Data.TryGetValue(fk.ColumnName, out var fkVal) && fkVal != null)
-                        {
-                            var fkId = fkVal.ToString();
-                            var label = foreignKeyOptions[fk.TableName]
-                                .FirstOrDefault(o => o.Value == fkId)?.Text;
+                var rawData = new Dictionary<string, object>(record.Data); // work from copy
 
+                foreach (var kvp in rawData)
+                {
+                    var key = kvp.Key;
+                    var val = kvp.Value?.ToString();
+
+                    if (string.IsNullOrWhiteSpace(val)) continue;
+
+                    // ✅ Resolve foUserID_ to FirstName + LastName
+                    if (key.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (userLookup.TryGetValue(val, out var name))
+                        {
+                            var newKey = key.Replace("foUserID_", "").Replace("_", " ").Trim();
+                            record.Data[newKey] = name;
+                        }
+                        record.Data.Remove(key); // remove original foUserID_* key
+                    }
+                    // ✅ Generic FK resolution
+                    else if (key.EndsWith("ID", StringComparison.OrdinalIgnoreCase) && int.TryParse(val, out var fkId))
+                    {
+                        var matchingFk = foreignKeys.TryGetValue(record.TableName, out var fks)
+                            ? fks.FirstOrDefault(fk => fk.ColumnName == key)
+                            : null;
+
+                        if (matchingFk != null && foreignKeyOptions.TryGetValue(matchingFk.TableName, out var opts))
+                        {
+                            var label = opts.FirstOrDefault(o => o.Value == val)?.Text;
                             if (!string.IsNullOrWhiteSpace(label))
                             {
-                                record.Data[fk.ColumnName] = $"{label}";
+                                record.Data[key] = label;
                             }
-                        }
-                    }
-                }
-
-                // 🔥 Fallback FK resolution for non-`_md_` tables
-                foreach (var kvp in record.Data.ToList())
-                {
-                    if (kvp.Key.EndsWith("ID", StringComparison.OrdinalIgnoreCase) && int.TryParse(kvp.Value?.ToString(), out var fkId))
-                    {
-                        var colName = kvp.Key;
-                        var tableName = foreignKeys
-                            .SelectMany(x => x.Value)
-                            .FirstOrDefault(fk => fk.ColumnName == colName)?.TableName;
-
-                        if (!string.IsNullOrEmpty(tableName))
-                        {
-                            var description = GetForeignKeyDescription(tableName, fkId.ToString());
-                            if (!string.IsNullOrWhiteSpace(description))
+                            else
                             {
-                                record.Data[colName] = $"{description}";
+                                var fallback = GetForeignKeyDescription(matchingFk.TableName, val);
+                                if (!string.IsNullOrWhiteSpace(fallback))
+                                    record.Data[key] = fallback;
                             }
                         }
                     }
                 }
 
-                // 🔹 Attachment Formatting
+                // ✅ Attachment resolution
                 foreach (var key in record.Data.Keys.Where(k => k.StartsWith("attachment_")).ToList())
                 {
                     var val = record.Data[key]?.ToString();
-                    if (!string.IsNullOrEmpty(val) && val.Contains(';'))
+                    if (!string.IsNullOrEmpty(val) && val.Contains(";"))
                     {
                         var parts = val.Split(';');
                         var desc = parts[0];
                         var path = parts.Length > 1 ? parts[1] : "";
-                        if (!string.IsNullOrEmpty(path))
-                        {
-                            var filename = System.IO.Path.GetFileName(path);
-                            record.Data[key] = $"<a href='/Attachments/{path}' target='_blank'>{desc ?? filename}</a>";
-                        }
-                        else
-                        {
-                            record.Data[key] = desc;
-                        }
+                        var filename = System.IO.Path.GetFileName(path);
+                        record.Data[key] = !string.IsNullOrEmpty(path)
+                            ? $"<a href='/Attachments/{path}' target='_blank'>{desc ?? filename}</a>"
+                            : desc;
                     }
                 }
             }
 
             ViewBag.ProcessHistory = history;
         }
+
+
+
 
 
         private List<foProcessDetail> GetProcessTables(int stepId, SqlConnection conn, SqlTransaction tx)

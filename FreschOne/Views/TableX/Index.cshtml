@@ -20,101 +20,102 @@
     }
     <button id="toggleSearchBtn" class="btn btn-sm btn-outline-primary" onclick="toggleSearch()">+ Show Search</button>
 </div>
-
 <table class="table table-bordered table-hover align-middle" id="dataTable">
     <thead class="table-light">
         <tr>
             @foreach (var column in Model.Columns)
             {
-                string formattedColumn;
+                string label = column;
 
-                if (column == "ID")
+                if (label == "ID")
                 {
-                    formattedColumn = "ID";
+                    label = "ID";
                 }
-                else if (column.StartsWith("attachment_"))
+                else if (label.StartsWith("attachment_"))
                 {
-                    var stripped = column.Replace("attachment_", "");
-                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
+                    label = label.Replace("attachment_", "");
                 }
-                else if (column.StartsWith("geo_"))
+                else if (label.StartsWith("geo_"))
                 {
-                    var stripped = column.Replace("geo_", "");
-                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
+                    label = label.Replace("geo_", "");
                 }
-                else
+                else if (label.StartsWith("foUserID_"))
                 {
-                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
+                    label = label.Replace("foUserID_", "");
+                }
+                else if (label.EndsWith("ID", StringComparison.OrdinalIgnoreCase))
+                {
+                    label = label[..^2];
                 }
 
-                <th class="fixed-width" data-column="@column">@formattedColumn</th>
+                label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
+                <th class="fixed-width" data-column="@column">@label</th>
             }
             <th>Actions</th>
         </tr>
+
         <tr id="searchRow" style="display: none;">
             @foreach (var column in Model.Columns)
             {
-                string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
-
-                if (column.StartsWith("geo_"))
+                if (column.StartsWith("attachment_"))
                 {
-                    var stripped = column.Replace("geo_", "");
-                    formattedColumn = System.Text.RegularExpressions.Regex.Replace(stripped, "(?<=.)([A-Z])", " $1");
-                }
-
-                <th class="fixed-width">
-                    @if (column.StartsWith("attachment_"))
-                    {
+                    <th class="fixed-width">
                         <select class="form-control column-search" data-column="@column">
                             <option value="">All</option>
                             <option value="true">With Attachment</option>
                             <option value="false">No Attachment</option>
                         </select>
-                    }
-                    else
-                    {
-                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @formattedColumn" />
-                    }
-                </th>
+                    </th>
+                }
+                else
+                {
+                    string label = column.Replace("attachment_", "").Replace("geo_", "").Replace("foUserID_", "");
+                    label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
+
+                    <th class="fixed-width">
+                        <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @label" />
+                    </th>
+                }
             }
             <th></th>
         </tr>
     </thead>
+
     <tbody id="tableBody">
         @foreach (var row in Model.TableData)
         {
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    var value = row[column]?.ToString() ?? "";
-                    <td class="fixed-width" data-column="@column" data-sort="@value">
+                    var rawValue = row[column]?.ToString() ?? "";
+                    var displayKey = $"{column}_Display";
+                    var displayValue = row.ContainsKey(displayKey) ? row[displayKey]?.ToString() : rawValue;
+
+                    <td class="fixed-width" data-column="@column" data-sort="@rawValue">
                         @if (column.StartsWith("attachment_"))
                         {
-                            <div class="text-center">
-                                @{
-                                    var parts = value.Split(';');
-                                    var desc = parts[0].Trim();
-                                    var url = parts.Length > 1 ? parts[1].Trim().Replace("\\", "/") : "";
-                                    if (!string.IsNullOrWhiteSpace(url))
-                                    {
-                                        <a href="@Url.Content("~/" + url)" target="_blank">@desc</a>
-                                    }
-                                    else
-                                    {
-                                        @desc
-                                    }
-                                }
-                            </div>
+                            var parts = rawValue.Split(';');
+                            var desc = parts.ElementAtOrDefault(0)?.Trim();
+                            var url = parts.ElementAtOrDefault(1)?.Trim().Replace("\\", "/");
+
+                            if (!string.IsNullOrWhiteSpace(url))
+                            {
+                                <a href="@Url.Content("~/" + url)" target="_blank">@desc</a>
+                            }
+                            else
+                            {
+                                @desc
+                            }
                         }
                         else
                         {
-                            @value
+                            @Html.Raw(displayValue)
                         }
                     </td>
                 }
+
                 <td class="text-center align-middle actions-column">
                     <div class="d-flex flex-row justify-content-center align-items-center gap-2">
-
                         @if (readwriteaccess == "RW")
                         {
                             <form method="get" asp-action="Edit" class="m-0 p-0">
@@ -122,49 +123,41 @@
                                 <input type="hidden" name="tablename" value="@tablename" />
                                 <input type="hidden" name="userid" value="@userid" />
                                 <input type="hidden" name="pageNumber" value="@ViewBag.pageNumber" />
-                                <button type="submit"
-                                        class="custom-button btn-gold btn-sm d-flex align-items-center justify-content-center"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                                <button type="submit" class="custom-button btn-gold btn-sm" title="Edit">
                                     <i class="bi bi-pencil-fill"></i>
                                 </button>
                             </form>
 
-                            <button type="button"
-                                    class="custom-button btn-red btn-sm d-flex align-items-center justify-content-center"
-                                    onclick="confirmDelete(@row["ID"], '@tablename')"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Delete">
+                            <button type="button" class="custom-button btn-red btn-sm"
+                                    onclick="confirmDelete(@row["ID"], '@tablename')" title="Delete">
                                 <i class="bi bi-trash-fill"></i>
                             </button>
                         }
-
-                        @if (readwriteaccess == "R")
+                        else if (readwriteaccess == "R")
                         {
                             <form method="get" asp-action="Edit" class="m-0 p-0">
                                 <input type="hidden" name="id" value="@row["ID"]" />
                                 <input type="hidden" name="tablename" value="@tablename" />
                                 <input type="hidden" name="userid" value="@userid" />
                                 <input type="hidden" name="pageNumber" value="@ViewBag.pageNumber" />
-                                <button type="submit"
-                                        class="custom-button btn-gold btn-sm d-flex align-items-center justify-content-center"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="View">
+                                <button type="submit" class="custom-button btn-gold btn-sm" title="View">
                                     <i class="bi bi-eye-fill"></i>
                                 </button>
                             </form>
                         }
 
                         <button type="button"
-                                class="custom-button btn-green btn-sm d-flex align-items-center justify-content-center"
-                                onclick="showPopup(event, '@tablename', '@row["ID"]')"
-                                data-bs-toggle="tooltip" data-bs-placement="top" title="More">
+                                class="custom-button btn-green btn-sm"
+                                onclick="showPopup(event, '@tablename', '@row["ID"]')" title="More">
                             <i class="bi bi-link-45deg"></i>
                         </button>
                     </div>
                 </td>
-
             </tr>
         }
     </tbody>
 </table>
+
 
 <!-- Pagination Controls -->
 <div class="d-flex justify-content-center mt-3">
