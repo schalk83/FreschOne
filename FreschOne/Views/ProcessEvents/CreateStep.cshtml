@@ -86,13 +86,15 @@
                                         <th class="fw-bold">Row No</th>
                                         @foreach (var column in columns)
                                         {
-                                            string label = column.StartsWith("attachment_")
-                                            ? column.Replace("attachment_", "").Replace("_", " ")
-                                            : column.StartsWith("geo_")
-                                            ? column.Replace("geo_", "").Replace("_", " ")
-                                            : column.EndsWith("ID")
-                                            ? column[..^2]
-                                            : column;
+                                             string label = column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)
+                ? column.Replace("foUserID_", "").Replace("_", " ")
+                : column.StartsWith("attachment_")
+                    ? column.Replace("attachment_", "").Replace("_", " ")
+                    : column.StartsWith("geo_")
+                        ? column.Replace("geo_", "").Replace("_", " ")
+                        : column.EndsWith("ID")
+                            ? column[..^2]
+                            : column;
 
 
                                             label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
@@ -581,29 +583,6 @@
                 }
             );
         }
-
-         // function openSearchModal(tableName, columnName, targetField) {
-         //                // Example: Fetch and show modal data
-         //                fetch(`/TableX/GetSearchOptions?tableName=${tableName}&columnName=${columnName}`)
-         //                    .then(response => response.json())
-         //                    .then(data => {
-         //                        // Build modal content dynamically based on `data`
-         //                        let content = '<div class="modal-header"><h5 class="modal-title">Select Value</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>';
-         //                        content += '<div class="modal-body"><ul class="list-group">';
-         //                        data.forEach(item => {
-         //                            content += `<li class="list-group-item list-group-item-action" onclick="selectSearchValue('${targetField}', '${item.value}')">${item.text}</li>`;
-         //                        });
-         //                        content += '</ul></div>';
-
-         //                        document.getElementById('searchModalContent').innerHTML = content;
-         //                        new bootstrap.Modal(document.getElementById('searchModal')).show();
-         //                    });
-         //            }
-
-         //            function selectSearchValue(fieldId, value) {
-         //                document.getElementById(fieldId).value = value;
-         //                bootstrap.Modal.getInstance(document.getElementById('searchModal')).hide();
-         //            }
 
     </script>
 }

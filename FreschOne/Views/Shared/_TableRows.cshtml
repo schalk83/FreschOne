@@ -50,6 +50,21 @@
                     <input type="file" name="file_@fieldName" class="form-control mb-1" onchange="updateAttachmentField('@fieldName')" />
                     <input type="hidden" name="@fieldName" id="hidden_@fieldName" value="@($"{desc};{path}")" />
                 }
+                else if (column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                {
+                    var userFieldId = fieldName; // Hidden input
+                    var userDisplayId = $"{fieldName}_Display";
+                    var displayValue = values.ContainsKey($"{column}_Display") ? values[$"{column}_Display"]?.ToString() : "";
+                    var cleanLabel = column.Replace("foUserID_", "").Replace("_", " ");
+
+                    <div class="input-group">
+                        <input type="hidden" name="@userFieldId" id="@userFieldId" value="@value" />
+                        <input type="text" id="@userDisplayId" value="@displayValue" class="form-control" readonly placeholder="Search..." onclick="openSearchModal('foUsers', 'ID', '@userFieldId')" />
+                        <button type="button" class="btn btn-outline-secondary" onclick="openSearchModal('foUsers', 'ID', '@userFieldId')">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                }
                 else if (Model.ForeignKeys.Any(fk => fk.ColumnName == column))
                 {
                     var fk = Model.ForeignKeys.First(fk => fk.ColumnName == column);
@@ -97,7 +112,6 @@
                 {
                     <input type="text" name="@fieldName" value="@value" class="form-control summary-trigger" />
                 }
-
             </td>
         }
 

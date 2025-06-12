@@ -307,7 +307,7 @@ namespace FreschOne.Controllers
                             TempData["SuccessMessage"] = nextAssignmentMessageRework;
                             TempData["UserId"] = userId;
 
-                            return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessageRework, userId, actionheader = decision });
+                            return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessageRework, userId, actionheader = decision, processInstanceId = processInstanceId });
 
                         }
                         else
@@ -368,7 +368,7 @@ namespace FreschOne.Controllers
                         ViewBag.action = "Step declined";
                     }
 
-                    return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessage, userId, actionheader = decision });
+                    return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessage, userId, actionheader = decision, processInstanceId = processInstanceId });
                 }
                 catch (Exception ex)
                 {

@@ -23,37 +23,67 @@
 <div class="d-flex justify-content-end mb-2">
     <button id="toggleSearchBtn" class="btn btn-sm btn-outline-secondary" onclick="toggleSearch()">+ Show Search</button>
 </div>
-
 <div class="table-responsive border rounded shadow-sm">
-    <table class="table table-hover table-sm align-middle" id="dataTable">
+    <table class="table table-bordered table-hover align-middle" id="dataTable">
         <thead class="table-light">
             <tr>
                 @foreach (var column in Model.Columns)
                 {
-                    string formattedColumn = System.Text.RegularExpressions.Regex.Replace(column.Replace("ID", ""), "(?<=.)([A-Z])", " $1");
-                    <th class="text-nowrap">@formattedColumn</th>
+                    string label = column;
+
+                    if (label == "ID")
+                    {
+                        label = "ID";
+                    }
+                    else if (label.StartsWith("attachment_"))
+                    {
+                        label = label.Replace("attachment_", "");
+                    }
+                    else if (label.StartsWith("geo_"))
+                    {
+                        label = label.Replace("geo_", "");
+                    }
+                    else if (label.StartsWith("foUserID_"))
+                    {
+                        label = label.Replace("foUserID_", "");
+                    }
+                    else if (label.EndsWith("ID", StringComparison.OrdinalIgnoreCase))
+                    {
+                        label = label[..^2];
+                    }
+
+                    label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
+                    <th class="fixed-width text-nowrap" data-column="@column">@label</th>
                 }
                 <th class="text-center">Actions</th>
             </tr>
 
-            <!-- Search Row -->
             <tr id="searchRow" style="display: none;">
                 @foreach (var column in Model.Columns)
                 {
-                    <th>
-                        @if (column.StartsWith("attachment_"))
-                        {
-                            <select class="form-select form-select-sm column-search" data-column="@column">
+                    if (column.StartsWith("attachment_"))
+                    {
+                        <th class="fixed-width">
+                            <select class="form-control column-search" data-column="@column">
                                 <option value="">All</option>
                                 <option value="true">With Attachment</option>
                                 <option value="false">No Attachment</option>
                             </select>
-                        }
-                        else
-                        {
-                            <input type="text" class="form-control form-control-sm column-search" data-column="@column" placeholder="Search..." />
-                        }
-                    </th>
+                        </th>
+                    }
+                    else
+                    {
+                        string searchLabel = column
+                        .Replace("attachment_", "")
+                        .Replace("geo_", "")
+                        .Replace("foUserID_", "");
+
+                        searchLabel = System.Text.RegularExpressions.Regex.Replace(searchLabel.Replace("_", " "), "(?<=.)([A-Z])", " $1");
+
+                        <th class="fixed-width">
+                            <input type="text" class="form-control column-search" data-column="@column" placeholder="Search @searchLabel" />
+                        </th>
+                    }
                 }
                 <th></th>
             </tr>
@@ -65,19 +95,48 @@
                 <tr>
                     @foreach (var column in Model.Columns)
                     {
-                        <td class="text-nowrap" data-column="@column" data-description="@row[column]">
-                            @row[column]
+                        string rawValue = row[column]?.ToString() ?? "";
+                        string displayKey = $"{column}_Display";
+                        string displayValue = row.ContainsKey(displayKey) ? row[displayKey]?.ToString() ?? "" : rawValue;
+
+                        <td class="fixed-width text-nowrap" data-column="@column" data-sort="@rawValue">
+                            @if (column.StartsWith("attachment_"))
+                            {
+                                var parts = rawValue.Split(';');
+                                var desc = parts.ElementAtOrDefault(0)?.Trim();
+                                var url = parts.ElementAtOrDefault(1)?.Trim().Replace("\\", "/");
+
+                                if (!string.IsNullOrWhiteSpace(url))
+                                {
+                                    <a href="@Url.Content("~/" + url)" target="_blank">@desc</a>
+                                }
+                                else
+                                {
+                                    @desc
+                                }
+                            }
+                            else
+                            {
+                                @Html.Raw(displayValue)
+                            }
                         </td>
                     }
-                    <td class="text-center">
-                        <a href="@Url.Action("GenerateReport", "DynamicReport", new { reportid = reportid, PKID = row["ID"], userId = userid })" class="btn btn-sm btn-green shadow-sm">View Report</a>
-                        <a href="@Url.Action("ExportSingleToExcel", "TableXReport", new { reportid = reportid, id = row["ID"], tablename = tablename })" class="btn btn-sm btn-outline-primary">📄 Download</a>
+
+                    <td class="text-center align-middle">
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="@Url.Action("GenerateReport", "DynamicReport", new { reportid = reportid, PKID = row["ID"], userId = userid })"
+                               class="btn btn-sm btn-green shadow-sm">View Report</a>
+                            <a href="@Url.Action("ExportSingleToExcel", "TableXReport", new { reportid = reportid, id = row["ID"], tablename = tablename })"
+                               class="btn btn-sm btn-outline-primary">📄 Download</a>
+                        </div>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
 </div>
+
+
 
 <!-- Pagination and Scripts (unchanged) -->
 <div class="d-flex justify-content-center mt-3">

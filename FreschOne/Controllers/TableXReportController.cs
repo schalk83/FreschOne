@@ -38,13 +38,11 @@ namespace FreschOne.Controllers
             EnsureAuditFieldsExist(tablename);
             SetUserAccess(userid);
 
-            // Report metadata
             ViewBag.ReportName = GetReportName(reportid);
             ViewBag.userid = userid;
             ViewBag.tablename = tablename;
             ViewBag.ReportID = reportid;
 
-            // Get table description (prefix stripping)
             var tablePrefixes = GetTablePrefixes();
             var tableDescription = tablePrefixes
                 .Where(p => tablename.StartsWith(p.Prefix))
@@ -52,46 +50,99 @@ namespace FreschOne.Controllers
                 .FirstOrDefault() ?? tablename;
             ViewBag.tableDescription = tableDescription.Replace("_", " ");
 
-            // Fetch columns + QR detection
             bool hasQR;
             var columns = GetTableColumns(tablename, reportid, out hasQR);
             ViewBag.HasQR = hasQR;
 
-            // Fetch data
             var tableData = GetTableData(tablename, reportid, hasQR);
 
-            // Filter by search text (if provided)
             if (!string.IsNullOrEmpty(searchText))
             {
-                tableData = tableData.Where(row =>
-                    row.Values.Any(v => v?.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) == true)
-                ).ToList();
+                tableData = tableData
+                    .Where(row => row.Values.Any(v => v?.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) == true))
+                    .ToList();
             }
 
-            // Replace FK values with descriptions
             var foreignKeys = GetForeignKeyColumns(tablename);
-            foreach (var row in tableData)
-            {
-                foreach (var fk in foreignKeys)
+
+            var foUserKeys = columns
+                .Where(c => c.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                .Where(c => !foreignKeys.Any(fk => fk.ColumnName == c))
+                .Select(c => new ForeignKeyInfo
                 {
-                    if (row.ContainsKey(fk.ColumnName) && row[fk.ColumnName] != DBNull.Value)
+                    ColumnName = c,
+                    TableName = "foUsers",
+                    ColumnDescription = "User"
+                }).ToList();
+
+            foreignKeys.AddRange(foUserKeys);
+
+            var fkOptions = new Dictionary<string, List<SelectListItem>>();
+            foreach (var fk in foreignKeys.Where(f => f.TableName != "foUsers"))
+            {
+                if (!fkOptions.ContainsKey(fk.TableName))
+                {
+                    fkOptions[fk.TableName] = GetForeignKeyOptions(fk.TableName);
+                }
+            }
+
+            var userMap = new Dictionary<string, string>();
+            if (foreignKeys.Any(fk => fk.TableName == "foUsers"))
+            {
+                using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                {
+                    conn.Open();
+                    var cmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", conn);
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        row[fk.ColumnName] = GetForeignKeyDescription(fk.TableName, row[fk.ColumnName]);
+                        while (reader.Read())
+                        {
+                            userMap[reader["ID"].ToString()] = reader["FullName"].ToString();
+                        }
                     }
                 }
             }
 
-            // Pagination
+            foreach (var row in tableData)
+            {
+                foreach (var column in columns)
+                {
+                    if (row.ContainsKey(column))
+                    {
+                        var rawValue = row[column]?.ToString();
+
+                        if (column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (!string.IsNullOrWhiteSpace(rawValue) && userMap.TryGetValue(rawValue, out var fullName))
+                            {
+                                row[$"{column}_Display"] = fullName;
+                            }
+                        }
+                        else
+                        {
+                            var fk = foreignKeys.FirstOrDefault(f => f.ColumnName == column && f.TableName != "foUsers");
+                            if (fk != null && fkOptions.ContainsKey(fk.TableName))
+                            {
+                                var match = fkOptions[fk.TableName].FirstOrDefault(opt => opt.Value == rawValue);
+                                if (match != null)
+                                {
+                                    row[$"{column}_Display"] = match.Text;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             int pageSize = 20;
-            int totalPages = (int)Math.Ceiling((double)tableData.Count / pageSize);
             var paginatedData = tableData.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+            int totalPages = (int)Math.Ceiling((double)tableData.Count / pageSize);
 
             ViewBag.pageNumber = pageNumber;
             ViewBag.totalPages = totalPages;
             ViewBag.searchText = searchText;
             ViewBag.readwriteaccess = "R";
 
-            // Breadcrumb
             TempData["DataManagementBreadcrumbX"] = JsonConvert.SerializeObject(new DataManagementBreadcrumbX
             {
                 PreviousScreen = "Index",
@@ -105,8 +156,7 @@ namespace FreschOne.Controllers
             });
             TempData.Keep("DataManagementBreadcrumbX");
 
-            // Build view model
-            var viewModel = new TableViewModel
+            return View(new TableViewModel
             {
                 UserId = userid,
                 TableName = tablename,
@@ -114,9 +164,7 @@ namespace FreschOne.Controllers
                 TableData = paginatedData,
                 PrimaryKeyColumn = GetPrimaryKeyColumn(tablename),
                 ForeignKeys = foreignKeys
-            };
-
-            return View(viewModel);
+            });
         }
 
 
@@ -198,20 +246,104 @@ namespace FreschOne.Controllers
         private string GetForeignKeyDescription(string tableName, object foreignKeyValue)
         {
             string description = string.Empty;
-            string query = $"SELECT Description FROM {tableName} WHERE ID = @Id";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(query, connection))
+
+                // 🟢 1. Handle foUsers directly
+                if (tableName.Equals("foUsers", StringComparison.OrdinalIgnoreCase))    
                 {
-                    command.Parameters.AddWithValue("@Id", foreignKeyValue);
-                    description = command.ExecuteScalar()?.ToString();
+                    string userQuery = "SELECT FirstName + ' ' + LastName AS FullName FROM foUsers WHERE ID = @Id";
+                    using (var cmd = new SqlCommand(userQuery, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", foreignKeyValue);
+                        var result = cmd.ExecuteScalar();
+                        if (result != null)
+                            return result.ToString();
+                    }
+                }
+
+                // 🔍 2. Check if it's a maintenance table (prefix match from foTablePrefixes)
+                bool isMaintenance = false;
+                string checkQuery = @"
+            SELECT COUNT(*) 
+            FROM foTablePrefixes 
+            WHERE @TableName LIKE Prefix + '%' AND Description = 'Maintenance'";
+
+                using (var checkCmd = new SqlCommand(checkQuery, connection))
+                {
+                    checkCmd.Parameters.AddWithValue("@TableName", tableName);
+                    isMaintenance = (int)checkCmd.ExecuteScalar() > 0;
+                }
+
+                if (isMaintenance)
+                {
+                    // 🛠 3. Maintenance table: return [Description] directly
+                    string descQuery = $"SELECT Description FROM {tableName} WHERE ID = @Id";
+                    using (var cmd = new SqlCommand(descQuery, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", foreignKeyValue);
+                        var result = cmd.ExecuteScalar();
+                        if (result != null)
+                        {
+                            description = result.ToString();
+                        }
+                    }
+                }
+                else
+                {
+                    // 🧠 4. Composite fallback for other FK tables (non-maintenance)
+                    var columns = new List<string>();
+                    var columnsQuery = @"
+                SELECT COLUMN_NAME, DATA_TYPE 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_NAME = @TableName 
+                AND COLUMN_NAME NOT IN ('ID', 'Active') 
+                AND COLUMN_NAME NOT LIKE '%ID'";
+
+                    using (var cmd = new SqlCommand(columnsQuery, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@TableName", tableName);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string col = reader["COLUMN_NAME"].ToString();
+                                string type = reader["DATA_TYPE"].ToString().ToLower();
+
+                                // Wrap non-varchar in CONVERT
+                                if (type != "varchar" && type != "nvarchar" && type != "text")
+                                {
+                                    col = $"CONVERT(varchar, {col})";
+                                }
+
+                                columns.Add(col);
+                            }
+                        }
+                    }
+
+                    if (columns.Count > 0)
+                    {
+                        string selectClause = string.Join(" + ' | ' + ", columns);
+                        string compositeQuery = $"SELECT {selectClause} FROM {tableName} WHERE ID = @Id";
+
+                        using (var cmd = new SqlCommand(compositeQuery, connection))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", foreignKeyValue);
+                            var result = cmd.ExecuteScalar();
+                            if (result != null)
+                            {
+                                description = result.ToString();
+                            }
+                        }
+                    }
                 }
             }
 
             return description;
         }
+
 
         private Dictionary<string, object> GetRecordById(string tablename, int id)
         {
@@ -243,29 +375,77 @@ namespace FreschOne.Controllers
         private List<SelectListItem> GetForeignKeyOptions(string tableName)
         {
             var options = new List<SelectListItem>();
-            string query = $"SELECT ID, Description FROM {tableName}";
 
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 connection.Open();
-                using (var command = new SqlCommand(query, connection))
+
+                var ignoredColumns = GetIgnoredColumns(connection);
+                var ignoredSet = new HashSet<string>(ignoredColumns, StringComparer.OrdinalIgnoreCase);
+
+                var fkColumns = GetForeignKeyColumns(tableName).ToList();
+                var fkLookup = fkColumns.ToDictionary(fk => fk.ColumnName, fk => fk.TableName, StringComparer.OrdinalIgnoreCase);
+
+                // Get available columns for display
+                var columnsQuery = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
+                var displayColumns = new List<string>();
+                using (var cmd = new SqlCommand(columnsQuery, connection))
                 {
-                    using (var reader = command.ExecuteReader())
+                    cmd.Parameters.AddWithValue("@TableName", tableName);
+                    using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            options.Add(new SelectListItem
+                            var col = reader["COLUMN_NAME"].ToString();
+                            if (!col.Equals("ID", StringComparison.OrdinalIgnoreCase) && !ignoredSet.Contains(col))
                             {
-                                Value = reader["ID"].ToString(),
-                                Text = reader["Description"].ToString()
-                            });
+                                displayColumns.Add(col);
+                            }
                         }
+                    }
+                }
+
+                if (displayColumns.Count == 0)
+                    displayColumns.Add("ID"); // Fallback
+
+                // Build SELECT query
+                var selectColumns = "ID, " + string.Join(", ", displayColumns);
+                var query = $"SELECT {selectColumns} FROM {tableName} WHERE Active = 1";
+
+                using (var cmd = new SqlCommand(query, connection))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var displayParts = new List<string>();
+                        foreach (var col in displayColumns)
+                        {
+                            var val = reader[col]?.ToString();
+                            if (!string.IsNullOrEmpty(val) && fkLookup.ContainsKey(col))
+                            {
+                                // Foreign key column: Resolve FK description
+                                var fkTable = fkLookup[col];
+                                var fkOptions = GetForeignKeyOptions(fkTable);
+                                var match = fkOptions.FirstOrDefault(x => x.Value == val);
+                                if (match != null)
+                                    val = match.Text;
+                            }
+
+                            displayParts.Add(val);
+                        }
+
+                        options.Add(new SelectListItem
+                        {
+                            Value = reader["ID"].ToString(),
+                            Text = string.Join(" | ", displayParts)
+                        });
                     }
                 }
             }
 
             return options;
         }
+
 
         private List<SelectListItem> GetForeignKeyDropdownData(string referencedTableName)
         {

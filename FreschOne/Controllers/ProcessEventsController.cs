@@ -200,6 +200,42 @@ namespace FreschOne.Controllers
                     fkTables[fk.ColumnName] = fk.TableName;
                 }
             }
+
+
+            // 🔁 Resolve foUserID_ fields (to _Display)
+            var userLookup = new Dictionary<string, string>();
+            using (var conn2 = GetConnection())
+            {
+                conn2.Open();
+                using (var cmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", conn2))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        userLookup[reader["ID"].ToString()] = reader["FullName"].ToString();
+                    }
+                }
+            }
+
+            foreach (var table in tables)
+            {
+                var rows = tableData[table.TableName];
+                foreach (var row in rows)
+                {
+                    foreach (var key in row.Keys.ToList())
+                    {
+                        if (key.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var fouserId = row[key]?.ToString();
+                            if (!string.IsNullOrEmpty(fouserId) && userLookup.TryGetValue(fouserId, out var fullName))
+                            {
+                                row[$"{key}_Display"] = fullName;
+                            }
+                        }
+                    }
+                }
+            }
+
             ViewBag.ForeignKeyTables = fkTables;
 
 
@@ -466,38 +502,38 @@ namespace FreschOne.Controllers
                     prefilledValues[table.TableName] = rows;
                 }
 
-                // 🧠 Bulk lookup for all foUserID_ values across tables
-                var userLookup = new Dictionary<string, string>();
-                using (var userConn = GetConnection())
-                {
-                    userConn.Open();
-                    var userCmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", userConn);
-                    using (var reader = userCmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            var uid = reader["ID"].ToString();
-                            var name = reader["FullName"].ToString();
-                            userLookup[uid] = name;
-                        }
-                    }
-                }
+                //// 🧠 Bulk lookup for all foUserID_ values across tables
+                //var userLookup = new Dictionary<string, string>();
+                //using (var userConn = GetConnection())
+                //{
+                //    userConn.Open();
+                //    var userCmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", userConn);
+                //    using (var reader = userCmd.ExecuteReader())
+                //    {
+                //        while (reader.Read())
+                //        {
+                //            var uid = reader["ID"].ToString();
+                //            var name = reader["FullName"].ToString();
+                //            userLookup[uid] = name;
+                //        }
+                //    }
+                //}
 
-                // ✨ Apply display name resolution for foUserID_ fields
-                foreach (var table in tableData.Keys)
-                {
-                    foreach (var row in tableData[table])
-                    {
-                        foreach (var key in row.Keys.Where(k => k.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)).ToList())
-                        {
-                            var userIdValue = row[key]?.ToString();
-                            if (!string.IsNullOrEmpty(userIdValue) && userLookup.TryGetValue(userIdValue, out var fullName))
-                            {
-                                row[$"{key}_Display"] = fullName;
-                            }
-                        }
-                    }
-                }
+                //// ✨ Apply display name resolution for foUserID_ fields
+                //foreach (var table in tableData.Keys)
+                //{
+                //    foreach (var row in tableData[table])
+                //    {
+                //        foreach (var key in row.Keys.Where(k => k.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)).ToList())
+                //        {
+                //            var userIdValue = row[key]?.ToString();
+                //            if (!string.IsNullOrEmpty(userIdValue) && userLookup.TryGetValue(userIdValue, out var fullName))
+                //            {
+                //                row[$"{key}_Display"] = fullName;
+                //            }
+                //        }
+                //    }
+                //}
 
                 ViewBag.PrefilledValues = prefilledValues;
                 PopulateProcessHistory(conn, null, processInstanceId);
@@ -563,8 +599,43 @@ namespace FreschOne.Controllers
                     fkTables[fk.ColumnName] = fk.TableName;
                 }
             }
-            ViewBag.ForeignKeyTables = fkTables;
 
+
+            // 🔁 Resolve foUserID_ fields (to _Display)
+            var userLookup = new Dictionary<string, string>();
+            using (var conn2 = GetConnection())
+            {
+                conn2.Open();
+                using (var cmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", conn2))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        userLookup[reader["ID"].ToString()] = reader["FullName"].ToString();
+                    }
+                }
+            }
+
+            foreach (var table in tables)
+            {
+                var rows = tableData[table.TableName];
+                foreach (var row in rows)
+                {
+                    foreach (var key in row.Keys.ToList())
+                    {
+                        if (key.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var fouserId = row[key]?.ToString();
+                            if (!string.IsNullOrEmpty(fouserId) && userLookup.TryGetValue(fouserId, out var fullName))
+                            {
+                                row[$"{key}_Display"] = fullName;
+                            }
+                        }
+                    }
+                }
+            }
+
+            ViewBag.ForeignKeyTables = fkTables;
             ViewBag.OriginalAdhocApprovers = originalAdhocApprovers;
             ViewBag.ReportTables = tables;
             ViewBag.ReportData = tableData;
@@ -598,7 +669,6 @@ namespace FreschOne.Controllers
                 }
             }
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -888,7 +958,7 @@ namespace FreschOne.Controllers
                             ViewBag.action = "Step Submitted Successully";
                         }
 
-                        return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessage, userId, actionheader = ViewBag.action });
+                        return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessage, userId, actionheader = ViewBag.action, processInstanceId = processInstanceId });
 
                     }
                     catch (Exception ex)
@@ -1271,12 +1341,7 @@ namespace FreschOne.Controllers
                                 message += "<br>Reassigned to:<br> - " + string.Join("<br>- ", assignees);
                             }
 
-                            //return RedirectToAction("StepCompleted", "StepCompleted", new
-                            //{
-                            //    message,
-                            //    userId,
-                            //    actionheader = ViewBag.action
-                            //});
+                            
                         }
 
 
@@ -1309,7 +1374,7 @@ namespace FreschOne.Controllers
                             ViewBag.action = "Step Submitted Successully";
                         }
 
-                        return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessage, userId, actionheader = ViewBag.action });
+                        return RedirectToAction("StepCompleted", "StepCompleted", new { message = nextAssignmentMessage, userId, actionheader = ViewBag.action, processInstanceId = processInstanceId});
 
                     }
                     catch (Exception ex)
@@ -1321,8 +1386,6 @@ namespace FreschOne.Controllers
                 }
             }
         }
-
-
 
         private StepTransitionResult HandleNextStep(SqlConnection conn, SqlTransaction transaction, int currentStepId, int currentEventId, int? processInstanceId, int userId, string action, bool SendForApproval = false, List<int> SelectedApproverIds = null, string cancelComment = null)
         {

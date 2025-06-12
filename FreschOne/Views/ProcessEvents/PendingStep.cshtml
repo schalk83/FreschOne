@@ -216,11 +216,19 @@
                                             <th>Row No</th>
                                             @foreach (var column in columns)
                                             {
-                                                string label = column.StartsWith("attachment_") ? column.Replace("attachment_", "").Replace("_", " ") :
-                                                column.EndsWith("ID") ? column[..^2] : column;
-                                                label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
-                                                <th>@label</th>
-                                            }
+                                             string label = column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)
+                                                ? column.Replace("foUserID_", "").Replace("_", " ")
+                                                : column.StartsWith("attachment_")
+                                                    ? column.Replace("attachment_", "").Replace("_", " ")
+                                                    : column.StartsWith("geo_")
+                                                        ? column.Replace("geo_", "").Replace("_", " ")
+                                                        : column.EndsWith("ID")
+                                                            ? column[..^2]
+                                                            : column;
+
+                                            label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
+                                            <th class="fw-bold">@label</th>
+                                        }
                                             <th></th>
                                         </tr>
                                     </thead>
