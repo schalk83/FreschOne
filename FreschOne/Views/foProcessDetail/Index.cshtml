@@ -27,7 +27,7 @@
 
 @if (stepId.HasValue)
 {
-    <a href="@Url.Action("Create", new { userid = userid, processId = processId, stepId = stepId })" class="btn btn-primary mb-3">Add Detail</a>
+    <a href="@Url.Action("Create", new { userid = userid, processId = processId, stepId = stepId })" class="btn btn-sm btn-blue">Add Detail</a>
 
     <table class="table table-bordered sortable">
         <thead>
@@ -52,9 +52,9 @@
                     <td>@item.FKColumn</td>
                     <td>@item.TableDescription</td>
                     <td>
-                        <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
+                        <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-green">Edit</a>
                         <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" style="display:inline">
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this detail?')">Delete</button>
+                            <button type="submit" class="btn btn-sm btn-red" onclick="return confirm('Delete this detail?')">Delete</button>
                         </form>
                     </td>
                 </tr>

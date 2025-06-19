@@ -131,6 +131,20 @@ body {
         border-color: #dc3545;
     }
 
+.btn-grey {
+    color: #6c757d; /* Bootstrap's text-muted grey */
+    border-color: #6c757d;
+    background-color: transparent;
+}
+
+    .btn-grey:hover,
+    .custom-hover-grey:hover {
+        color: white;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+
+
 .custom-button,
 .custom-button:visited,
 .custom-button:hover,

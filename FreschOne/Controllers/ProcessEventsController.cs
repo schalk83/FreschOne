@@ -1,21 +1,31 @@
-﻿using FreschOne.Models;
+﻿using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
+using FreschOne.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Data;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Drawing.Charts;
-using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace FreschOne.Controllers
 {
     public class ProcessEventsController : BaseController
     {
-        public ProcessEventsController(DatabaseHelper dbHelper, IConfiguration configuration) : base(dbHelper, configuration) { }
+        private readonly IFormRefresher _formRefresher;
+
+        public ProcessEventsController(
+            DatabaseHelper dbHelper,
+            IConfiguration configuration,
+            IFormRefresher formRefresher)
+            : base(dbHelper, configuration)
+        {
+            _formRefresher = formRefresher;
+        }
 
 
         private SqlConnection GetConnection() => new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
@@ -235,10 +245,8 @@ namespace FreschOne.Controllers
                     }
                 }
             }
-
+                        
             ViewBag.ForeignKeyTables = fkTables;
-
-
             ViewBag.CalculationConfig = columnCalcsParsed;
             ViewBag.ReportTables = tables;
             ViewBag.ReportData = tableData;
@@ -252,6 +260,9 @@ namespace FreschOne.Controllers
 
             return View();
         }
+
+      
+
 
         public IActionResult PendingStep(int Eventid, int processId, int? stepId, int? processInstanceId, int userId)
         {

@@ -2,7 +2,10 @@
 @{
     ViewBag.Title = "Edit Process";
     var userid = ViewBag.userid;
+    var foProcessID = ViewBag.foProcessID; 
 }
+
+<partial name="_Sidebar" />
 
 <h2>Edit Process</h2>
 
@@ -16,6 +19,15 @@
         <label>Description</label>
         <textarea asp-for="ProcessDescription" class="form-control"></textarea>
     </div>
-    <button type="submit" class="btn btn-primary">Update</button>
-    <a asp-action="Index" asp-route-userid="@userid" class="btn btn-secondary">Cancel</a>
+    <br />
+    <button type="submit" class="btn btn-sm btn-blue">Update</button>
+    <a href="@Url.Action("Index", new { userid })" class="btn btn-sm btn-grey">Cancel</a>
+
+    <div class="d-flex justify-content-end mb-3">
+        <a href="@Url.Action("Index", "foProcessSteps", new { processid = foProcessID, userid = userid })" class="btn btn-sm btn-outline-secondary">
+            View Steps
+        </a>
+    </div>
+
+
 </form>

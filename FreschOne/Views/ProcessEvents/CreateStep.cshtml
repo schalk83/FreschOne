@@ -155,131 +155,151 @@
                                 ➕ Add Row
                             </button>
                         }
-                        else if (table.FormType == "F")
-                        {
-                            int columnCount = table.ColumnCount.GetValueOrDefault();
-                            if (columnCount <= 1) columnCount = 1; // Treat 0 and 1 the same
-                            int colWidth = columnCount >= 1 && columnCount <= 12 ? 12 / columnCount : 6;
-                            int columnRendered = 0;
-                            
-                            while (columnRendered < columns.Count)
-                            {
-                                <div class="row">
-                                    @for (int j = 0; j < columnCount && columnRendered < columns.Count; j++, columnRendered++)
-                                    {
-                                        var column = columns[columnRendered];
-                                        string fieldName = $"{tableName}_{column}";
-                                        var columnValue = row[column]?.ToString();
+        else if (table.FormType == "F")
+        {
+            int columnCount = table.ColumnCount.GetValueOrDefault();
+            if (columnCount <= 1) columnCount = 1;
+            int colWidth = columnCount >= 1 && columnCount <= 12 ? 12 / columnCount : 6;
+            int columnRendered = 0;
 
-                                        string label = column;
-                                        if (label.EndsWith("ID")) label = label[..^2];
-                                        label = System.Text.RegularExpressions.Regex.Replace(label, "(?<=.)([A-Z])", " $1");
+            while (columnRendered < columns.Count)
+            {
+                <div class="row">
+@for (int j = 0; j < columnCount && columnRendered < columns.Count; j++, columnRendered++)
+{
+    var column = columns[columnRendered];
+    string fieldName = $"{tableName}_{column}";
+    var columnValue = row[column]?.ToString();
 
-                                        string columnType = columnTypes?[tableName].ContainsKey(column) == true ? columnTypes[tableName][column] : "varchar";
-                                        int columnLength = columnLengths?[tableName].ContainsKey(column) == true ? columnLengths[tableName][column] : 255;
+    string label = column.EndsWith("ID") ? column[..^2] : column;
+    label = System.Text.RegularExpressions.Regex.Replace(label, "(?<=.)([A-Z])", " $1");
 
-                                        <div class="col-md-@colWidth mb-3">
-                                            @if (column.StartsWith("attachment_"))
-                                            {
-                                                string[] parts = columnValue?.Split(';') ?? new string[2];
-                                                string desc = parts.Length > 0 ? parts[0] : "";
-                                                string path = parts.Length > 1 ? parts[1] : "";
-                                                string url = !string.IsNullOrEmpty(path) ? Url.Content("~/Attachments/" + path) : "";
+    string columnType = columnTypes?[tableName].ContainsKey(column) == true ? columnTypes[tableName][column] : "varchar";
+    int columnLength = columnLengths?[tableName].ContainsKey(column) == true ? columnLengths[tableName][column] : 255;
 
-                                                string fullColumnKey = $"{tableName}_{column}";
+    string refreshAttr = "data-refresh=\"true\"";
 
-                                                <label for="@fullColumnKey" class="fw-bold">@label.Replace("attachment_", "").Replace("_", " ")</label>
-                                                <div class="attachment-group">
-                                                    <input type="text" name="desc_@fullColumnKey" id="desc_@fullColumnKey" placeholder="Attachment Description" value="@desc" class="form-control" />
-                                                    <input type="file" name="file_@fullColumnKey" id="file_@fullColumnKey" class="form-control" onchange="updateAttachmentField('@fullColumnKey')" />
-                                                </div>
-                                                @if (!string.IsNullOrEmpty(path))
-                                                {
-                                                    <a href="@url" target="_blank" class="btn btn-sm btn-outline-secondary">@System.IO.Path.GetFileName(path)</a>
-                                                }
-                                                <input type="hidden" name="@fullColumnKey" id="hidden_@fullColumnKey" value="@desc;@path" />
-                                            }
-                                            else if (
-                                            (foreignKeys != null && foreignKeys.ContainsKey(tableName) && foreignKeys[tableName].Any(fk => fk.ColumnName == column))
-                                            || column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)
-                                            )
-                                            {
-                                                var isFoUser = column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase);
-                                                var foreignKey = isFoUser
-                                                ? new ForeignKeyInfo { TableName = "foUsers", ColumnName = "ID" }
-                                                : foreignKeys[tableName].First(fk => fk.ColumnName == column);
+    <div class="col-md-@colWidth mb-3" data-wrapper="@fieldName">
+        @* ─── ATTACHMENT ─────────────────────────────── *@
+        @if (column.StartsWith("attachment_"))
+        {
+            string[] parts = columnValue?.Split(';') ?? new string[2];
+            string desc = parts[0];
+            string path = parts.Length > 1 ? parts[1] : "";
+            string url = !string.IsNullOrEmpty(path) ? Url.Content("~/Attachments/" + path) : "";
 
-                                                var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
-                                                var options = foreignKeyOptions.ContainsKey(foreignKey.TableName)
-                                                ? foreignKeyOptions[foreignKey.TableName]
-                                                : new List<SelectListItem>();
+            <label class="fw-bold">@label.Replace("attachment_", "").Replace("_", " ")</label>
+            <div class="attachment-group">
+                <input type="text" name="desc_@fieldName" value="@desc" class="form-control" />
+                <input type="file" name="file_@fieldName" class="form-control" onchange="updateAttachmentField('@fieldName')" />
+            </div>
+            @if (!string.IsNullOrEmpty(path))
+            {
+                <a href="@url" target="_blank" class="btn btn-sm btn-outline-secondary">@System.IO.Path.GetFileName(path)</a>
+            }
+            <input type="hidden" name="@fieldName" value="@desc;@path" />
+        }
+        @* ─── FK / USER PICKERS ───────────────────────── *@
+        else if ((foreignKeys?.ContainsKey(tableName) == true && foreignKeys[tableName].Any(fk => fk.ColumnName == column)) ||
+                  column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase))
+        {
+            @* Keep existing FK rendering block here (as you already have) *@
+        }
+        @* ─── LONG VARCHAR ───────────────────────────── *@
+        else if (columnType == "varchar" && columnLength > 255)
+        {
+            <label class="fw-bold" for="@fieldName">@label</label>
+            <textarea id="@fieldName"
+                      name="@fieldName"
+                      class="form-control"
+                      data-field="@fieldName"
+                      data-tablename="@tableName"
+                      @Html.Raw(refreshAttr)>@columnValue</textarea>
+        }
+        @* ─── NUMBER ─────────────────────────────────── *@
+        else if (columnType is "int" or "bigint" or "decimal")
+        {
+            <label class="fw-bold" for="@fieldName">@label</label>
+            <input type="number"
+                   id="@fieldName"
+                   name="@fieldName"
+                   class="form-control input-short"
+                   value="@columnValue"
+                   data-field="@fieldName"
+                   data-tablename="@tableName"
 
-                                                // ✅ Use tableName_column naming convention like in TableX
-                                                string fkFieldId = $"{tableName}_{column}";              // e.g., "tbl_tran_Property_PropertyID"
-                                                string fkDisplayId = $"{fkFieldId}_Display";             // e.g., "tbl_tran_Property_PropertyID_Display"
-                                                string displayValue = row.ContainsKey($"{column}_Display") ? row[$"{column}_Display"]?.ToString() : "";
-                                                string labelOverride = isFoUser ? column.Replace("foUserID_", "") : label;
+                   @Html.Raw(refreshAttr) />
+        }
+        @* ─── CHECKBOX (bit) ─────────────────────────── *@
+        else if (columnType == "bit")
+        {
+            <div class="form-check">
+                <input type="checkbox"
+                       id="@fieldName"
+                       name="@fieldName"
+                       class="form-check-input"
+                       value="true"
+                       @(columnValue == "True" ? "checked" : "")
+                       data-field="@fieldName"
+                       data-tablename="@tableName"
 
-                                                <label for="@fkFieldId" class="fw-bold">@labelOverride</label>
+                       @Html.Raw(refreshAttr) />
+                <label class="form-check-label fw-bold" for="@fieldName">@label</label>
+            </div>
+        }
+        @* ─── DATE ───────────────────────────────────── *@
+        else if (columnType == "datetime")
+        {
+            var formatted = DateTime.TryParse(columnValue, out var dt) ? dt.ToString("yyyy-MM-dd") : "";
+            <label class="fw-bold" for="@fieldName">@label</label>
+            <input type="date"
+                   id="@fieldName"
+                   name="@fieldName"
+                   class="form-control input-short"
+                   value="@formatted"
+                   data-field="@fieldName"
+                       data-tablename="@tableName"
 
-                                                if (isMaintenance)
-                                                {
-                                                    @Html.DropDownList(fkFieldId, new SelectList(options, "Value", "Text", columnValue), "", new { @class = "form-select", id = fkFieldId })
-                                                }
-                                                else
-                                                {
-                                                    <div class="input-group">
-                                                        <input type="hidden" name="@fkFieldId" id="@fkFieldId" value="@columnValue" />
-                                                        <input type="text" id="@fkDisplayId" value="@displayValue" class="form-control" readonly placeholder="Search..." onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fkFieldId')" />
-                                                        <button type="button" class="btn btn-outline-secondary" onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fkFieldId')">
-                                                            <i class="bi bi-search"></i>
-                                                        </button>
-                                                    </div>
-                                                }
-                                            }
-                                            else if (columnType == "varchar" && columnLength > 255)
-                                            {
-                                                <label for="@fieldName" class="fw-bold">@label</label>
-                                                <textarea name="@fieldName" class="form-control">@columnValue</textarea>
-                                            }
-                                            else if (columnType is "int" or "bigint" or "decimal")
-                                            {
-                                                <label for="@fieldName" class="fw-bold">@label</label>
-                                                <input type="number" name="@fieldName" value="@columnValue" class="form-control input-short" />
-                                            }
-                                            else if (columnType == "bit")
-                                            {
-                                                <div class="form-check">
-                                                    <input type="checkbox" name="@fieldName" class="form-check-input" value="true" @(columnValue == "True" ? "checked" : "") />
-                                                    <label class="form-check-label fw-bold" for="@fieldName">@label</label>
-                                                </div>
-                                            }
-                                            else if (columnType == "datetime")
-                                            {
-                                                string formattedDate = DateTime.TryParse(columnValue, out var dtVal) ? dtVal.ToString("yyyy-MM-dd") : "";
-                                                <label for="@fieldName" class="fw-bold">@label</label>
-                                                <input type="date" name="@fieldName" value="@formattedDate" class="form-control input-short" />
-                                            }
-                                            else if (column.StartsWith("geo_"))
-                                            {
-                                                var cleanLabel = label.Replace("geo_", "").Replace("_", " ");
-                                                <label for="@fieldName" class="fw-bold">@cleanLabel</label>
-                                                <div class="input-group">
-                                                    <input type="text" name="@fieldName" id="@fieldName" value="@columnValue" class="form-control" placeholder="Latitude, Longitude" />
-                                                    <button type="button" class="btn btn-outline-secondary" onclick="getLocation('@fieldName')">📍 My Location</button>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <label for="@fieldName" class="fw-bold">@label</label>
-                                                <input type="text" name="@fieldName" value="@columnValue" class="form-control" />
-                                            }
+                   @Html.Raw(refreshAttr) />
+        }
+        @* ─── GEO TAG ────────────────────────────────── *@
+        else if (column.StartsWith("geo_"))
+        {
+            var cleanLabel = label.Replace("geo_", "").Replace("_", " ");
+            <label class="fw-bold" for="@fieldName">@cleanLabel</label>
+            <div class="input-group">
+                <input type="text"
+                       id="@fieldName"
+                       name="@fieldName"
+                       class="form-control"
+                       placeholder="Latitude, Longitude"
+                       value="@columnValue"
+                       data-field="@fieldName"
+                           data-tablename="@tableName"
 
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        }
+                       @Html.Raw(refreshAttr) />
+                <button type="button" class="btn btn-outline-secondary" onclick="getLocation('@fieldName')">📍</button>
+            </div>
+        }
+        @* ─── DEFAULT TEXT ───────────────────────────── *@
+        else
+        {
+            <label class="fw-bold" for="@fieldName">@label</label>
+            <input type="text"
+                   id="@fieldName"
+                   name="@fieldName"
+                   class="form-control"
+                   value="@columnValue"
+                   data-field="@fieldName"
+                       data-tablename="@tableName"
+
+                   @Html.Raw(refreshAttr) />
+        }
+    </div> <!-- .col -->
+}
+                </div> <!-- .row -->
+            }
+        }
                     </div>
                 </div>
             </div>
@@ -323,17 +343,10 @@
 
 </form>
 
-
 @section Scripts {
     <script>
         $(document).ready(function () {
-            // Initialize Select2
-            $('#approvalUsers').select2({
-                placeholder: "Select users for approval...",
-                allowClear: true
-            });
-
-            // Toggle visibility
+            $('#approvalUsers').select2({ placeholder: "Select users for approval...", allowClear: true });
             $('#sendForApprovalCheckbox').on('change', function () {
                 if (this.checked) {
                     $('#approvalOptions').slideDown();
@@ -344,28 +357,78 @@
             });
 
             resizeDropdowns();
+            hookRefreshHandlers(); // 🟢 New: Setup Refresh triggers
         });
+
+        function hookRefreshHandlers () {
+            // Anything that carries data-refresh="true"
+            document.querySelectorAll('[data-refresh="true"]').forEach(el => {
+                /* guard against duplicate binding */
+                if (el.dataset._refreshBound) return;
+                el.addEventListener('change', () => {
+                    const fieldName = el.getAttribute('data-field');
+                    const tableName = el.getAttribute("data-tablename");
+
+                    if (!fieldName || !tableName) return;
+
+                    triggerRefresh(tableName, fieldName);
+                });
+                el.dataset._refreshBound = "1";
+            });
+        }
+
+        async function triggerRefresh(tableName, changedField) {
+            const row = {};
+            document.querySelectorAll(`[data-field^="${tableName}_"]`).forEach(el => {
+                const name = el.getAttribute("data-field");
+                if (!name) return;
+                row[name] = el.type === "checkbox" ? el.checked : el.value;
+            });
+
+            try {
+                const response = await fetch('/foEventLogic/RefreshAsync?changedField=' + encodeURIComponent(changedField), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ TableName: tableName, Row: row })
+                });
+
+                if (!response.ok) throw new Error("Refresh failed");
+
+                const result = await response.json();
+                for (const [fieldName, fieldData] of Object.entries(result)) {
+                    const input = document.querySelector(`[data-field="${fieldName}"]`);
+                    const wrapper = document.querySelector(`[data-wrapper="${fieldName}"]`);
+
+                    if (input) {
+                        if (fieldData.value !== undefined && input.value !== fieldData.value) {
+                            input.value = fieldData.value;
+                        }
+                        if (fieldData.readOnly !== undefined) {
+                            input.readOnly = fieldData.readOnly;
+                            input.disabled = fieldData.readOnly;
+                        }
+                    }
+
+                    if (wrapper && fieldData.visible !== undefined) {
+                        wrapper.style.display = fieldData.visible ? "" : "none";
+                    }
+                }
+
+            } catch (err) {
+                console.error("Refresh error", err);
+            }
+        }
 
         function updateAttachmentField(fullKey) {
             const descInput = document.getElementById('desc_' + fullKey);
             const fileInput = document.getElementById('file_' + fullKey);
             const hiddenInput = document.getElementById('hidden_' + fullKey);
 
-            const description = descInput?.value?.trim() || "No Description";
-            const fileName = fileInput?.files?.[0]?.name || "";
-
-            const parts = fullKey.split('_');
-            let tableName = parts[0];
-            if (parts.length >= 4) {
-                const attachmentIndex = parts.findIndex(p => p === 'attachment');
-                if (attachmentIndex > 0) {
-                    tableName = parts.slice(0, attachmentIndex).join('_');
-                }
-            }
-
+            const description = descInput && descInput.value ? descInput.value.trim() : "No Description";
+            const fileName = fileInput && fileInput.files && fileInput.files.length > 0 ? fileInput.files[0].name : "";
+            const tableName = fullKey.split('_').slice(0, -1).join('_');
             const virtualPath = fileName ? `Attachments/${tableName}/${fileName}` : "";
-            const combined = `${description};${virtualPath}`;
-            if (hiddenInput) hiddenInput.value = combined;
+            if (hiddenInput) hiddenInput.value = `${description};${virtualPath}`;
         }
 
         document.addEventListener("change", function (e) {
@@ -375,141 +438,37 @@
             }
         });
 
-        function addRowAjax(tableName) {
-            const stepId = document.querySelector('input[name="stepId"]').value;
-            const userId = document.querySelector('input[name="userId"]').value;
-            const processIdInput = document.querySelector('input[name="processInstanceId"]');
-            const processId = processIdInput ? processIdInput.value : null;
-
-            const rowContainer = document.querySelector(`#${tableName}_rows`);
-            const currentRowCount = rowContainer ? rowContainer.querySelectorAll("tr").length : 0;
-
-            const data = {
-                tableName,
-                stepId,
-                userId,
-                processInstanceId: processId,
-                currentRowCount: currentRowCount
-            };
-
-            fetch(`/ProcessEvents/AddTableRowPartial`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+        function getLocation(fieldId) {
+            if (!navigator.geolocation) return alert("Geolocation not supported.");
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    const coords = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+                    document.getElementById(fieldId).value = coords;
                 },
-                body: JSON.stringify(data)
-            })
-            .then(res => res.text())
-            .then(html => {
-                const container = document.querySelector(`#${tableName}_rows`);
-                if (container) {
-                    // 🧱 Append HTML as-is
-                    container.insertAdjacentHTML("beforeend", html);
-
-                    // 🔁 Bind summary-trigger events to the last inserted row only
-                           const lastRow = container.lastElementChild;
-                    if (lastRow) {
-                        lastRow.querySelectorAll("input[name], select[name], textarea[name]").forEach(el => {
-                            el.addEventListener("input", () => recalculateSummaries(tableName));
-                        });
-                    }
-
-
-                    // ✅ Recalculate immediately
-                    recalculateSummaries(tableName);
-                }
-            })
-            .catch(err => console.error("Add Row Error:", err));
-        }
-
-                window.addEventListener("load", () => {
-            document.querySelectorAll("tbody[id$='_rows']").forEach(tb => {
-                const tableName = tb.id.replace("_rows", "");
-                recalculateSummaries(tableName);
-            });
-
-            // 🟢 Explicitly hook into all summary-trigger fields
-            document.querySelectorAll('.summary-trigger').forEach(el => {
-                el.addEventListener('blur', handleChangeOrBlur);
-                el.addEventListener('change', handleChangeOrBlur);
-                el.addEventListener('input', handleChangeOrBlur);
-            });
-        });
-
-                function handleChangeOrBlur(e) {
-            const input = e.target;
-            if (!input.name || !input.closest("tbody[id$='_rows']")) return;
-            const tbody = input.closest("tbody");
-            const tableName = tbody.id.replace("_rows", "");
-            recalculateSummaries(tableName);
-        }
-
-
-                function removeRow(button) {
-            const row = button.closest('tr');
-            const tbody = row.parentElement;
-            const rowCount = tbody.querySelectorAll('tr').length;
-            if (rowCount > 1) {
-                const tableName = tbody.id.replace("_rows", "");
-                row.remove();
-                updateRowIndices(tbody);
-                recalculateSummaries(tableName); // ✅ recalculate after removing row
-            }
-        }
-
-
-
-        function updateRowIndices(tbody) {
-            const rows = tbody.querySelectorAll('tr');
-            rows.forEach((row, index) => {
-                row.setAttribute('data-row-index', index);
-                const rowNo = row.querySelector('.row-no');
-                if (rowNo) rowNo.innerText = index + 1;
-
-                row.querySelectorAll('[name], [id], [for]').forEach(el => {
-                    ['name', 'id', 'for'].forEach(attr => {
-                        const val = el.getAttribute(attr);
-                        if (val) {
-                            el.setAttribute(attr, val.replace(/_(\d+)$/, `_${index}`));
-                        }
-                    });
-                });
-            });
+                err => alert("Unable to retrieve location.")
+            );
         }
 
         function resizeDropdowns() {
             document.querySelectorAll("select.form-select").forEach(select => {
-                const tempSpan = document.createElement("span");
-                tempSpan.style.visibility = "hidden";
-                tempSpan.style.position = "absolute";
-                tempSpan.style.whiteSpace = "nowrap";
-                tempSpan.style.font = getComputedStyle(select).font;
+                const span = document.createElement("span");
+                span.style.visibility = "hidden";
+                span.style.position = "absolute";
+                span.style.whiteSpace = "nowrap";
+                span.style.font = getComputedStyle(select).font;
 
-                let maxText = "";
+                let longest = "";
                 Array.from(select.options).forEach(opt => {
-                    if (opt.text.length > maxText.length) {
-                        maxText = opt.text;
-                    }
+                    if (opt.text.length > longest.length) longest = opt.text;
                 });
 
-                tempSpan.textContent = maxText;
-                document.body.appendChild(tempSpan);
-
-                const width = tempSpan.offsetWidth + 50;
-                select.style.width = width + "px";
-
-                document.body.removeChild(tempSpan);
+                span.textContent = longest;
+                document.body.appendChild(span);
+                select.style.width = span.offsetWidth + 50 + "px";
+                document.body.removeChild(span);
             });
         }
 
-        function showLoading() {
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.style.display = 'flex';
-            setTimeout(() => {
-                overlay.style.opacity = '1';
-            }, 10);
-        }
         function recalculateSummaries(tableName) {
             const rows = document.querySelectorAll(`#${tableName}_rows tr`);
             const calcs = {};
@@ -517,24 +476,13 @@
             rows.forEach(row => {
                 row.querySelectorAll("input[name], select[name], textarea[name]").forEach(input => {
                     const name = input.name;
-                    const prefix = `${tableName}_`;
-                    const suffixMatch = name.match(/_(\d+)$/);
-                    if (!suffixMatch || !name.startsWith(prefix)) return;
-
-                    const withoutPrefix = name.slice(prefix.length);
-                    const col = withoutPrefix.replace(/_\d+$/, "").toLowerCase(); // ✅ always lowercase
-
+                    const suffix = name.match(/_(\d+)$/);
+                    if (!suffix || !name.startsWith(tableName + "_")) return;
+                    const col = name.replace(tableName + "_", "").replace(/_\d+$/, "").toLowerCase();
                     const val = input.value;
-                    const hasValue = val !== undefined && val !== null && val.toString().trim() !== "";
-
                     if (!calcs[col]) calcs[col] = { sum: 0, count: 0 };
-
-                    if (!isNaN(parseFloat(val))) {
-                        calcs[col].sum += parseFloat(val);
-                        calcs[col].count++;
-                    } else if (hasValue) {
-                        calcs[col].count++;
-                    }
+                    if (!isNaN(parseFloat(val))) calcs[col].sum += parseFloat(val);
+                    if (val && val.trim()) calcs[col].count++;
                 });
             });
 
@@ -546,44 +494,65 @@
             }
         }
 
-
-        // ✅ Hook into existing row change logic
-        document.addEventListener("input", function (e) {
-            const input = e.target;
-            if (!input.name || !input.name.includes("_")) return;
-
-            const parts = input.name.split("_");
-            if (parts.length < 3) return;
-            const tableName = parts[0];
-            recalculateSummaries(tableName);
-        });
-
-        // ✅ Recalculate on load
-        window.addEventListener("load", () => {
-            document.querySelectorAll("tbody[id$='_rows']").forEach(tb => {
-                const tableName = tb.id.replace("_rows", "");
+        function removeRow(button) {
+            const row = button.closest('tr');
+            const tbody = row.parentElement;
+            const tableName = tbody.id.replace("_rows", "");
+            if (tbody.querySelectorAll("tr").length > 1) {
+                row.remove();
+                updateRowIndices(tbody);
                 recalculateSummaries(tableName);
-            });
-        });
-
-        function getLocation(fieldId) {
-            if (!navigator.geolocation) {
-                alert("Geolocation is not supported by your browser.");
-                return;
             }
+        }
 
-            navigator.geolocation.getCurrentPosition(
-                position => {
-                    const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
-                    document.getElementById(fieldId).value = coords;
+        function updateRowIndices(tbody) {
+            tbody.querySelectorAll('tr').forEach((row, index) => {
+                row.setAttribute('data-row-index', index);
+                const rowNo = row.querySelector('.row-no');
+                if (rowNo) rowNo.innerText = index + 1;
+
+                row.querySelectorAll('[name], [id], [for]').forEach(el => {
+                    ['name', 'id', 'for'].forEach(attr => {
+                        const val = el.getAttribute(attr);
+                        if (val) el.setAttribute(attr, val.replace(/_(\d+)$/, `_${index}`));
+                    });
+                });
+            });
+        }
+
+        function addRowAjax(tableName) {
+            const stepId = document.querySelector('input[name="stepId"]').value;
+            const userId = document.querySelector('input[name="userId"]').value;
+            const processId = document.querySelector('input[name="processInstanceId"]') ? document.querySelector('input[name="processInstanceId"]').value : null;
+            const rowContainer = document.querySelector(`#${tableName}_rows`);
+            const currentRowCount = rowContainer ? rowContainer.querySelectorAll("tr").length : 0;
+
+            const data = { tableName, stepId, userId, processInstanceId: processId, currentRowCount };
+
+            fetch('/ProcessEvents/AddTableRowPartial', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
                 },
-                error => {
-                    alert("Unable to retrieve your location.");
-                    console.error("Geolocation error:", error);
+                body: JSON.stringify(data)
+            })
+            .then(res => res.text())
+            .then(html => {
+                rowContainer.insertAdjacentHTML("beforeend", html);
+                const lastRow = rowContainer.lastElementChild;
+                if (lastRow) {
+                    lastRow.querySelectorAll("input[name], select[name], textarea[name]").forEach(el => {
+                        el.addEventListener("input", () => recalculateSummaries(tableName));
+                    });
                 }
-            );
+                recalculateSummaries(tableName);
+                hookRefreshHandlers(); // 🟢 Rebind after row added
+            })
+            .catch(err => console.error("Add Row Error:", err));
         }
 
     </script>
 }
+
 

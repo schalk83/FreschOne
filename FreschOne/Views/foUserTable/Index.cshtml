@@ -21,7 +21,7 @@
 
 @if (l_user != null)
 {
-    <a class="btn btn-primary mb-3" asp-action="Create" asp-route-userid="@userid" asp-route-l_user="@l_user">Assign Table</a>
+    <a class="btn btn-sm btn-blue" asp-action="Create" asp-route-userid="@userid" asp-route-l_user="@l_user">Assign Table</a>
 
     <table class="table table-bordered sortable">
         <thead>
@@ -38,9 +38,9 @@
                     <td>@item.TableName</td>
                     <td>@item.ReadWriteAccess</td>
                     <td>
-                        <a class="btn btn-sm btn-secondary" asp-action="Edit" asp-route-id="@item.ID" asp-route-userid="@userid">Edit</a>
+                        <a class="btn btn-sm btn-green" asp-action="Edit" asp-route-id="@item.ID" asp-route-userid="@userid">Edit</a>
                         <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" asp-route-l_user="@l_user" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            <button type="submit" class="btn btn-sm btn-red">Delete</button>
                         </form>
                     </td>
                 </tr>

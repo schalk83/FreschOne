@@ -7,7 +7,7 @@
 <partial name="_Sidebar" />
 
 <h2>Table Prefixes</h2>
-<a href="@Url.Action("Create", new { userid })" class="btn btn-primary mb-3">Add Prefix</a>
+<a href="@Url.Action("Create", new { userid })" class="btn btn-sm btn-green">Add Prefix</a>
 
 @if (TempData["ErrorMessage"] != null)
 {
@@ -35,9 +35,9 @@
                 <td>@item.Description</td>
                 <td>@(item.Active ? "Yes" : "No")</td>
                 <td>
-                    <a href="@Url.Action("Edit", new { id = item.ID, userid })" class="btn btn-sm btn-secondary">Edit</a>
+                    <a href="@Url.Action("Edit", new { id = item.ID, userid })" class="btn btn-sm btn-blue">Edit</a>
                     <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" style="display:inline">
-                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        <button type="submit" class="btn btn-sm btn-red">Delete</button>
                     </form>
                 </td>
             </tr>

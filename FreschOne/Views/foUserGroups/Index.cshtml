@@ -15,7 +15,7 @@
 
 @if (l_user != 0)
 {
-    <a href="@Url.Action("Create", new { userid = userid, l_user = l_user })" class="btn btn-primary mb-3">Add Group</a>
+    <a href="@Url.Action("Create", new { userid = userid, l_user = l_user })" class="btn btn-sm btn-green">Add Group</a>
 
     <table class="table table-bordered sortable">
         <thead>
@@ -31,7 +31,7 @@
                     <td>@item.GroupName</td>
                     <td>
                         <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" asp-route-l_user="@l_user" style="display:inline">
-                            <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                            <button type="submit" class="btn btn-sm btn-red">Remove</button>
                         </form>
                     </td>
                 </tr>

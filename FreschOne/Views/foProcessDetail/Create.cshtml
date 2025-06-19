@@ -179,7 +179,7 @@
         <span asp-validation-for="Active" class="text-danger"></span>
     </div>
 
-
+    <br />
     <button type="submit" class="btn btn-success">Save</button>
     <button type="submit" class="btn btn-outline-primary" name="action" value="addanother">Save & Add Another</button>
     <a href="@Url.Action("Index", new { processId = processId, stepId = stepId, userid = userid })" class="btn btn-secondary">Cancel</a>
@@ -243,16 +243,20 @@
             // Toggle FK column dropdown
             function toggleFKDropdown() {
                 const isParent = document.querySelector('[name="Parent"]').value === "true";
+                const tableSelected = tableDropdown.value.trim() !== "";
                 const fkGroup = document.getElementById('fkColumnGroup');
 
-                fkGroup.style.display = isParent ? "none" : "block";
                 fkSelect.value = "";
                 if (isParent) {
                     fkSelect.removeAttribute("required");
                 } else {
                     fkSelect.setAttribute("required", "required");
                 }
+
+                // 👇 show only when applicable
+                fkGroup.style.display = (!isParent && tableSelected) ? "block" : "none";
             }
+
 
             // ColumnCalcs validation
             function validateColumnCalcs() {

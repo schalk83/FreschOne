@@ -3,48 +3,115 @@
 @{
     ViewData["Title"] = "Admin and Configuration";
     var userid = ViewBag.userId;
+
+    /* ────────────────────────────────────────────────
+       Fallback descriptions (delete if you add it to  the DB / model)
+    ──────────────────────────────────────────────── */
+    var descriptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["foReports"] = "Configure high-level system reports.",
+        ["foProcessDetail"] = "Map process steps to their data tables.",
+        ["EmailTemplate"] = "Edit email templates for notifications.",
+        ["foUserProcess"] = "Grant users access to processes.",
+        ["foProcessSteps"] = "Define each step in a business process.",
+        ["foProcess"] = "Create and manage business processes.",
+        ["foUserReports"] = "Assign report access to users.",
+        ["foReportTableQuery"] = "Store custom SQL for advanced reports.",
+        ["foReportAccess"] = "Fine-grained report permissions.",
+        ["foReportTable"] = "Link reports to underlying tables.",
+        ["foTableGroups"] = "Logical groupings of tables.",
+        ["foTablePrefixes"] = "Prefix defs (tbl_mai_, tbl_tran_, …).",
+        ["foTableColumnsToIgnore"] = "Hide columns in forms / exports.",
+        ["foTable"] = "Master registry of dynamic tables.",
+        ["foUserGroups"] = "Assign users to security groups.",
+        ["foGroups"] = "Define security / functional groups.",
+        ["foUsers"] = "User account maintenance.",
+        ["foUserTable"] = "Row-level table permissions."
+    };
 }
 
 <partial name="_Sidebar" />
 
 <h1 class="mb-4">Admin and Configuration</h1>
 
+<!-- 🔍 Quick filter -->
+<div class="input-group mb-3">
+    <span class="input-group-text"><i class="fas fa-search"></i></span>
+    <input type="text"
+           id="adminSearch"
+           class="form-control"
+           placeholder="Search tables… (e.g. users, reports, process)" />
+</div>
+
 <div class="accordion" id="accordionExample">
     @foreach (var group in Model.GroupBy(m => m.TableGroup))
     {
-        var groupId = $"group_{group.Key.Replace(" ", "_")}";
+var groupId = $"group_{group.Key.Replace(" ", "_")}";
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="heading_@groupId">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapse_@groupId"
+                    aria-expanded="false"
+                    aria-controls="collapse_@groupId">
+                <strong>@group.Key</strong>
+            </button>
+        </h2>
 
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="heading_@groupId">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#collapse_@groupId" aria-expanded="false" aria-controls="collapse_@groupId">
-                    <b>@group.Key</b>
-                </button>
-            </h2>
-            <div id="collapse_@groupId" class="accordion-collapse collapse" aria-labelledby="heading_@groupId">
-                <div class="accordion-body bg-info-subtle">
-                    <div class="row">
-                        @foreach (var table in group)
-                        {
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="card shadow-sm h-100">
-                                    <div class="card-body d-flex flex-column justify-content-between">
-                                        <div>
-                                            <h5 class="card-title">@table.TableName</h5>
-                                        </div>
-                                        <a class="btn btn-outline-primary mt-2"
-                                           href="@Url.Action("Index", table.TableName, new { userid = userid, group = (table.TableName == "foUserReports" ? table.TableGroup : null) })">
-                                            Open Table
-                                        </a>
-                                    </div>
+        <div id="collapse_@groupId" class="accordion-collapse collapse"
+             aria-labelledby="heading_@groupId">
+            <div class="accordion-body bg-info-subtle">
+                <div class="row g-3">
+                    @foreach (var table in group)
+                                        {
+                                        var desc = descriptions.TryGetValue(table.TableName, out var d) ? d : "No description available.";
+                                        var cardId = $"card_{table.TableName}";
+                    <div class="col-md-6 col-lg-4 admin-card" id="@cardId">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body d-flex flex-column">
+                                <div>
+                                    <h5 class="card-title mb-1">@table.TableName</h5>
+                                    <p class="card-text text-muted small mb-2">@desc</p>
                                 </div>
+
+                                <a class="btn btn-sm btn-outline-primary mt-auto align-self-start"
+                                   href="@Url.Action("Index",
+                                                                                        table.TableName,
+                                                                                        new { userid = userid,
+                                                                                              group = (table.TableName == "foUserReports"
+                                                                                                        ? table.TableGroup : null) })"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="Open &amp; manage @table.TableName">
+                                    <i class="fas fa-database"></i> Manage
+                                </a>
                             </div>
-                        }
+                        </div>
                     </div>
+                                        }
                 </div>
             </div>
         </div>
-    }
+    </div>
+        }
 </div>
 
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
 
+<script>
+    /* ── quick text filter ─────────────────────────── */
+    document.getElementById("adminSearch")
+        .addEventListener("input", function () {
+            const term = this.value.toLowerCase();
+            document.querySelectorAll(".admin-card").forEach(card => {
+                card.style.display = card.textContent.toLowerCase()
+                                     .includes(term) ? "" : "none";
+            });
+        });
+
+    /* ── bootstrap tooltip init ───────────────────── */
+    document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        .forEach(el => new bootstrap.Tooltip(el));
+</script>
+}

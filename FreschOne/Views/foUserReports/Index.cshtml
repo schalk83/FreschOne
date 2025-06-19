@@ -27,7 +27,7 @@
 
 @if (l_user != null)
 {
-    <a href="@Url.Action("Create", new { userid = userid, l_user = l_user })" class="btn btn-primary mb-3">Assign Report</a>
+    <a href="@Url.Action("Create", new { userid = userid, l_user = l_user })" class="btn btn-sm btn-blue">Assign Report</a>
 
     <table class="table table-bordered sortable">
         <thead>
@@ -44,9 +44,9 @@
                     <td>@item.UserName</td>
                     <td>@item.ReportName</td>
                     <td>
-                        <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-secondary">Edit</a>
+                        <a href="@Url.Action("Edit", new { id = item.ID, userid = userid })" class="btn btn-sm btn-green">Edit</a>
                         <form method="post" asp-action="Delete" asp-route-id="@item.ID" asp-route-userid="@userid" asp-route-l_user="@l_user" style="display:inline">
-                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            <button type="submit" class="btn btn-sm btn-red">Delete</button>
                         </form>
                     </td>
                 </tr>

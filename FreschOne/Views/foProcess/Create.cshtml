@@ -4,6 +4,9 @@
     var userid = ViewBag.userid;
 }
 
+<partial name="_Sidebar" />
+
+
 <h2>Create New Process</h2>
 
 <form asp-action="Create" asp-route-userid="@userid" method="post">
@@ -15,6 +18,13 @@
         <label>Description</label>
         <textarea asp-for="ProcessDescription" class="form-control"></textarea>
     </div>
-    <button type="submit" class="btn btn-success">Save</button>
-    <a asp-action="Index" asp-route-userid="@userid" class="btn btn-secondary">Cancel</a>
+    <br />
+
+    <button type="submit" class="btn btn-sm btn-blue">Save</button>
+    <a href="@Url.Action("Index", new { userid })" class="btn btn-sm btn-grey">Cancel</a>
 </form>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

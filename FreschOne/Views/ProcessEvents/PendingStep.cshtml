@@ -238,70 +238,69 @@
                                 </table>
                                 <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addRowAjax('@tableName')">➕ Add Row</button>
                             }
-                            else if (table.FormType == "F")
+                        else if (table.FormType == "F")
+                        {
+                            int columnCount = table.ColumnCount.GetValueOrDefault();
+                            if (columnCount <= 1) columnCount = 1;
+                            int colWidth = columnCount >= 1 && columnCount <= 12 ? 12 / columnCount : 6;
+                            int columnRendered = 0;
+
+                            var prefillData = row;
+
+                            <input type="hidden" name="@($"{tableName}_RecordID_0")" value="@row["RecordID"]" />
+
+                            while (columnRendered < columns.Count)
                             {
-                                int columnCount = table.ColumnCount.GetValueOrDefault();
-                                if (columnCount <= 1) columnCount = 1;
-                                int colWidth = columnCount >= 1 && columnCount <= 12 ? 12 / columnCount : 6;
-                                int columnRendered = 0;
+                                <div class="row">
+                                    @for (int j = 0; j < columnCount && columnRendered < columns.Count; j++, columnRendered++)
+                                    {
+                                        var column = columns[columnRendered];
+                                        string fieldName = $"{tableName}_{column}";
+                                        string columnValue = prefillData.ContainsKey(column) ? prefillData[column]?.ToString() : "";
 
-                                var prefillData = row;
+                                        string label = column.EndsWith("ID") ? column[..^2] : column;
+                                        label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
 
-                                <input type="hidden" name="@($"{tableName}_RecordID_0")" value="@row["RecordID"]" />
+                                        string columnType = columnTypes?[tableName].ContainsKey(column) == true ? columnTypes[tableName][column] : "varchar";
+                                        int columnLength = columnLengths?[tableName].ContainsKey(column) == true ? columnLengths[tableName][column] : 255;
 
-                                while (columnRendered < columns.Count)
-                                {
-                                    <div class="row">
-                                        @for (int j = 0; j < columnCount && columnRendered < columns.Count; j++, columnRendered++)
-                                        {
-                                            var column = columns[columnRendered];
-                                            string fieldName = $"{tableName}_{column}";
-                                            string columnValue = prefillData.ContainsKey(column) ? prefillData[column]?.ToString() : "";
+                                        <div class="col-md-@colWidth mb-3" data-wrapper="@fieldName">
+                                            @if (column.StartsWith("attachment_"))
+                                            {
+                                                string[] parts = columnValue?.Split(';') ?? new string[2];
+                                                string desc = parts.Length > 0 ? parts[0] : "";
+                                                string path = parts.Length > 1 ? parts[1] : "";
+                                                string url = !string.IsNullOrEmpty(path) ? Url.Content("~/Attachments/" + path) : "";
+                                                string fullColumnKey = $"{tableName}_{column}";
 
-                                            string label = column.EndsWith("ID") ? column[..^2] : column;
-                                            label = System.Text.RegularExpressions.Regex.Replace(label.Replace("_", " "), "(?<=.)([A-Z])", " $1");
-
-                                            string columnType = columnTypes?[tableName].ContainsKey(column) == true ? columnTypes[tableName][column] : "varchar";
-                                            int columnLength = columnLengths?[tableName].ContainsKey(column) == true ? columnLengths[tableName][column] : 255;
-
-                                            <div class="col-md-@colWidth mb-3">
-                                                @if (column.StartsWith("attachment_"))
+                                                <label for="@fullColumnKey" class="fw-bold">@label.Replace("attachment_", "").Replace("_", " ")</label>
+                                                <div class="attachment-group">
+                                                    <input type="text" name="desc_@fullColumnKey" value="@desc" class="form-control" />
+                                                    <input type="file" name="file_@fullColumnKey" class="form-control" onchange="updateAttachmentField('@fullColumnKey')" />
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(path))
                                                 {
-                                                    string[] parts = columnValue?.Split(';') ?? new string[2];
-                                                    string desc = parts.Length > 0 ? parts[0] : "";
-                                                    string path = parts.Length > 1 ? parts[1] : "";
-                                                    string url = !string.IsNullOrEmpty(path) ? Url.Content("~/Attachments/" + path) : "";
-                                                    string fullColumnKey = $"{tableName}_{column}";
-
-                                                    <label for="@fullColumnKey" class="fw-bold">@label.Replace("attachment_", "").Replace("_", " ")</label>
-                                                    <div class="attachment-group">
-                                                        <input type="text" name="desc_@fullColumnKey" value="@desc" class="form-control" />
-                                                        <input type="file" name="file_@fullColumnKey" class="form-control" onchange="updateAttachmentField('@fullColumnKey')" />
-                                                    </div>
-                                                    @if (!string.IsNullOrEmpty(path))
-                                                    {
-                                                        <a href="@url" target="_blank" class="btn btn-sm btn-outline-secondary">@System.IO.Path.GetFileName(path)</a>
-                                                    }
-                                                    <input type="hidden" name="@fullColumnKey" value="@desc;@path" />
+                                                    <a href="@url" target="_blank" class="btn btn-sm btn-outline-secondary">@System.IO.Path.GetFileName(path)</a>
                                                 }
+                                                <input type="hidden" name="@fullColumnKey" value="@desc;@path" />
+                                            }
                                             else if (
-                                            (foreignKeys != null && foreignKeys.ContainsKey(tableName) && foreignKeys[tableName].Any(fk => fk.ColumnName == column))
-                                            || column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)
+                                                (foreignKeys != null && foreignKeys.ContainsKey(tableName) && foreignKeys[tableName].Any(fk => fk.ColumnName == column))
+                                                || column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase)
                                             )
                                             {
                                                 var isFoUser = column.StartsWith("foUserID_", StringComparison.OrdinalIgnoreCase);
                                                 var foreignKey = isFoUser
-                                                ? new ForeignKeyInfo { TableName = "foUsers", ColumnName = "ID" }
-                                                : foreignKeys[tableName].First(fk => fk.ColumnName == column);
+                                                    ? new ForeignKeyInfo { TableName = "foUsers", ColumnName = "ID" }
+                                                    : foreignKeys[tableName].First(fk => fk.ColumnName == column);
 
                                                 var isMaintenance = foreignKey.TableName.StartsWith("tbl_md_", StringComparison.OrdinalIgnoreCase);
                                                 var options = foreignKeyOptions.ContainsKey(foreignKey.TableName)
-                                                ? foreignKeyOptions[foreignKey.TableName]
-                                                : new List<SelectListItem>();
+                                                    ? foreignKeyOptions[foreignKey.TableName]
+                                                    : new List<SelectListItem>();
 
-                                                // ✅ Use tableName_column naming convention like in TableX
-                                                string fkFieldId = $"{tableName}_{column}";              // e.g., "tbl_tran_Property_PropertyID"
-                                                string fkDisplayId = $"{fkFieldId}_Display";             // e.g., "tbl_tran_Property_PropertyID_Display"
+                                                string fkFieldId = $"{tableName}_{column}";
+                                                string fkDisplayId = $"{fkFieldId}_Display";
                                                 string displayValue = row.ContainsKey($"{column}_Display") ? row[$"{column}_Display"]?.ToString() : "";
                                                 string labelOverride = isFoUser ? column.Replace("foUserID_", "") : label;
 
@@ -309,12 +308,12 @@
 
                                                 if (isMaintenance)
                                                 {
-                                                    @Html.DropDownList(fkFieldId, new SelectList(options, "Value", "Text", columnValue), "", new { @class = "form-select", id = fkFieldId })
+                                                    @Html.DropDownList(fkFieldId, new SelectList(options, "Value", "Text", columnValue), "", new { @class = "form-select", id = fkFieldId, @data_field = fkFieldId, @data_tablename = tableName, @data_refresh = "true" })
                                                 }
                                                 else
                                                 {
                                                     <div class="input-group">
-                                                        <input type="hidden" name="@fkFieldId" id="@fkFieldId" value="@columnValue" />
+                                                        <input type="hidden" name="@fkFieldId" id="@fkFieldId" value="@columnValue" data-field="@fkFieldId" data-tablename="@tableName" data-refresh="true" />
                                                         <input type="text" id="@fkDisplayId" value="@displayValue" class="form-control" readonly placeholder="Search..." onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fkFieldId')" />
                                                         <button type="button" class="btn btn-outline-secondary" onclick="openSearchModal('@foreignKey.TableName', '@foreignKey.ColumnName', '@fkFieldId')">
                                                             <i class="bi bi-search"></i>
@@ -322,39 +321,39 @@
                                                     </div>
                                                 }
                                             }
-                                                else if (columnType == "varchar" && columnLength > 255)
-                                                {
-                                                    <label for="@fieldName" class="fw-bold">@label</label>
-                                                    <textarea name="@fieldName" class="form-control">@columnValue</textarea>
-                                                }
-                                                else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
-                                                {
-                                                    <label for="@fieldName" class="fw-bold">@label</label>
-                                                    <input type="number" name="@fieldName" value="@columnValue" class="form-control input-short" />
-                                                }
-                                                else if (columnType == "bit")
-                                                {
-                                                    <div class="form-check">
-                                                        <input type="checkbox" name="@fieldName" class="form-check-input" value="true" @(columnValue == "True" ? "checked" : "") />
-                                                        <label class="form-check-label fw-bold" for="@fieldName">@label</label>
-                                                    </div>
-                                                }
-                                                else if (columnType == "datetime")
-                                                {
-                                                    string formattedDate = DateTime.TryParse(columnValue, out var dtVal) ? dtVal.ToString("yyyy-MM-dd") : "";
-                                                    <label for="@fieldName" class="fw-bold">@label</label>
-                                                    <input type="date" name="@fieldName" value="@formattedDate" class="form-control input-short" />
-                                                }
-                                                else
-                                                {
-                                                    <label for="@fieldName" class="fw-bold">@label</label>
-                                                    <input type="text" name="@fieldName" value="@columnValue" class="form-control" />
-                                                }
-                                            </div>
-                                        }
-                                    </div>
-                                }
+                                            else if (columnType == "varchar" && columnLength > 255)
+                                            {
+                                                <label for="@fieldName" class="fw-bold">@label</label>
+                                                <textarea name="@fieldName" data-field="@fieldName" data-tablename="@tableName" data-refresh="true" class="form-control">@columnValue</textarea>
+                                            }
+                                            else if (columnType == "int" || columnType == "bigint" || columnType == "decimal")
+                                            {
+                                                <label for="@fieldName" class="fw-bold">@label</label>
+                                                <input type="number" name="@fieldName" value="@columnValue" class="form-control input-short" data-field="@fieldName" data-tablename="@tableName" data-refresh="true" />
+                                            }
+                                            else if (columnType == "bit")
+                                            {
+                                                <div class="form-check">
+                                                    <input type="checkbox" name="@fieldName" class="form-check-input" value="true" @(columnValue == "True" ? "checked" : "") data-field="@fieldName" data-tablename="@tableName" data-refresh="true" />
+                                                    <label class="form-check-label fw-bold" for="@fieldName">@label</label>
+                                                </div>
+                                            }
+                                            else if (columnType == "datetime")
+                                            {
+                                                string formattedDate = DateTime.TryParse(columnValue, out var dtVal) ? dtVal.ToString("yyyy-MM-dd") : "";
+                                                <label for="@fieldName" class="fw-bold">@label</label>
+                                                <input type="date" name="@fieldName" value="@formattedDate" class="form-control input-short" data-field="@fieldName" data-tablename="@tableName" data-refresh="true" />
+                                            }
+                                            else
+                                            {
+                                                <label for="@fieldName" class="fw-bold">@label</label>
+                                                <input type="text" name="@fieldName" value="@columnValue" class="form-control" data-field="@fieldName" data-tablename="@tableName" data-refresh="true" />
+                                            }
+                                        </div>
+                                    }
+                                </div>
                             }
+                        }
                         </div>
                     </div>
                 </div>
@@ -457,26 +456,18 @@
             }
 
             function updateAttachmentField(fullKey) {
-                const descInput = document.getElementById('desc_' + fullKey);
-                const fileInput = document.getElementById('file_' + fullKey);
+                const descInput  = document.getElementById('desc_' + fullKey);
+                const fileInput  = document.getElementById('file_' + fullKey);
                 const hiddenInput = document.getElementById('hidden_' + fullKey);
 
                 const description = descInput?.value?.trim() || "No Description";
-                const fileName = fileInput?.files?.[0]?.name || "";
-
-                const parts = fullKey.split('_');
-                let tableName = parts[0];
-                if (parts.length >= 4) {
-                    const attachmentIndex = parts.findIndex(p => p === 'attachment');
-                    if (attachmentIndex > 0) {
-                        tableName = parts.slice(0, attachmentIndex).join('_');
-                    }
-                }
-
+                const fileName    = fileInput?.files?.[0]?.name || "";
+                const tableName   = fullKey.split('_').slice(0, -1).join('_');   // ← fixed
                 const virtualPath = fileName ? `Attachments/${tableName}/${fileName}` : "";
-                const combined = `${description};${virtualPath}`;
-                if (hiddenInput) hiddenInput.value = combined;
+
+                if (hiddenInput) hiddenInput.value = `${description};${virtualPath}`;
             }
+
 
             document.addEventListener("change", function (e) {
                 if (e.target && e.target.matches("input[type='file'][name^='file_']")) {
@@ -660,7 +651,60 @@
                 );
             }
 
-    
+            // ✅ REFRESH HOOKS
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll('[data-refresh="true"]').forEach(el => {
+                if (el.dataset._refreshBound) return;
+                el.addEventListener("change", () => {
+                    const fieldName = el.getAttribute("data-field");
+                    const tableName = el.getAttribute("data-tablename");
+                    if (!fieldName || !tableName) return;
+                    triggerRefresh(tableName, fieldName);
+                });
+                el.dataset._refreshBound = "1";
+            });
+        });
+
+        async function triggerRefresh(tableName, changedField) {
+            const row = {};
+            document.querySelectorAll(`[data-field^="${tableName}_"]`).forEach(el => {
+                const name = el.getAttribute("data-field");
+                if (!name) return;
+                row[name] = el.type === "checkbox" ? el.checked : el.value;
+            });
+
+            try {
+                const response = await fetch(`/foEventLogic/RefreshAsync?changedField=${encodeURIComponent(changedField)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ TableName: tableName, Row: row })
+                });
+
+                if (!response.ok) throw new Error("Refresh failed");
+
+                const result = await response.json();
+                for (const [fieldName, fieldData] of Object.entries(result)) {
+                    const input = document.querySelector(`[data-field="${fieldName}"]`);
+                    const wrapper = document.querySelector(`[data-wrapper="${fieldName}"]`);
+
+                    if (input) {
+                        if (fieldData.value !== undefined && input.value !== fieldData.value) {
+                            input.value = fieldData.value;
+                        }
+                        if (fieldData.readOnly !== undefined) {
+                            input.readOnly = fieldData.readOnly;
+                            input.disabled = fieldData.readOnly;
+                        }
+                    }
+
+                    if (wrapper && fieldData.visible !== undefined) {
+                        wrapper.style.display = fieldData.visible ? "" : "none";
+                    }
+                }
+            } catch (err) {
+                console.error("Refresh error", err);
+            }
+        }
 
         </script>
 

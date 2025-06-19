@@ -12,7 +12,9 @@
 }
 
 <h1>Groups</h1>
-<a class="btn btn-primary mb-2" href="@Url.Action("Create", new { userid = ViewBag.userid })">Create New</a>
+<a href="@Url.Action("Create", new { userid = ViewBag.userid })" class="btn btn-green mb-3">
+        Create New
+    </a>
 
 <table class="table table-bordered sortable">
     <thead>
@@ -27,9 +29,10 @@
             <tr>
                 <td>@group.Description</td>
                 <td>
-                    <a class="btn btn-sm btn-secondary" href="@Url.Action("Edit", new { id = group.ID, userid = ViewBag.userid })">Edit</a>
+                    <a href="@Url.Action("Edit", new { id = group.ID, userid = ViewBag.userid })" class="btn btn-sm btn-blue">Edit</a>
+
                     <form method="post" asp-action="Delete" asp-route-id="@group.ID" asp-route-userid="@ViewBag.userid" style="display:inline">
-                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        <button type="submit" class="btn btn-sm btn-red">Delete</button>
                     </form>
                 </td>
             </tr>

@@ -69,6 +69,7 @@ namespace FreschOne.Controllers
         {
             SetUserAccess(userid);
             ViewBag.userid = userid;
+            ViewBag.foProcessID = id;
 
             foProcess process = null;
 

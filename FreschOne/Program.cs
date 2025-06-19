@@ -1,4 +1,6 @@
 ﻿using DinkToPdf;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using FreschOne.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +14,9 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+
+builder.Services.AddScoped<IFormRefresher, DefaultFormRefresher>();
+
 
 // Avoid registering DatabaseHelper twice
 builder.Services.AddScoped<DatabaseHelper>();

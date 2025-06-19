@@ -15,9 +15,10 @@
         <input asp-for="Description" class="form-control" />
         <span asp-validation-for="Description" class="text-danger"></span>
     </div>
-
-    <button type="submit" class="btn btn-success">Save</button>
-    <a href="@Url.Action("Index", new { userid })" class="btn btn-secondary">Cancel</a>
+       
+    <br />
+    <button type="submit" class="btn btn-sm btn-blue">Save</button>
+    <a href="@Url.Action("Index", new { userid })" class="btn btn-sm btn-grey">Cancel</a>
 </form>
 
 @section Scripts {
