@@ -62,7 +62,7 @@ namespace FreschOne.Controllers
                                 UserID = reader.IsDBNull(5) ? (long?)null : reader.GetInt64(5),
                                 FullName = (reader.IsDBNull(6) && reader.IsDBNull(7)) ? null : $"{reader.GetString(6)} {reader.GetString(7)}",
                                 DateAssigned = reader.GetDateTime(8),
-                                StepDescription = reader.GetString(9),
+                                StepDescription = reader.IsDBNull(9) ? "Adhoc Approval" : reader.GetString(9),
                                 StepNo = Convert.ToDouble(reader["StepNo"]),
                                 ProcessID = Convert.ToInt32(reader["ProcessID"]),
                                 ProcessName = reader["ProcessName"].ToString(),
@@ -84,18 +84,35 @@ namespace FreschOne.Controllers
                 u.FirstName,
                 u.LastName,
                 e.DateAssigned,
-                COALESCE(s.StepDescription, 'Approval required for ' + p.ProcessDescription) AS StepDescription,
-                ISNULL(s.StepNo, 1) AS StepNo,
-                ISNULL(s.ProcessID, 0) AS ProcessID,
+
+                COALESCE(
+                    ps.StepDescription, 
+                   'Adhoc approval ' +  fallbackPs.StepDescription, 
+                    'Approval required'
+                ) AS StepDescription,
+
+                ISNULL(s.StepNo, fallbackPs.StepNo) AS StepNo,
+                ISNULL(s.ProcessID, fallbackPs.ProcessID) AS ProcessID,
                 p.ProcessName
+
             FROM foApprovalEvents e
+
+            -- Normal link to ApprovalSteps
             LEFT JOIN foApprovalSteps s ON e.StepID = s.ID
             LEFT JOIN foProcess p ON s.ProcessID = p.ID
+            LEFT JOIN foProcessSteps ps ON ps.ProcessID = s.ProcessID AND ps.StepNo = s.StepNo
+
+            -- Fallback link: get the last process step if StepID = 0 (via foProcessEvents)
+            LEFT JOIN foProcessEvents pe ON pe.ProcessInstanceID = e.ProcessInstanceID AND pe.StepID <> 0
+            LEFT JOIN foProcessSteps fallbackPs ON fallbackPs.ID = pe.StepID
+
             LEFT JOIN foGroups g ON e.GroupID = g.ID
             LEFT JOIN foUsers u ON e.UserID = u.ID
+
             WHERE e.DateCompleted IS NULL
               AND (e.UserID = @UserID OR e.GroupID IN (SELECT GroupID FROM foUserGroups WHERE UserID = @UserID))
-        ";
+
+            ";
 
                 using (var cmd = new SqlCommand(approvalQuery, conn))
                 {
@@ -116,7 +133,7 @@ namespace FreschOne.Controllers
                                 UserID = reader.IsDBNull(5) ? (long?)null : reader.GetInt64(5),
                                 FullName = (reader.IsDBNull(6) && reader.IsDBNull(7)) ? null : $"{reader.GetString(6)} {reader.GetString(7)}",
                                 DateAssigned = reader.GetDateTime(8),
-                                StepDescription = reader.GetString(9),
+                                StepDescription = reader.IsDBNull(9) ? "Adhoc Approval" : reader.GetString(9),
                                 StepNo = Convert.ToDouble(reader["StepNo"]),
                                 ProcessID = Convert.ToInt32(reader["ProcessID"]),
                                 ProcessName = reader["ProcessName"].ToString(),

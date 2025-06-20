@@ -55,8 +55,12 @@
                         </form>
 
                         <a href="@Url.Action("Index", "foProcessDetail", new { userid = userid, processId = processId, stepId = step.ID })"
-                           class="btn btn-sm btn-info mb-2 float-end ms-2">
+                           class="btn btn-sm btn-info mb-2 float-end ms-2 btn-blue">
                             Manage Details
+                        </a>
+                        <a href="@Url.Action("QuickIndex", "foProcessDetail", new { userid = userid, processId = processId, stepId = step.ID })"
+                           class="btn btn-sm btn-info mb-2 float-end ms-2 btn-purple">
+                            Quick Details
                         </a>
 
                         @if (details.Any())

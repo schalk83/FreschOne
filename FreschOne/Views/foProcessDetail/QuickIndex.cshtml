@@ -1,0 +1,223 @@
+﻿@model FreschOne.Models.foProcessDetail
+@{
+    ViewData["Title"] = "Quick Add Step Details";
+    var userid = ViewBag.userid;
+    var processId = ViewBag.ProcessId;
+    var stepId = ViewBag.StepId;
+
+    var formTypes = ViewBag.FormTypes as List<SelectListItem>;
+    var tableOptions = ViewBag.ValidTables as List<SelectListItem>;
+    var tablePrefixes = ViewBag.TablePrefixes
+                        as List<(string Prefix, string Description)>;
+    var rows = ViewBag.StepDetailList
+                        as List<FreschOne.Models.foProcessDetail>;
+}
+
+<partial name="_Sidebar" />
+
+<h2 class="mb-1">Process Detail</h2>
+<p class="text-muted mb-4">
+    <strong>Process:</strong> @ViewBag.ProcessName
+    &nbsp; | &nbsp;
+    <strong>Step:</strong> @ViewBag.StepDescription
+</p>
+
+
+<!-- Existing rows table -->
+@if (rows?.Any() == true)
+{
+    <table class="table table-bordered table-sm mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>Table Name</th>
+                <th>Form Type</th>
+                <th>Query</th>
+                <th>Parent?</th>
+                <th>FK Column</th>
+                <th>Description</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in rows)
+            {
+                <tr class="@(r.Parent ? "table-success" : "")">
+                    <td>@r.TableName</td>
+                    <td>@r.FormType</td>
+                    <td>@r.ColumnQuery</td>
+                    <td>@(r.Parent ? "Yes" : "No")</td>
+                    <td>@r.FKColumn</td>
+                    <td>@r.TableDescription</td>
+                    <td>
+                        <form asp-action="Delete" asp-route-id="@r.ID" asp-route-userid="@userid" asp-route-from="quick" method="post" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-red" onclick="return confirm('Delete this detail?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<!-- Quick-add panel -->
+<form asp-action="QuickIndex"
+      asp-route-userid="@userid"
+      asp-route-processId="@processId"
+      asp-route-stepId="@stepId"
+      method="post" class="border rounded p-3 bg-light">
+
+    <h5>Add New Detail</h5>
+    <hr />
+
+    <!-- table prefix filter -->
+    <div class="mb-2">
+        <label class="d-block fw-bold">Filter by Prefix</label>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input prefix-filter" type="radio"
+                   id="pref_all" name="prefixFilter" value="ALL" checked>
+            <label class="form-check-label" for="pref_all">All</label>
+        </div>
+
+        @foreach (var p in tablePrefixes)
+        {
+            var rid = $"pref_{p.Prefix}";
+            <div class="form-check form-check-inline">
+                <input class="form-check-input prefix-filter" type="radio"
+                       id="@rid" name="prefixFilter" value="@p.Prefix">
+                <label class="form-check-label" for="@rid">@p.Description</label>
+            </div>
+        }
+    </div>
+
+    <div class="row g-3">
+        <!-- TableName -->
+        <div class="col-md-4">
+            <label asp-for="TableName" class="form-label">Table Name</label>
+            <select asp-for="TableName" class="form-select" id="tableSelect">
+                <option value=""></option>
+                @foreach (var o in tableOptions)
+                {
+                    var pref = o.Group?.Name ?? "";
+                    <option value="@o.Value" data-prefix="@pref">@o.Text</option>
+                }
+            </select>
+            <span asp-validation-for="TableName" class="text-danger"></span>
+        </div>
+
+        <!-- FormType -->
+        <div class="col-md-2">
+            <label asp-for="FormType" class="form-label">Form Type</label>
+            <select asp-for="FormType" asp-items="formTypes" class="form-select"></select>
+        </div>
+
+        <!-- ColumnQuery -->
+        <div class="col-md-2">
+            <label asp-for="ColumnQuery" class="form-label">Column Query</label>
+            <input asp-for="ColumnQuery" class="form-control" />
+        </div>
+
+        <!-- Parent? -->
+        <div class="col-md-2">
+            <label asp-for="Parent" class="form-label">Is Parent?</label>
+            <select asp-for="Parent" class="form-select" id="isParent">
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+            </select>
+        </div>
+
+        <!-- FKColumn -->
+        <div class="col-md-2" id="fkGroup" style="display:none">
+            <label asp-for="FKColumn" class="form-label">FK Column</label>
+            <select asp-for="FKColumn" class="form-select" id="fkSelect">
+                <option></option>
+            </select>
+            <span asp-validation-for="FKColumn" class="text-danger"></span>
+        </div>
+    </div>
+
+    <input type="hidden" asp-for="TableDescription" />
+    <input type="hidden" asp-for="ColumnCount" value="0" />
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-sm btn-blue">Save</button>
+
+        <a asp-action="Index"
+            asp-controller="foProcessSteps"
+           asp-route-userid="@userid"
+           asp-route-processId="@processId"
+           class="btn btn-sm btn-grey">Back</a>
+    </div>
+</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // 🟡 Injected prefix list from server
+        const knownPrefixes = @Html.Raw(Json.Serialize(
+                    ((List<(string Prefix, string Description)>)ViewBag.TablePrefixes)
+                            .Select(p => p.Prefix)
+                            .Distinct()
+                            .OrderByDescending(p => p.Length)
+                            .ToList()
+            ));
+
+    // 🧠 Removes any known prefix
+    function makeFriendly(tbl) {
+        if (!tbl) return "";
+
+            let cleaned = tbl;
+            for (const prefix of knownPrefixes) {
+                if (cleaned.toLowerCase().startsWith(prefix.toLowerCase())) {
+                    cleaned = cleaned.slice(prefix.length);
+                }
+            }
+
+            return cleaned
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, m => m.toUpperCase());
+        }
+
+        document.querySelectorAll(".prefix-filter").forEach(r => {
+            r.addEventListener("change", e => {
+                const pref = e.target.value;
+                document.querySelectorAll("#tableSelect option")
+                    .forEach(o => {
+                        if (!o.value) return;
+                        const op = o.getAttribute("data-prefix");
+                        o.hidden = pref !== "ALL" && op !== pref;
+                    });
+                document.getElementById("tableSelect").value = "";
+                fkReset();
+            });
+        });
+
+        document.getElementById("tableSelect").addEventListener("change", e => {
+            const tbl = e.target.value;
+            document.getElementById("TableDescription").value = makeFriendly(tbl);
+            if (tbl) fetch(`/foProcessDetail/GetFKColumns?tableName=${encodeURIComponent(tbl)}`)
+                .then(r => r.json())
+                .then(cols => {
+                    const sel = document.getElementById("fkSelect");
+                    sel.innerHTML = "<option></option>";
+                    cols.forEach(c => sel.innerHTML += `<option>${c}</option>`);
+                });
+        });
+
+        document.getElementById("isParent").addEventListener("change", toggleFK);
+        toggleFK();
+
+        function toggleFK() {
+            const isParent = document.getElementById("isParent").value === "true";
+            const g = document.getElementById("fkGroup");
+            const sel = document.getElementById("fkSelect");
+            g.style.display = isParent ? "none" : "block";
+            if (isParent) { sel.removeAttribute("required"); sel.value = ""; }
+            else { sel.setAttribute("required", "required"); }
+        }
+
+        function fkReset() {
+            document.getElementById("fkSelect").innerHTML = "<option></option>";
+        }
+    </script>
+}
+

@@ -207,6 +207,7 @@ namespace FreschOne.Controllers
         }
 
 
+
         public IActionResult Edit(long id, int userid)
         {
             SetUserAccess(userid);
@@ -377,7 +378,7 @@ namespace FreschOne.Controllers
 
 
         [HttpPost]
-        public IActionResult Delete(long id, int userid)
+        public IActionResult Delete(long id, int userid, string from )
         {
             SetUserAccess(userid);
             long stepId;
@@ -400,7 +401,15 @@ namespace FreschOne.Controllers
                 delCmd.ExecuteNonQuery();
             }
 
-            return RedirectToAction("Index", new { userid, processId, stepId });
+            if (from == "quick")
+            {
+                return RedirectToAction("QuickIndex", new { userid, processId, stepId });
+            }
+            else
+            {
+                return RedirectToAction("Index", new { userid, processId, stepId });
+
+            }
         }
 
         private List<foProcessDetail> GetDetailsForStep(long stepId)
@@ -676,6 +685,164 @@ namespace FreschOne.Controllers
             }
             return list;
         }
+
+        // ──────────────────────────────────────────────────────────────
+        //  In foProcessDetailController
+        // ──────────────────────────────────────────────────────────────
+        [HttpGet]
+        public IActionResult QuickIndex(int userid, long processId, long stepId)
+        {
+            SetUserAccess(userid);
+
+            ViewBag.userid = userid;
+            ViewBag.ProcessId = processId;
+            ViewBag.StepId = stepId;
+            ViewBag.FormTypes = GetFormTypeSelectList();
+            ViewBag.ValidTables = GetPrefixedTableNames();
+            ViewBag.TablePrefixes = GetTablePrefixes();          // radio buttons
+
+            // Header text
+            ViewBag.ProcessName = GetSingleValue("SELECT ProcessName FROM foProcess WHERE ID = @ID",
+                                                    ("@ID", processId));
+            ViewBag.StepDescription = GetSingleValue("SELECT StepDescription FROM foProcessSteps WHERE ID = @ID",
+                                                    ("@ID", stepId));
+
+            // Existing rows
+            ViewBag.StepDetailList = GetDetailsForStep(stepId);
+
+            // empty model with sensible defaults
+            var detail = new foProcessDetail
+            {
+                StepID = stepId,
+                ColumnQuery = "*",
+                FormType = "F",   // default
+                Parent = false,
+                Active = true
+            };
+
+            return View(detail);
+        }
+
+        // Helper for single-field look-ups
+        private string GetSingleValue(string sql, params (string name, object val)[] p)
+        {
+            using var conn = GetConnection();
+            using var cmd = new SqlCommand(sql, conn);
+            foreach (var (n, v) in p) cmd.Parameters.AddWithValue(n, v ?? DBNull.Value);
+            conn.Open();
+            return cmd.ExecuteScalar()?.ToString() ?? "";
+        }
+
+        // ──────────────────────────────────────────────────────────────
+        //  POST  – insert and optionally keep adding
+        // ──────────────────────────────────────────────────────────────
+        [HttpPost]
+        public IActionResult QuickIndex(foProcessDetail detail,
+                                        int userid,
+                                        long processId,
+                                        long stepId,
+                                        string action)
+        {
+            SetUserAccess(userid);
+
+            ViewBag.userid = userid;
+            ViewBag.ProcessId = processId;
+            ViewBag.StepId = stepId;
+            ViewBag.FormTypes = GetFormTypeSelectList();
+            ViewBag.ValidTables = GetPrefixedTableNames();
+            ViewBag.TablePrefixes = GetTablePrefixes();
+            ViewBag.StepDetailList = GetDetailsForStep(stepId);
+
+            // ── server-side fall-backs/validation ────────────────────
+            detail.TableDescription ??= MakeFriendlyName(detail.TableName);
+
+            if (!IsQueryValid(detail.TableName, detail.ColumnQuery))
+                ModelState.AddModelError("ColumnQuery", "❌ Invalid SQL query.");
+
+            if (!detail.Parent && string.IsNullOrWhiteSpace(detail.FKColumn))
+                ModelState.AddModelError("FKColumn", "FK column required for child tables.");
+
+            if (detail.Parent && OtherParentExists(stepId))
+                ModelState.AddModelError("Parent", "❌ Only one parent table allowed per step.");
+
+            if (!ModelState.IsValid)
+                return View(detail);                     // come back with errors
+
+            // ── insert row ────────────────────────────────────────────
+            using (var conn = GetConnection())
+            {
+                var sql = @"
+INSERT INTO foProcessDetail
+(StepID,TableName,ColumnQuery,FormType,ListTable,ColumnCount,Parent,FKColumn,
+ TableDescription,ColumnCalcs,Active)
+VALUES
+(@StepID,@TableName,@ColumnQuery,@FormType,@ListTable,@ColumnCount,@Parent,@FKColumn,
+ @TableDescription,@ColumnCalcs,1)";
+                var cmd = new SqlCommand(sql, conn);
+
+                cmd.Parameters.AddWithValue("@StepID", detail.StepID);
+                cmd.Parameters.AddWithValue("@TableName", detail.TableName);
+                cmd.Parameters.AddWithValue("@ColumnQuery", detail.ColumnQuery ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@FormType", detail.FormType);
+                cmd.Parameters.AddWithValue("@ListTable", detail.ListTable ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ColumnCount", detail.ColumnCount);
+                cmd.Parameters.AddWithValue("@Parent", detail.Parent);
+                cmd.Parameters.AddWithValue("@FKColumn", detail.FKColumn ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@TableDescription", detail.TableDescription);
+                cmd.Parameters.AddWithValue("@ColumnCalcs", detail.ColumnCalcs ?? (object)DBNull.Value);
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            EnsureAuditFieldsExist(detail.TableName);   // ignore errors silently like before
+
+            // ── keep adding?  ─────────────────────────────────────────
+            if (action == "addanother")
+                return RedirectToAction("QuickIndex", new { userid, processId, stepId });
+
+            return RedirectToAction("QuickIndex", new { userid, processId, stepId });
+        }
+
+        // Check if another parent exists for the step
+        private bool OtherParentExists(long stepId)
+        {
+            using var conn = GetConnection();
+            var cmd = new SqlCommand(@"SELECT COUNT(*) FROM foProcessDetail
+                               WHERE StepID = @StepID AND Parent = 1 AND Active = 1", conn);
+            cmd.Parameters.AddWithValue("@StepID", stepId);
+            conn.Open();
+            return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+        }
+
+        private string MakeFriendlyName(string tableName)
+        {
+            if (string.IsNullOrWhiteSpace(tableName)) return "";
+
+            var prefixes = GetTablePrefixes()
+                .Select(p => p.Prefix)
+                .OrderByDescending(p => p.Length) // remove longest prefixes first
+                .ToList();
+
+            string cleaned = tableName;
+
+            // 🔁 Strip all matching prefixes in order
+            foreach (var prefix in prefixes)
+            {
+                if (cleaned.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    cleaned = cleaned[prefix.Length..];
+                    // Don't break — allow multiple prefix matches (e.g., tbl_tran_)
+                }
+            }
+
+            // 🧼 Underscores → spaces, TitleCase
+            var parts = cleaned.Split(new[] { '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+            return string.Join(' ', parts.Select(p => char.ToUpper(p[0]) + p[1..]));
+        }
+
+
+
 
 
 

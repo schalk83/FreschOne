@@ -24,42 +24,48 @@ namespace FreschOne.Controllers
             ViewBag.processInstanceId = processInstanceId;
 
             string stepDescription = "";
-            double stepNo = 0;
+            double? stepNo = 0;
 
             using (var conn = GetConnection())
             {
                 conn.Open();
                 using (var transaction = conn.BeginTransaction())
                 {
-                    // Get first step if not supplied
-                    if (stepId is null)
+                    // adhoc
+                    if (stepId == 0)
                     {
-                        var cmd = new SqlCommand(@"
-                    SELECT TOP 1 ID 
-                    FROM foApprovalSteps 
-                    WHERE ProcessID = @ProcessID AND Active = 1 
-                    ORDER BY StepNo", conn, transaction);
-                        cmd.Parameters.AddWithValue("@ProcessID", processId);
-                        var result = cmd.ExecuteScalar();
-                        if (result == null)
-                            return NotFound("No approval steps defined.");
-                        stepId = Convert.ToInt32(result);
-                    }
-
-                    // Read step description + no
-                    string stepQuery = "SELECT StepDescription, StepNo FROM foApprovalSteps WHERE ID = @StepID";
-                    using (var detailCmd = new SqlCommand(stepQuery, conn, transaction))
-                    {
-                        detailCmd.Parameters.AddWithValue("@StepID", stepId);
-                        using (var reader = detailCmd.ExecuteReader())
+                        // Read step description + no
+                        string stepQuery = "SELECT 'Adhoc approval ' + ProcessName AS StepDescription FROM foProcess where ID = " + processId;
+                        using (var detailCmd = new SqlCommand(stepQuery, conn, transaction))
                         {
-                            if (reader.Read())
+                            detailCmd.Parameters.AddWithValue("@StepID", stepId);
+                            using (var reader = detailCmd.ExecuteReader())
                             {
-                                stepDescription = reader["StepDescription"].ToString();
-                                stepNo = Convert.ToDouble(reader["StepNo"]);
-                            }
-                        } // ✅ Reader closed here
+                                if (reader.Read())
+                                {
+                                    stepDescription = reader["StepDescription"].ToString();
+                                    stepNo = null;
+                                }
+                            } // ✅ Reader closed here
+                        }
                     }
+                    else
+                    {
+                        // Normal
+                        string stepQuery = "SELECT StepDescription, StepNo FROM foApprovalSteps WHERE ID = @StepID";
+                        using (var detailCmd = new SqlCommand(stepQuery, conn, transaction))
+                        {
+                            detailCmd.Parameters.AddWithValue("@StepID", stepId);
+                            using (var reader = detailCmd.ExecuteReader())
+                            {
+                                if (reader.Read())
+                                {
+                                    stepDescription = reader["StepDescription"].ToString();
+                                    stepNo = Convert.ToDouble(reader["StepNo"]);
+                                }
+                            } // ✅ Reader closed here
+                        }
+                    }                        
 
                     // ✅ Safe to load history now
                     PopulateProcessHistory(conn, transaction, processInstanceId);

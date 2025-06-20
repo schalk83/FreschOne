@@ -47,8 +47,6 @@ namespace FreschOne.Controllers
             return View(steps);
         }
 
-     
-
         public IActionResult Create(long processid, int userid)
         {
             SetUserAccess(userid);

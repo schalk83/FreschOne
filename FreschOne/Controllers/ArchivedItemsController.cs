@@ -41,7 +41,7 @@ namespace FreschOne.Controllers
             LEFT JOIN foGroups g ON e.GroupID = g.ID
             LEFT JOIN foUsers u ON e.UserID = u.ID
             WHERE (e.UserID = @UserID OR e.GroupID IN (SELECT GroupID FROM foUserGroups WHERE UserID = @UserID))
-              AND e.ID = (SELECT TOP 1 ID FROM foProcessEventsArchive WHERE ProcessInstanceID = e.ProcessInstanceID ORDER BY StepNo DESC, DateAssigned DESC)";
+              AND e.ID = (SELECT TOP 1 ID FROM foProcessEventsArchive WHERE ProcessInstanceID = e.ProcessInstanceID ORDER BY s.StepNo DESC, DateAssigned DESC)";
 
                 using (var cmd = new SqlCommand(processQuery, conn))
                 {
@@ -81,18 +81,35 @@ namespace FreschOne.Controllers
                 e.UserID,
                 u.FirstName,
                 u.LastName,
-                e.DateCompleted,
-                COALESCE(s.StepDescription, 'Approval required for ' + p.ProcessDescription) AS StepDescription,
-                s.StepNo,
-                s.ProcessID,
+                e.DateAssigned,
+
+                COALESCE(
+                    ps.StepDescription, 
+                   'Adhoc approval ' +  fallbackPs.StepDescription, 
+                    'Approval required'
+                ) AS StepDescription,
+
+                ISNULL(s.StepNo, fallbackPs.StepNo) AS StepNo,
+                ISNULL(s.ProcessID, fallbackPs.ProcessID) AS ProcessID,
                 p.ProcessName
-            FROM foApprovalEventsArchive e
+
+            FROM foApprovalEvents e
+
+            -- Normal link to ApprovalSteps
             LEFT JOIN foApprovalSteps s ON e.StepID = s.ID
             LEFT JOIN foProcess p ON s.ProcessID = p.ID
+            LEFT JOIN foProcessSteps ps ON ps.ProcessID = s.ProcessID AND ps.StepNo = s.StepNo
+
+            -- Fallback link: get the last process step if StepID = 0 (via foProcessEvents)
+            LEFT JOIN foProcessEvents pe ON pe.ProcessInstanceID = e.ProcessInstanceID AND pe.StepID <> 0
+            LEFT JOIN foProcessSteps fallbackPs ON fallbackPs.ID = pe.StepID
+
             LEFT JOIN foGroups g ON e.GroupID = g.ID
             LEFT JOIN foUsers u ON e.UserID = u.ID
-            WHERE (e.UserID = @UserID OR e.GroupID IN (SELECT GroupID FROM foUserGroups WHERE UserID = @UserID))
-              AND e.ID = (SELECT TOP 1 ID FROM foApprovalEventsArchive WHERE ProcessInstanceID = e.ProcessInstanceID ORDER BY StepNo DESC, DateAssigned DESC)";
+
+            WHERE e.DateCompleted IS NULL
+              AND (e.UserID = @UserID OR e.GroupID IN (SELECT GroupID FROM foUserGroups WHERE UserID = @UserID))
+                AND e.ID = (SELECT TOP 1 ID FROM foApprovalEventsArchive WHERE ProcessInstanceID = e.ProcessInstanceID ORDER BY s.StepNo DESC, DateAssigned DESC)";
 
                 using (var cmd = new SqlCommand(approvalQuery, conn))
                 {

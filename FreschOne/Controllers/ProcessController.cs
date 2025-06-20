@@ -18,37 +18,59 @@ namespace FreschOne.Controllers
         public IActionResult NewProcessIndex(int userId)
         {
             ViewBag.userid = userId;
-
             SetUserAccess(userId);
 
             var processList = new List<foProcess>();
 
-            var query = "SELECT DISTINCT ID AS ProcessID, ProcessName, ProcessDescription FROM foProcess " +
-            "WHERE ID IN ( select ProcessID from foProcessSteps " +
-            "WHERE ISNULL ( UserID, 0 ) = " + userId + " AND Active = 1) UNION SELECT DISTINCT ID AS ProcessID,ProcessName, ProcessDescription " +
-                            "FROM foProcess WHERE ID IN ( SELECT ProcessID FROM foProcessSteps WHERE ISNULL ( GroupID, 0 ) IN " +
-                            "( SELECT GroupID FROM foUserGroups WHERE UserID = " + userId + " ) AND Active = 1)";
+            const string query = @"
+        SELECT DISTINCT p.ID AS ProcessID,
+                        p.ProcessName,
+                        p.ProcessDescription
+        FROM   foProcess p
+        WHERE  p.ID IN (
+                SELECT ps.ProcessID
+                FROM   foProcessSteps ps
+                WHERE  ISNULL(ps.UserID, 0) = @UserId
+                  AND  ps.Active = 1
+                  AND  ps.ID IN (SELECT StepID FROM foProcessDetail WHERE Active = 1)
+              )
 
+        UNION
 
-            using (SqlConnection conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        SELECT DISTINCT p.ID AS ProcessID,
+                        p.ProcessName,
+                        p.ProcessDescription
+        FROM   foProcess p
+        WHERE  p.ID IN (
+                SELECT ps.ProcessID
+                FROM   foProcessSteps ps
+                WHERE  ISNULL(ps.GroupID, 0) IN (
+                        SELECT ug.GroupID
+                        FROM   foUserGroups ug
+                        WHERE  ug.UserID = @UserId
+                    )
+                  AND  ps.Active = 1
+                  AND  ps.ID IN (SELECT StepID FROM foProcessDetail WHERE Active = 1)
+              );";
+
+            using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using var cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@UserId", userId);
+
+                conn.Open();
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
                 {
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    processList.Add(new foProcess
                     {
-                        while (reader.Read())
-                        {
-                            processList.Add(new foProcess
-                            {
-                                ID = (long)reader["ProcessID"],
-                                ProcessName = reader["ProcessName"].ToString(),
-                                ProcessDescription = reader["ProcessDescription"].ToString(),
-                            });
-                        }
-                    }
+                        ID = Convert.ToInt32(reader["ProcessID"]),  // 🔁 safer than (long)
+                        ProcessName = reader["ProcessName"].ToString(),
+                        ProcessDescription = reader["ProcessDescription"].ToString(),
+                    });
                 }
             }
+
             return View(processList);
         }
     }
