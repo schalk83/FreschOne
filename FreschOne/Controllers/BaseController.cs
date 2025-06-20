@@ -36,71 +36,71 @@ namespace FreschOne.Controllers
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            //var controller = context.ActionDescriptor.RouteValues["controller"];
-            //var action = context.ActionDescriptor.RouteValues["action"];
+            var controller = context.ActionDescriptor.RouteValues["controller"];
+            var action = context.ActionDescriptor.RouteValues["action"];
 
-            //bool isPublic = controller == "Account" &&
-            //               (action == "Login" || action == "ResetPassword" || action == "Logout");
+            bool isPublic = controller == "Account" &&
+                           (action == "Login" || action == "ResetPassword" || action == "Logout");
 
-            //var isLoggedIn = context.HttpContext.Session.GetString("IsLoggedIn");
-            //var sessionUserId = context.HttpContext.Session.GetInt32("UserID");
+            var isLoggedIn = context.HttpContext.Session.GetString("IsLoggedIn");
+            var sessionUserId = context.HttpContext.Session.GetInt32("UserID");
 
-            //if (!isPublic && (isLoggedIn != "true" || sessionUserId == null))
-            //{
-            //    context.Result = new RedirectToActionResult("Login", "Account", null);
-            //    return;
-            //}
+            if (!isPublic && (isLoggedIn != "true" || sessionUserId == null))
+            {
+                context.Result = new RedirectToActionResult("Login", "Account", null);
+                return;
+            }
 
-            //if (isLoggedIn == "true" && sessionUserId != null &&
-            //    context.HttpContext.Request.Query.ContainsKey("userId"))
-            //{
-            //    if (int.TryParse(context.HttpContext.Request.Query["userId"], out int queryUserId))
-            //    {
-            //        if (queryUserId != sessionUserId)
-            //        {
-            //            Console.WriteLine($"🚨 Spoofed userId: {queryUserId} ≠ session: {sessionUserId}");
-            //            context.Result = new RedirectToActionResult("Login", "Account", null);
-            //            return;
-            //        }
-            //    }
-            //}
+            if (isLoggedIn == "true" && sessionUserId != null &&
+                context.HttpContext.Request.Query.ContainsKey("userId"))
+            {
+                if (int.TryParse(context.HttpContext.Request.Query["userId"], out int queryUserId))
+                {
+                    if (queryUserId != sessionUserId)
+                    {
+                        Console.WriteLine($"🚨 Spoofed userId: {queryUserId} ≠ session: {sessionUserId}");
+                        context.Result = new RedirectToActionResult("Login", "Account", null);
+                        return;
+                    }
+                }
+            }
 
-            //// ✅ License Check: Decode and Validate
-            //string licenseEndDateString = GetDecodedLicenseKey();
-            //if (!string.IsNullOrEmpty(licenseEndDateString) && DateTime.TryParse(licenseEndDateString, out DateTime licenseEndDate))
-            //{
-            //    if (licenseEndDate < DateTime.Now)
-            //    {
-            //        context.Result = new ContentResult
-            //        {
-            //            Content = $"❌ License expired on {licenseEndDate:yyyy-MM-dd}. Please contact support.",
-            //            StatusCode = 403
-            //        };
-            //        return;
-            //    }
-            //}
-            //else
-            //{
-            //    context.Result = new ContentResult
-            //    {
-            //        Content = "❌ Invalid or missing license. Please contact support.",
-            //        StatusCode = 403
-            //    };
-            //    return;
-            //}
+            // ✅ License Check: Decode and Validate
+            string licenseEndDateString = GetDecodedLicenseKey();
+            if (!string.IsNullOrEmpty(licenseEndDateString) && DateTime.TryParse(licenseEndDateString, out DateTime licenseEndDate))
+            {
+                if (licenseEndDate < DateTime.Now)
+                {
+                    context.Result = new ContentResult
+                    {
+                        Content = $"❌ License expired on {licenseEndDate:yyyy-MM-dd}. Please contact support.",
+                        StatusCode = 403
+                    };
+                    return;
+                }
+            }
+            else
+            {
+                context.Result = new ContentResult
+                {
+                    Content = "❌ Invalid or missing license. Please contact support.",
+                    StatusCode = 403
+                };
+                return;
+            }
 
-            //// ✅ Check critical tables (only if logged in)
-            //if (isLoggedIn == "true" && sessionUserId != null)
-            //{
-            //    using (var conn = _dbHelper.GetConnection())
-            //    {
-            //        conn.Open();
-            //        CheckCriticalTables(conn);
-            //    }
-            //}
+            // ✅ Check critical tables (only if logged in)
+            if (isLoggedIn == "true" && sessionUserId != null)
+            {
+                using (var conn = _dbHelper.GetConnection())
+                {
+                    conn.Open();
+                    CheckCriticalTables(conn);
+                }
+            }
 
-            //ViewBag.userid = sessionUserId;
-            //base.OnActionExecuting(context);
+            ViewBag.userid = sessionUserId;
+            base.OnActionExecuting(context);
         }
 
         private void CheckCriticalTables(SqlConnection conn)
