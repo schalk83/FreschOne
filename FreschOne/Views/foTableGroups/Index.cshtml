@@ -15,7 +15,7 @@
     <div class="alert alert-success">@TempData["Message"]</div>
 }
 
-<h1>Reports</h1>
+<h1>Table Groups</h1>
 <a class="btn btn-primary mb-2" href="@Url.Action("Create", new { userid = @userid })">Create New</a>
 
 <table class="table table-bordered sortable">
@@ -26,13 +26,13 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var report in Model)
+        @foreach (var tableGroups in Model)
         {
             <tr>
-                <td>@report.Description</td>
+                <td>@tableGroups.Description</td>
                 <td>
-                    <a class="btn btn-sm btn-secondary" href="@Url.Action("Edit", new { id = report.ID, userid = @userid })">Edit</a>
-                    <form method="post" asp-action="Delete" asp-route-id="@report.ID" asp-route-userid="@userid" style="display:inline">
+                    <a class="btn btn-sm btn-secondary" href="@Url.Action("Edit", new { id = tableGroups.ID, userid = @userid })">Edit</a>
+                    <form method="post" asp-action="Delete" asp-route-id="@tableGroups.ID" asp-route-userid="@userid" style="display:inline">
                         <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                     </form>
                 </td>
