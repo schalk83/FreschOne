@@ -605,6 +605,65 @@ form#searchForm input[type="text"] {
 #attachmentForm {
     display: none;
 }
+/* Wider modal and nicer padding */
+#searchModal .modal-dialog {
+    max-width: 90%;
+}
+
+/* Only define once */
+#searchModal .modal-body {
+    padding: 1.5rem 1.5rem 2.5rem 1.5rem; /* top, right, bottom, left */
+    min-height: 150px; /* ensures visible padding even for short tables */
+}
+
+#searchModal table {
+    width: 90%;
+    margin: 1rem auto 1rem auto; /* ⬅ top and bottom margins */
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #dee2e6;
+    background-color: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+
+#searchModal th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    padding: 10px;
+    border-bottom: 2px solid #dee2e6;
+    text-align: left;
+}
+
+#searchModal td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+#searchModal tr:nth-child(even) td {
+    background-color: #f6f8fa;
+}
+
+#searchModal tr:hover td {
+    background-color: #e9f7fe;
+    cursor: pointer;
+}
+
+#searchModal .modal-title {
+    font-weight: bold;
+    padding-left: 1.25rem;
+}
+
+#searchModal .modal-body::after {
+    content: "";
+    display: block;
+    height: 20px;
+    background: transparent;
+}
+
+
 
 
 

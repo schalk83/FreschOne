@@ -43,93 +43,133 @@
     @RenderSection("Scripts", required: false)
 
     <script>
-        function openSearchModal(tableName, columnName, targetField) {
-            const modal = new bootstrap.Modal(document.getElementById('searchModal'));
+        /* ────────────────────────────────────────────────────────────────────────────
+           Search-picker modal
+           ────────────────────────────────────────────────────────────────────────── */
+        (() => {
+            /* helper – turn raw column name into a nice label/title */
 
-        let niceColumnName = columnName
-            .replace(/ID$/i, '') // Remove trailing 'ID'
-            .replace(/_/g, ' ')  // Replace underscores with spaces
-            .replace(/([a-z])([A-Z])/g, '$1 $2') // Split camelCase
-            .trim(); // Clean any trailing spaces
+        const makeFriendly = (txt = "") => {
+            if (!txt) return "";
 
+            // Only override exact "foUserID"
+            if (txt.toLowerCase() === "fouserid") return "User";
 
-            document.getElementById('searchModalContent').innerHTML = `
-                <div class="modal-header">
-            <h5 class="modal-title">Select ${niceColumnName}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>`;
-            modal.show();
+            let label = txt
+                .replace(/^foUserID_/i, "")        // remove prefix
+                .replace(/ID$/i, "")               // remove suffix
+                .replace(/_/g, " ")                // snake_case to spaces
+                .replace(/([a-z])([A-Z])/g, "$1 $2") // camelCase to spaces
+                .trim();
 
-            fetch(`/TableX/GetSearchOptions?tableName=${encodeURIComponent(tableName)}&columnName=${encodeURIComponent(columnName)}`)
-                .then(response => response.json())
-                .then(data => {
-                    let content = `
-                        <div class="modal-header">
-                    <h5 class="modal-title">Select ${niceColumnName}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <ul class="list-group">`;
+            // Capitalize each word
+            return label.replace(/\b\w/g, c => c.toUpperCase()) || txt;
+        };
 
-                    if (data.length === 0) {
-                        content += `<li class="list-group-item text-muted">No results found.</li>`;
-                    } else {
-                        data.forEach(item => {
-                            const id = item.ID?.toString().replace(/'/g, "\\'");
-                            const display = (item.Display ?? "").replace(/'/g, "\\'");
-                            content += `<li class="list-group-item list-group-item-action" style="cursor:pointer;" onclick="selectSearchValue('${targetField}', '${id}', '${display}')">${display}</li>`;
-                        });
-                    }
+            const modalEl = document.getElementById("searchModal");
+            const modal   = new bootstrap.Modal(modalEl);
 
-                    content += `</ul></div>`;
-                    document.getElementById('searchModalContent').innerHTML = content;
-                })
-                .catch(err => {
-                    document.getElementById('searchModalContent').innerHTML = `
-                        <div class="modal-header">
-                            <h5 class="modal-title">Error</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p class="text-danger">Error loading data. Please try again.</p>
-                        </div>`;
-                    console.error('Fetch error:', err);
-                });
-        }
+            /* global so we can call it from Razor-generated buttons */
+        window.openSearchModal = function (tableName, columnName, targetField) {
+            // Fallback to targetField if columnName is just "ID"
+            let fieldLabel = columnName;
 
-        function selectSearchValue(fieldId, value, displayText) {
-            // Hidden input (shared)
-            const hiddenById = document.getElementById(fieldId);
-            const hiddenByName = document.querySelector(`input[type="hidden"][name="${fieldId}"]`);
-
-            // Display textbox: could be id=fieldId or id=fieldId_Display
-            const displayById = document.getElementById(fieldId);
-            const displayByDisplayId = document.getElementById(fieldId + "_Display");
-
-            // Prefer setting hidden values correctly
-            if (hiddenById) hiddenById.value = value;
-            if (hiddenByName) hiddenByName.value = value;
-
-            // Display field logic
-            if (displayByDisplayId) {
-                displayByDisplayId.value = displayText;
-            } else if (displayById && displayById.type !== "hidden") {
-                displayById.value = displayText;
+            if (columnName.toLowerCase() === "id" && targetField.includes("_")) {
+                const parts = targetField.split("_");
+                fieldLabel = parts[parts.length - 1]; // e.g., "Agent"
             }
 
-            // Close modal
-            const modalEl = document.getElementById('searchModal');
-            const modalInstance = bootstrap.Modal.getInstance(modalEl);
-            if (modalInstance) modalInstance.hide();
-        }
+            const niceColumnName = makeFriendly(fieldLabel);
 
+                /* skeleton while we fetch data */
+                document.getElementById("searchModalContent").innerHTML = `
+                    <div class="modal-header bg-primary bg-opacity-10 border-bottom-0">
+                        <h5 class="modal-title fw-semibold text-primary">Select ${niceColumnName}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading…</span>
+                        </div>
+                    </div>`;
+                modal.show();
 
+                fetch(
+                    `/TableX/GetSearchOptions?tableName=${encodeURIComponent(tableName)}&columnName=${encodeURIComponent(columnName)}`
+                )
+                    .then(r => r.json())
+                    .then(data => {
+                        const cols = data.columns || [];
+                        const rows = data.rows    || [];
 
+                        /* build table */
+                        let html = `
+                            <div class="modal-header bg-primary bg-opacity-10 border-bottom-0">
+                                <h5 class="modal-title fw-semibold text-primary">Select ${niceColumnName}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-0">
+                              <div class="table-responsive">
+                                <table class="table table-striped table-hover table-bordered mb-0 small">
+                                  <thead class="table-light">
+                                    <tr>`;
+
+                        cols.forEach(c => html += `<th class="align-middle">${makeFriendly(c)}</th>`);
+                        html += `</tr></thead><tbody>`;
+
+                        if (rows.length) {
+                            rows.forEach(r => {
+                                const id   = (r.ID ?? "").toString().replace(/'/g, "\\'");
+                                const disp = (r.Display ?? "").replace(/'/g, "\\'");
+                                html += `<tr style="cursor:pointer"
+                                             onclick="selectSearchValue('${targetField}', '${id}', '${disp}')">`;
+                                cols.forEach(c => html += `<td>${r[c] ?? ""}</td>`);
+                                html += `</tr>`;
+                            });
+                        } else {
+                            html += `<tr><td colspan="${cols.length}" class="text-center text-muted py-3">
+                                       No results found.
+                                     </td></tr>`;
+                        }
+
+                        html += `</tbody></table></div></div>`;
+
+                        document.getElementById("searchModalContent").innerHTML = html;
+                    })
+                    .catch(err => {
+                        console.error("Modal fetch failed:", err);
+                        document.getElementById("searchModalContent").innerHTML = `
+                            <div class="modal-header bg-danger bg-opacity-10">
+                                <h5 class="modal-title text-danger">Error</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="text-danger mb-0">Could not load results: ${err.message}</p>
+                            </div>`;
+                    });
+            };
+
+            /* called when a <tr> is clicked */
+            window.selectSearchValue = function (fieldId, value, displayText) {
+
+                /* hidden value(s) */
+                const hiddenById   = document.getElementById(fieldId);
+                const hiddenByName = document.querySelector(`input[type="hidden"][name="${fieldId}"]`);
+                if (hiddenById)   hiddenById.value   = value;
+                if (hiddenByName) hiddenByName.value = value;
+
+                /* visible text box */
+                const displayById      = document.getElementById(fieldId);
+                const displayByDisplay = document.getElementById(fieldId + "_Display");
+                if (displayByDisplay) {
+                    displayByDisplay.value = displayText;
+                } else if (displayById && displayById.type !== "hidden") {
+                    displayById.value = displayText;
+                }
+
+                modal.hide();
+            };
+        })();
     </script>
 
 

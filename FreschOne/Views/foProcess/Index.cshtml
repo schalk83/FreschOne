@@ -37,6 +37,9 @@
                     <form method="post" asp-action="Delete" asp-route-id="@process.ID" asp-route-userid="@userid" style="display:inline;">
                         <button type="submit" class="btn btn-sm btn-red">Delete</button>
                     </form>
+
+                    <a href="@Url.Action("Index", "foProcessSteps", new { processid = process.ID, userid = userid })" class="btn btn-sm btn-green float-end">Steps</a>
+
                 </td>
             </tr>
         }

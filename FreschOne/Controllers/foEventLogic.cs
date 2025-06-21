@@ -25,16 +25,16 @@ namespace FreschOne.Controllers
             var result = new Dictionary<string, object>();
             var fieldname = "";
 
-            if (tableName == "Adjustment")
+            if (tableName == "tbl_tran_Employee")
             {
-                fieldname = "Description";
+                fieldname = "FirstName";
 
                 if (row.TryGetValue(tableName + fieldname, out var firstNameToken) && firstNameToken?.ToString() == "Schalk")
                 {
                     result[tableName + "LastName"] = new
                     {
                         visible = true,
-                        value = "BONUS_ADJUSTMENT_TO_ACCOUNT",
+                        value = "Van der Merwe",
                         readOnly = true
                     };
                 }

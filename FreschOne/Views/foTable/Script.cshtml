@@ -98,13 +98,34 @@
     const fkTables = @Html.Raw(JsonConvert.SerializeObject(ViewBag.ForeignKeyTables ?? new List<string>()));
     const savedColumns = @Html.Raw(JsonConvert.SerializeObject(ViewBag.SavedColumns ?? new List<FreschOne.Models.foTableColumns>()));
 
-    function toPascalCase(text) {
-        return text
-            .toLowerCase()
+        function toPascalCase(text) {
+        if (!text) return "";
+
+        let prefix = "";
+        let rest = text;
+
+        // Preserve specific prefixes
+        if (text.toLowerCase().startsWith("attachment_")) {
+            prefix = "attachment_";
+            rest = text.slice("attachment_".length);
+        } else if (text.toLowerCase().startsWith("geo_")) {
+            prefix = "geo_";
+            rest = text.slice("geo_".length);
+        }
+
+        const cleaned = rest
+            .replace(/([a-z])([A-Z])/g, '$1 $2')  // handle camelCase
+            .replace(/[_\s]+/g, ' ')              // normalize
+            .trim()
             .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
             .join('');
+
+        return prefix + cleaned;
     }
+
+
+
 
     document.querySelectorAll("input[name='tablePrefix']").forEach(radio => {
         radio.addEventListener("change", () => {
@@ -468,6 +489,19 @@
             console.error("❌ Save failed:", error);
             alert("❌ Save failed: " + error.message);
         });
+     }
+         function copyScript() {
+        const scriptElement = document.getElementById("generatedScript");
+        const text = scriptElement.innerText;
+
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                alert("✅ Script copied to clipboard.");
+            })
+            .catch(err => {
+                console.error("❌ Copy failed:", err);
+                alert("❌ Failed to copy script.");
+            });
     }
 
 </script>

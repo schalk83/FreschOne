@@ -1367,7 +1367,7 @@ namespace FreschOne.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetSearchOptions(string tableName, string columnName)
+        public IActionResult GetSearchOptions2(string tableName, string columnName)
         {
             var result = new List<Dictionary<string, object>>();
             try
@@ -1476,6 +1476,101 @@ namespace FreschOne.Controllers
             }
         }
 
+        [HttpGet]
+        public IActionResult GetSearchOptions(string tableName, string columnName)
+        {
+            var columns = new HashSet<string>();
+            var rows = new List<Dictionary<string, object>>();
+
+            try
+            {
+                using var conn = GetConnection();
+                conn.Open();
+
+                var ignoredColumns = GetIgnoredColumns(conn);
+                var fkColumns = GetForeignKeyColumns(tableName).ToList();
+                var allColumns = GetTableColumns(tableName);
+
+                var needsUserLookup = tableName == "foUsers";
+                var userLookup = new Dictionary<string, string>();
+
+                if (needsUserLookup)
+                {
+                    using var userCmd = new SqlCommand("SELECT ID, FirstName + ' ' + LastName AS FullName FROM foUsers", conn);
+                    using var reader = userCmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        var id = reader["ID"].ToString();
+                        var fullName = reader["FullName"].ToString();
+                        userLookup[id] = fullName;
+                    }
+                }
+
+                var cmd = new SqlCommand($"SELECT * FROM {tableName} WHERE Active = 1", conn);
+                using var dataReader = cmd.ExecuteReader();
+
+                while (dataReader.Read())
+                {
+                    var row = new Dictionary<string, object>();
+                    var displayParts = new List<string>();
+
+                    for (int i = 0; i < dataReader.FieldCount; i++)
+                    {
+                        var name = dataReader.GetName(i);
+                        if (ignoredColumns.Contains(name)) continue;
+
+                        var value = dataReader[name]?.ToString();
+                        if (string.IsNullOrWhiteSpace(value)) continue;
+
+                        columns.Add(name); // collect column names
+
+                        // foreign key override
+                        var fkMatch = fkColumns.FirstOrDefault(fk => fk.ColumnName == name);
+                        if (fkMatch != null)
+                        {
+                            if (fkMatch.TableName == "foUsers" && userLookup.TryGetValue(value, out var fullName))
+                            {
+                                displayParts.Add(fullName);
+                                row[name] = fullName;
+                            }
+                            else
+                            {
+                                var options = GetForeignKeyOptions(fkMatch.TableName);
+                                var resolved = options.FirstOrDefault(x => x.Value == value)?.Text ?? value;
+                                displayParts.Add(resolved);
+                                row[name] = resolved;
+                            }
+                        }
+                        else
+                        {
+                            row[name] = value;
+
+                            // ✅ Include core user fields if foUsers
+                            if (needsUserLookup && (name == "FirstName" || name == "LastName" ))
+                                displayParts.Add(value);
+                            else if (!needsUserLookup)
+                                displayParts.Add(value);
+                        }
+                    }
+
+                    row["ID"] = dataReader["ID"].ToString();
+                    if (!row.ContainsKey("Display") || string.IsNullOrWhiteSpace(row["Display"]?.ToString()))
+                        row["Display"] = string.Join(" | ", displayParts);
+
+                    rows.Add(row);
+                }
+
+                return Json(new
+                {
+                    Columns = columns.ToList(),
+                    Rows = rows
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
 
 
     }

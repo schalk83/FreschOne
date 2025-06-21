@@ -699,29 +699,36 @@ namespace FreschOne.Controllers
             ViewBag.StepId = stepId;
             ViewBag.FormTypes = GetFormTypeSelectList();
             ViewBag.ValidTables = GetPrefixedTableNames();
-            ViewBag.TablePrefixes = GetTablePrefixes();          // radio buttons
+            ViewBag.TablePrefixes = GetTablePrefixes();
 
             // Header text
-            ViewBag.ProcessName = GetSingleValue("SELECT ProcessName FROM foProcess WHERE ID = @ID",
-                                                    ("@ID", processId));
-            ViewBag.StepDescription = GetSingleValue("SELECT StepDescription FROM foProcessSteps WHERE ID = @ID",
-                                                    ("@ID", stepId));
+            ViewBag.ProcessName = GetSingleValue(
+                "SELECT ProcessName FROM foProcess WHERE ID = @ID",
+                ("@ID", processId));
+
+            ViewBag.StepDescription = GetSingleValue(
+                "SELECT StepDescription FROM foProcessSteps WHERE ID = @ID",
+                ("@ID", stepId));
 
             // Existing rows
-            ViewBag.StepDetailList = GetDetailsForStep(stepId);
+            var existingRows = GetDetailsForStep(stepId);
+            ViewBag.StepDetailList = existingRows;
 
-            // empty model with sensible defaults
+            /* ─────────────────────────────────────────────
+               Build an empty model with sensible defaults
+               ───────────────────────────────────────────*/
             var detail = new foProcessDetail
             {
                 StepID = stepId,
                 ColumnQuery = "*",
-                FormType = "F",   // default
-                Parent = false,
+                FormType = "F",               // default form type
+                Parent = !existingRows.Any(), // ➜ true when it’s the first record
                 Active = true
             };
 
             return View(detail);
         }
+
 
         // Helper for single-field look-ups
         private string GetSingleValue(string sql, params (string name, object val)[] p)
