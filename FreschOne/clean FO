@@ -1,0 +1,67 @@
+
+
+DELETE FROM foApprovalAttachments
+DELETE FROM foApprovalEvents
+DELETE FROM foApprovalEventsArchive
+DELETE FROM foApprovalEventsDetail
+DELETE FROM foApprovalEventsDetailArchive
+DELETE FROM foApprovals
+DELETE FROM foApprovalSteps
+DELETE FROM foGroups
+DELETE FROM foProcess
+DELETE FROM foProcessCancellations
+DELETE FROM foProcessDetail
+DELETE FROM foProcessEvents
+DELETE FROM foProcessEventsArchive
+DELETE FROM foProcessEventsDetail
+DELETE FROM foProcessEventsDetailArchive
+DELETE FROM foProcessSteps
+DELETE FROM foReportAccess
+DELETE FROM foReports
+DELETE FROM foReportTable
+DELETE FROM foReportTableQuery
+DELETE FROM foTable
+DELETE FROM foTableAttachments
+DELETE FROM foTableColumns
+
+DELETE FROM foTableGroups
+DELETE FROM foUserGroups
+DELETE FROM foUserLogin
+DELETE FROM foUserPasswordReset
+DELETE FROM foUserProcess
+DELETE FROM foUserReports
+
+dbcc checkident ('foApprovalAttachments',RESEED,0)
+dbcc checkident ('foApprovalEvents',RESEED,0)
+dbcc checkident ('foApprovalEventsArchive',RESEED,0)
+dbcc checkident ('foApprovalEventsDetail',RESEED,0)
+dbcc checkident ('foApprovalEventsDetailArchive',RESEED,0)
+dbcc checkident ('foApprovals',RESEED,0)
+dbcc checkident ('foApprovalSteps',RESEED,0)
+dbcc checkident ('foEmailNotifications',RESEED,0)
+dbcc checkident ('foEmailNotificationsDetail',RESEED,0)
+dbcc checkident ('foEmailSettings',RESEED,0)  
+dbcc checkident ('foEmailTemplate',RESEED,0)
+dbcc checkident ('foGroups',RESEED,0)
+dbcc checkident ('foProcess',RESEED,0)
+dbcc checkident ('foProcessCancellations',RESEED,0)
+dbcc checkident ('foProcessDetail',RESEED,0)
+dbcc checkident ('foProcessEvents',RESEED,0)
+dbcc checkident ('foProcessEventsArchive',RESEED,0)
+dbcc checkident ('foProcessEventsDetail',RESEED,0)
+dbcc checkident ('foProcessEventsDetailArchive',RESEED,0)
+dbcc checkident ('foProcessSteps',RESEED,0)
+dbcc checkident ('foReportAccess',RESEED,0)
+dbcc checkident ('foReports',RESEED,0)
+dbcc checkident ('foReportTable',RESEED,0)
+dbcc checkident ('foReportTableQuery',RESEED,0)
+dbcc checkident ('foTable',RESEED,0)
+dbcc checkident ('foTableAttachments',RESEED,0)
+dbcc checkident ('foTableColumns',RESEED,0)
+
+dbcc checkident ('foTableGroups',RESEED,0)
+dbcc checkident ('foUserGroups',RESEED,0)
+dbcc checkident ('foUserLogin',RESEED,0)
+dbcc checkident ('foUserPasswordReset',RESEED,0)
+dbcc checkident ('foUserProcess',RESEED,0)
+dbcc checkident ('foUserReports',RESEED,0)
