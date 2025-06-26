@@ -1,2314 +1,303 @@
-﻿USE [dbJumpman_Dev]
-GO
-/****** Object:  Table [dbo].[foAdminTables]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foAdminTables](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[TableName] [varchar](max) NULL,
-	[Parent] [bit] NULL,
-	[TableGroup] [varchar](max) NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foApprovalAttachments]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foApprovalAttachments](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ApprovalID] [int] NOT NULL,
-	[AttachmentDescription] [nvarchar](255) NULL,
-	[AttachmentPath] [nvarchar](500) NOT NULL,
-	[CreatedDate] [datetime] NOT NULL,
-	[CreatedbyID] [int] NOT NULL,
-	[Active] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foApprovalEvents]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foApprovalEvents](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ProcessInstanceID] [bigint] NULL,
-	[StepID] [bigint] NULL,
-	[PreviousEventID] [bigint] NULL,
-	[GroupID] [bigint] NULL,
-	[UserID] [bigint] NULL,
-	[DateAssigned] [datetime] NULL,
-	[DateCompleted] [datetime] NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foApprovalEventsArchive]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foApprovalEventsArchive](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ProcessInstanceID] [bigint] NULL,
-	[StepID] [bigint] NULL,
-	[PreviousEventID] [bigint] NULL,
-	[GroupID] [bigint] NULL,
-	[UserID] [bigint] NULL,
-	[DateAssigned] [datetime] NULL,
-	[DateCompleted] [datetime] NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foApprovalEventsDetail]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foApprovalEventsDetail](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ApprovalEventID] [bigint] NOT NULL,
-	[ProcessInstanceID] [bigint] NOT NULL,
-	[StepID] [bigint] NOT NULL,
-	[RecordID] [bigint] NOT NULL,
-	[DataSetUpdate] [nvarchar](max) NULL,
-	[CreatedDate] [datetime] NOT NULL,
-	[CreatedUserID] [int] NOT NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foApprovalEventsDetailArchive]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foApprovalEventsDetailArchive](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ApprovalEventID] [bigint] NOT NULL,
-	[ProcessInstanceID] [bigint] NOT NULL,
-	[StepID] [bigint] NOT NULL,
-	[RecordID] [bigint] NOT NULL,
-	[DataSetUpdate] [nvarchar](max) NULL,
-	[CreatedDate] [datetime] NOT NULL,
-	[CreatedUserID] [int] NOT NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foApprovals]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foApprovals](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ProcessInstanceID] [int] NOT NULL,
-	[ApprovalEventID] [int] NOT NULL,
-	[StepID] [int] NOT NULL,
-	[Decision] [varchar](20) NOT NULL,
-	[Comment] [nvarchar](max) NULL,
-	[CreatedDate] [datetime] NOT NULL,
-	[CreatedUserID] [int] NOT NULL,
-	[Active] [bit] NOT NULL,
- CONSTRAINT [PK__foApprov__3214EC27B1FFFF82] PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foApprovalSteps]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foApprovalSteps](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[ProcessID] [bigint] NULL,
-	[StepNo] [decimal](18, 2) NULL,
-	[StepDescription] [varchar](1000) NULL,
-	[GroupID] [bigint] NULL,
-	[UserID] [bigint] NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foEmailNotifications]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foEmailNotifications](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ProcessInstanceID] [bigint] NULL,
-	[StepID] [bigint] NULL,
-	[GroupID] [bigint] NULL,
-	[UserID] [bigint] NULL,
-	[EmailTemplateID] [bigint] NULL,
-	[DateSent] [datetime] NULL,
-	[Active] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foEmailNotificationsDetail]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foEmailNotificationsDetail](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[EmailNotificationID] [bigint] NOT NULL,
-	[DataSetUpdate] [nvarchar](max) NULL,
-	[AttachmentDataSetUpdate] [nvarchar](max) NULL,
-	[CreatedDate] [datetime] NOT NULL,
-	[CreatedUserID] [int] NOT NULL,
-	[Active] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foEmailSettings]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foEmailSettings](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[EmailSMTP] [varchar](500) NULL,
-	[EmailUserName] [varchar](500) NULL,
-	[EmailPassword] [varchar](500) NULL,
-	[Active] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foEmailTemplate]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foEmailTemplate](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[TemplateType] [varchar](50) NULL,
-	[EmailSubject] [varchar](max) NULL,
-	[EmailBody] [varchar](max) NULL,
-	[ActiveDate] [datetime] NULL,
-	[Active] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foGroups]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foGroups](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](max) NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foLicenseManagement]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foLicenseManagement](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[LicenseKey] [varchar](500) NULL,
-	[foSiteCheckDone] [bit] NULL,
-	[foSiteCheckTables] [varchar](max) NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foProcess]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foProcess](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[ProcessName] [varchar](max) NULL,
-	[ProcessDescription] [varchar](max) NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foProcessCancellations]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foProcessCancellations](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ProcessInstanceID] [int] NOT NULL,
-	[CancelledUserID] [int] NOT NULL,
-	[CancellationReason] [nvarchar](max) NOT NULL,
-	[CancelledDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foProcessDetail]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foProcessDetail](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[StepID] [bigint] NULL,
-	[TableName] [varchar](max) NULL,
-	[ColumnQuery] [varchar](max) NULL,
-	[FormType] [varchar](2) NULL,
-	[ColumnCount] [int] NULL,
-	[Parent] [bit] NULL,
-	[FKColumn] [varchar](500) NULL,
-	[TableDescription] [varchar](max) NULL,
-	[Active] [bit] NULL,
-	[ColumnCalcs] [nvarchar](max) NULL,
-	[ListTable] [nvarchar](100) NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foProcessEvents]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foProcessEvents](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ProcessInstanceID] [bigint] NULL,
-	[StepID] [bigint] NULL,
-	[PreviousEventID] [bigint] NULL,
-	[GroupID] [bigint] NULL,
-	[UserID] [bigint] NULL,
-	[DateAssigned] [datetime] NULL,
-	[DateCompleted] [datetime] NULL,
-	[Active] [bit] NULL,
-	[Cancelled] [bit] NOT NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foProcessEventsArchive]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foProcessEventsArchive](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ProcessInstanceID] [bigint] NULL,
-	[StepID] [bigint] NULL,
-	[PreviousEventID] [bigint] NULL,
-	[GroupID] [bigint] NULL,
-	[UserID] [bigint] NULL,
-	[DateAssigned] [datetime] NULL,
-	[DateCompleted] [datetime] NULL,
-	[Active] [bit] NULL,
-	[Cancelled] [bit] NOT NULL
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foProcessEventsDetail]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foProcessEventsDetail](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ProcessEventID] [bigint] NOT NULL,
-	[ProcessInstanceID] [bigint] NOT NULL,
-	[StepID] [bigint] NOT NULL,
-	[TableName] [nvarchar](255) NOT NULL,
-	[RecordID] [bigint] NOT NULL,
-	[DataSetUpdate] [nvarchar](max) NULL,
-	[CreatedDate] [datetime] NOT NULL,
-	[CreatedUserID] [int] NOT NULL,
-	[Active] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foProcessEventsDetailArchive]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foProcessEventsDetailArchive](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[ProcessEventID] [bigint] NOT NULL,
-	[ProcessInstanceID] [bigint] NOT NULL,
-	[StepID] [bigint] NOT NULL,
-	[TableName] [nvarchar](255) NOT NULL,
-	[RecordID] [bigint] NOT NULL,
-	[DataSetUpdate] [nvarchar](max) NULL,
-	[CreatedDate] [datetime] NOT NULL,
-	[CreatedUserID] [int] NOT NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foProcessSteps]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foProcessSteps](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[ProcessID] [bigint] NULL,
-	[StepNo] [decimal](18, 2) NULL,
-	[StepDescription] [varchar](1000) NULL,
-	[GroupID] [bigint] NULL,
-	[UserID] [bigint] NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foReportAccess]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foReportAccess](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[ReportID] [bigint] NULL,
-	[UserID] [bigint] NULL,
-	[GroupID] [bigint] NULL,
-	[Active] [bit] NOT NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foReports]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foReports](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[ReportName] [varchar](max) NULL,
-	[ReportDescription] [varchar](max) NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foReportTable]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foReportTable](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[ReportsID] [bigint] NULL,
-	[TableName] [varchar](max) NULL,
-	[ColumnQuery] [varchar](max) NULL,
-	[FormType] [varchar](2) NULL,
-	[ColumnCount] [int] NULL,
-	[Parent] [bit] NULL,
-	[FKColumn] [varchar](500) NULL,
-	[TableDescription] [varchar](max) NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foReportTableQuery]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foReportTableQuery](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[ReportsID] [bigint] NULL,
-	[Query] [varchar](max) NULL,
-	[FormType] [varchar](2) NULL,
-	[ColumnCount] [int] NULL,
-	[TableDescription] [varchar](max) NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foTable]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foTable](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[SchemaName] [varchar](120) NULL,
-	[TableName] [varchar](1500) NULL,
-	[Active] [bit] NULL,
-	[ColumnNames] [varchar](max) NULL,
-	[Script] [varchar](max) NULL,
-	[TableGroup] [varchar](500) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foTableAttachments]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foTableAttachments](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[tablename] [varchar](100) NOT NULL,
-	[PKID] [bigint] NOT NULL,
-	[AttachmentDescription] [varchar](max) NULL,
-	[Attachment] [varchar](max) NULL,
-	[DateAdded] [datetime] NULL,
-	[UserID] [bigint] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foTableColumns]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foTableColumns](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[TableID] [bigint] NOT NULL,
-	[ColumnName] [varchar](200) NOT NULL,
-	[ColumnDataType] [varchar](50) NOT NULL,
-	[ColumnLength_Precision] [varchar](50) NULL,
-	[IsNullable] [bit] NOT NULL,
-	[ForeignKeyTable] [varchar](200) NULL,
-	[Active] [bit] NOT NULL,
-	[Attachment] [bit] NULL,
-	[Geo] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foTableColumnsToIgnore]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foTableColumnsToIgnore](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[ColumnName] [varchar](100) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foTableGroups]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foTableGroups](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](255) NULL,
-	[Active] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foTablePrefixes]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foTablePrefixes](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Prefix] [varchar](100) NULL,
-	[Description] [varchar](255) NULL,
-	[Active] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foUserGroups]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foUserGroups](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[UserID] [bigint] NULL,
-	[GroupID] [bigint] NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foUserLogin]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foUserLogin](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[UserID] [bigint] NULL,
-	[LoginDateTime] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foUserPasswordReset]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foUserPasswordReset](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[UserID] [bigint] NULL,
-	[ResetwithNextLogin] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foUserProcess]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foUserProcess](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[UserID] [bigint] NULL,
-	[ProcessID] [bigint] NULL
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foUserReports]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foUserReports](
-	[ID] [int] IDENTITY(1,1) NOT NULL,
-	[UserID] [bigint] NULL,
-	[ReportID] [bigint] NULL,
-	[Active] [bit] NULL
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foUsers]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foUsers](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[UserName] [varchar](50) NULL,
-	[Password] [varchar](50) NULL,
-	[FirstName] [varchar](max) NULL,
-	[LastName] [varchar](max) NULL,
-	[Email] [varchar](max) NULL,
-	[Admin] [bit] NOT NULL,
-	[Active] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[foUserTable]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[foUserTable](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[UserID] [bigint] NULL,
-	[TableName] [varchar](max) NULL,
-	[ReadWriteAccess] [varchar](20) NULL,
-	[Active] [bit] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_EmailNotification]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_EmailNotification](
-	[Id] [int] IDENTITY(1,1) NOT NULL,
-	[TemplateId] [int] NOT NULL,
-	[Recipient] [nvarchar](256) NOT NULL,
-	[Subject] [nvarchar](200) NOT NULL,
-	[Body] [nvarchar](max) NOT NULL,
-	[IsSent] [bit] NOT NULL,
-	[CreatedAt] [datetime] NOT NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_EmailTemplate]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_EmailTemplate](
-	[Id] [int] IDENTITY(1,1) NOT NULL,
-	[Name] [nvarchar](100) NOT NULL,
-	[Subject] [nvarchar](200) NOT NULL,
-	[Body] [nvarchar](max) NOT NULL,
-	[IsApproved] [bit] NOT NULL,
-	[CreatedAt] [datetime] NOT NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Actor]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Actor](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[FullName] [varchar](500) NULL,
-	[Gender] [char](1) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_AssetType]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_AssetType](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](max) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Campus]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Campus](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](500) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Country]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Country](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](500) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Director]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Director](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[FullName] [varchar](500) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Format]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Format](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](500) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Genre]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Genre](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](500) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_HomeType]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_HomeType](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](500) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Language]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Language](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](500) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_ProductOffered]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_ProductOffered](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](200) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Province]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Province](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](500) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Rating]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Rating](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](500) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Store]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Store](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](500) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Studio]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Studio](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Name] [varchar](500) NULL,
-	[CountryID] [bigint] NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_md_Suburb]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_md_Suburb](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Description] [varchar](max) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_tran_Agent]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_tran_Agent](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[foUserID_Agent] [bigint] NULL,
-	[CallCenterID] [bigint] NULL,
-	[Email] [varchar](150) NULL,
-	[PhoneNumber] [varchar](50) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_tran_Call]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_tran_Call](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[ClientID] [bigint] NULL,
-	[ProductOfferedID] [bigint] NULL,
-	[CallDate] [datetime] NULL,
-	[CallSummary] [varchar](max) NULL,
-	[Accepted] [bit] NULL,
-	[TicketResolved] [bit] NULL,
-	[DateResolved] [datetime] NULL,
-	[ApprovalStatus] [varchar](50) NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-	[Active] [bit] NULL,
-	[foUserID_Agent] [bigint] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_tran_CallCenter]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_tran_CallCenter](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Name] [varchar](200) NULL,
-	[ProvinceID] [bigint] NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_tran_CallFollowUp]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_tran_CallFollowUp](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[CallID] [bigint] NULL,
-	[FollowUpDate] [datetime] NULL,
-	[Notes] [varchar](max) NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-	[Active] [bit] NULL,
-	[foUserID_PersonManager] [bigint] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_tran_Client]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_tran_Client](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[FirstName] [varchar](100) NULL,
-	[LastName] [varchar](100) NULL,
-	[IDNumber] [varchar](20) NULL,
-	[PhoneNumber] [varchar](50) NULL,
-	[Email] [varchar](150) NULL,
-	[ProvinceID] [bigint] NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-/****** Object:  Table [dbo].[tbl_tran_Employee]    Script Date: 2025/06/20 21:15:07 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[tbl_tran_Employee](
-	[ID] [bigint] IDENTITY(1,1) NOT NULL,
-	[Firstname] [varchar](max) NULL,
-	[Lastname] [varchar](max) NULL,
-	[CountryID] [bigint] NULL,
-	[Idnumber] [varchar](max) NULL,
-	[Active] [bit] NULL,
-	[CreatedUserID] [bigint] NULL,
-	[CreatedDate] [datetime] NULL,
-	[ModifiedUserID] [bigint] NULL,
-	[ModifiedDate] [datetime] NULL,
-	[DeletedUserID] [bigint] NULL,
-	[DeletedDate] [datetime] NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-SET IDENTITY_INSERT [dbo].[foAdminTables] ON 
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (12, N'foUserReports', 1, N'Reports', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (2, N'foReports', 1, N'Reports', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (3, N'foReportTable', NULL, N'Reports', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (13, N'foProcessSteps', NULL, N'Process', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (5, N'foTableColumnsToIgnore', NULL, N'Table', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (6, N'foTablePrefixes', NULL, N'Table', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (14, N'foProcess', NULL, N'Process', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (19, N'foProcessDetail', NULL, N'Process', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (9, N'foUserReports', NULL, N'Users', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (10, N'foUsers', 1, N'Users', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (11, N'foUserTable', NULL, N'Users', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (20, N'EmailTemplate', NULL, N'Notifications', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (21, N'foTable', NULL, N'Table', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (22, N'foReportTableQuery', NULL, N'Reports', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (23, N'foTableGroups', NULL, N'Table', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (25, N'foReports', NULL, N'Main', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (26, N'foProcessDetail', NULL, N'Main', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (15, N'foUserProcess', NULL, N'Process', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (16, N'foGroups', NULL, N'Users', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (17, N'foUserGroups', NULL, N'Users', 1)
-GO
-INSERT [dbo].[foAdminTables] ([ID], [TableName], [Parent], [TableGroup], [Active]) VALUES (27, N'foReportAccess', NULL, N'Reports', 1)
-GO
-SET IDENTITY_INSERT [dbo].[foAdminTables] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foApprovalEvents] ON 
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (444, 1, 13, -763, 5, NULL, CAST(N'2025-06-05T14:39:02.517' AS DateTime), NULL, 1)
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (446, 4, 13, -770, NULL, 2, CAST(N'2025-06-06T17:33:16.830' AS DateTime), NULL, 1)
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (448, 3, 13, -771, NULL, 2, CAST(N'2025-06-11T23:25:14.820' AS DateTime), NULL, 1)
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (450, 7, 13, -779, NULL, 2, CAST(N'2025-06-12T15:27:27.240' AS DateTime), NULL, 1)
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (452, 19, 0, -802, NULL, 2, CAST(N'2025-06-20T15:00:55.273' AS DateTime), NULL, 1)
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (445, 2, 13, -764, 5, NULL, CAST(N'2025-06-05T18:46:55.690' AS DateTime), NULL, 1)
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (453, 20, 13, -804, NULL, 2, CAST(N'2025-06-20T15:40:18.993' AS DateTime), NULL, 1)
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (449, 6, 13, -776, NULL, 2, CAST(N'2025-06-12T11:39:49.257' AS DateTime), NULL, 1)
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (454, 21, 0, -805, NULL, 2, CAST(N'2025-06-20T16:09:01.343' AS DateTime), NULL, 1)
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (455, 21, 0, -805, NULL, 1, CAST(N'2025-06-20T16:09:01.343' AS DateTime), NULL, 1)
-GO
-INSERT [dbo].[foApprovalEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (447, 5, 13, -775, NULL, 2, CAST(N'2025-06-11T23:22:39.490' AS DateTime), NULL, 1)
-GO
-SET IDENTITY_INSERT [dbo].[foApprovalEvents] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foApprovalEventsArchive] ON 
-GO
-INSERT [dbo].[foApprovalEventsArchive] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active]) VALUES (410, 18, 0, -801, NULL, 1, CAST(N'2025-06-20T14:40:35.920' AS DateTime), CAST(N'2025-06-20T16:18:49.690' AS DateTime), 1)
-GO
-SET IDENTITY_INSERT [dbo].[foApprovalEventsArchive] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foApprovalEventsDetailArchive] ON 
-GO
-INSERT [dbo].[foApprovalEventsDetailArchive] ([ID], [ApprovalEventID], [ProcessInstanceID], [StepID], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (77, 451, 18, 0, 87, N'{"StepDescription":"Adhoc approval Capture Employee","Decision":"Approve","Comment":"","CreatedUserID":1,"CreatedDate":"2025-06-20T16:18:49.7737325+02:00"}', CAST(N'2025-06-20T16:18:49.753' AS DateTime), 1, 1)
-GO
-SET IDENTITY_INSERT [dbo].[foApprovalEventsDetailArchive] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foApprovals] ON 
-GO
-INSERT [dbo].[foApprovals] ([ID], [ProcessInstanceID], [ApprovalEventID], [StepID], [Decision], [Comment], [CreatedDate], [CreatedUserID], [Active]) VALUES (87, 18, 451, 0, N'Approve', NULL, CAST(N'2025-06-20T16:18:49.733' AS DateTime), 1, 1)
-GO
-SET IDENTITY_INSERT [dbo].[foApprovals] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foApprovalSteps] ON 
-GO
-INSERT [dbo].[foApprovalSteps] ([ID], [ProcessID], [StepNo], [StepDescription], [GroupID], [UserID], [Active]) VALUES (13, 10, CAST(1.00 AS Decimal(18, 2)), N'Approve Call', 5, NULL, 1)
-GO
-SET IDENTITY_INSERT [dbo].[foApprovalSteps] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foEmailNotifications] ON 
-GO
-INSERT [dbo].[foEmailNotifications] ([ID], [ProcessInstanceID], [StepID], [GroupID], [UserID], [EmailTemplateID], [DateSent], [Active]) VALUES (1, 11, 635, 2, 0, 1, NULL, 1)
-GO
-SET IDENTITY_INSERT [dbo].[foEmailNotifications] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foEmailTemplate] ON 
-GO
-INSERT [dbo].[foEmailTemplate] ([ID], [TemplateType], [EmailSubject], [EmailBody], [ActiveDate], [Active]) VALUES (1, N'New', N'New Process {{ProcessID}} and {{Description}}.', N'Hello, a new process with ID {{ProcessID}} has been created: {{Description}}.', CAST(N'2025-05-05T10:07:22.510' AS DateTime), 0)
-GO
-INSERT [dbo].[foEmailTemplate] ([ID], [TemplateType], [EmailSubject], [EmailBody], [ActiveDate], [Active]) VALUES (2, N'Pending', N'Pending Process {{ProcessID}} and {{Description}}', N'<table width="100%" cellpadding="0" cellspacing="0" style="font-family: ''Segoe UI'', sans-serif; background-color: #f4f4f4; padding: 30px 0;">
-  <tr>
-    <td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
-        
-        <!-- Logo -->
-        <tr>
-          <td style="padding: 20px 0 0; text-align: center;">
-            <span style="font-size: 24px; font-weight: bold; color: #4CAF50;">fresch<span style="color: #000;">One</span></span>
-          </td>
-        </tr>
+-- ================================================
+-- FreschOne Database Schema Script
+-- Includes: Master + Transaction + Link + Attachment Tables
+-- ================================================
 
-        <!-- Content -->
-        <tr>
-          <td style="padding: 20px 30px;">
-            <p style="margin: 0; font-size: 15px; color: #333;">Hello,</p>
-            <p style="margin: 8px 0 16px; font-size: 14px; color: #555;">
-              A new process has been created in the system. Here are the details:
-            </p>
+-- Master Table: Condition
+CREATE TABLE [dbo].[tbl_md_Condition] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [Description] [varchar](MAX) NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
 
-            <table cellpadding="10" cellspacing="0" width="100%" style="background-color: #f9f9f9; border-radius: 6px;">
-              <tr>
-                <td style="font-weight: bold; width: 120px;">Process ID:</td>
-                <td>{{ProcessID}}</td>
-              </tr>
-              <tr>
-                <td style="font-weight: bold;">Description:</td>
-                <td>{{Description}}</td>
-              </tr>
-            </table>
+INSERT INTO [dbo].[tbl_md_Condition] ([Description], [Active]) VALUES
+('New', 1),
+('Good', 1),
+('Fair', 1),
+('Bad', 1);
 
-            <div style="text-align: center; margin-top: 20px;">
-              <a href="#" style="display: inline-block; padding: 10px 22px; background-color: #4CAF50; color: white; text-decoration: none; font-size: 14px; border-radius: 6px;">
-                View Process
-              </a>
-            </div>
-          </td>
-        </tr>
+-- Transaction Table: Client
+CREATE TABLE [dbo].[tbl_tran_Client] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [ClientName] [varchar](MAX) NULL,
+    [ContactPerson] [varchar](MAX) NULL,
+    [ContactNumber] [varchar](MAX) NULL,
+    [ContactEmail] [varchar](MAX) NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
 
-        <!-- Footer -->
-        <tr>
-          <td style="background-color: #f0f0f0; text-align: center; font-size: 12px; color: #777; padding: 12px;">
-            This is an automated message. Do not reply.
-          </td>
-        </tr>
+-- Transaction Table: Site
+CREATE TABLE [dbo].[tbl_tran_Site] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [SiteName] [varchar](MAX) NULL,
+    [Location] [varchar](MAX) NULL,
+    [geo_Coordinate] [varchar](MAX) NULL,
+    [ContactPerson] [varchar](MAX) NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
 
-      </table>
-    </td>
-  </tr>
-</table>
-', CAST(N'2025-05-14T15:04:20.757' AS DateTime), 1)
-GO
-INSERT [dbo].[foEmailTemplate] ([ID], [TemplateType], [EmailSubject], [EmailBody], [ActiveDate], [Active]) VALUES (3, N'New', N'New Process {{ProcessID}} and {{Description}}.', N'Hello, a new process with ID {{ProcessID}} has been created: {{Description}}.', CAST(N'2025-05-05T11:56:31.350' AS DateTime), 1)
-GO
-INSERT [dbo].[foEmailTemplate] ([ID], [TemplateType], [EmailSubject], [EmailBody], [ActiveDate], [Active]) VALUES (4, N'Late', N'Late Process {{ProcessID}} and {{Description}}', N'Hello, a Lateprocess with ID {{ProcessID}} has been created: {{Description}}.', CAST(N'2025-05-14T11:53:30.150' AS DateTime), 1)
-GO
-INSERT [dbo].[foEmailTemplate] ([ID], [TemplateType], [EmailSubject], [EmailBody], [ActiveDate], [Active]) VALUES (5, N'Generic', N'New Process {{ProcessID}} - {{Description}}', N'<table width="100%" cellpadding="0" cellspacing="0" style="font-family: ''Segoe UI'', sans-serif; background-color: #f4f4f4; padding: 30px 0;">
-          <tr>
-            <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
-                <tr>
-                  <td style="padding: 20px 0 0; text-align: center;">
-                    <span style="font-size: 24px; font-weight: bold; color: #4CAF50;">fresch<span style="color: #000;">One</span></span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 20px 30px;">
-                    <p style="margin: 0; font-size: 15px; color: #333;">Hello,</p>
-                    <p style="margin: 8px 0 16px; font-size: 14px; color: #555;">
-                      A new process has been created in the system. Here are the details:
-                    </p>
-                    <table cellpadding="10" cellspacing="0" width="100%" style="background-color: #f9f9f9; border-radius: 6px;">
-                      <tr>
-                        <td style="font-weight: bold; width: 120px;">Process ID:</td>
-                        <td>{{ProcessID}}</td>
-                      </tr>
-                      <tr>
-                        <td style="font-weight: bold;">Description:</td>
-                        <td>{{Description}}</td>
-                      </tr>
-                    </table>
-                    <div style="text-align: center; margin-top: 20px;">
-                      <a href="#" style="display: inline-block; padding: 10px 22px; background-color: #4CAF50; color: white; text-decoration: none; font-size: 14px; border-radius: 6px;">
-                        View Process
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="background-color: #f0f0f0; text-align: center; font-size: 12px; color: #777; padding: 12px;">
-                    This is an automated message. Do not reply.
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>', CAST(N'2025-05-14T15:14:09.090' AS DateTime), 1)
-GO
-INSERT [dbo].[foEmailTemplate] ([ID], [TemplateType], [EmailSubject], [EmailBody], [ActiveDate], [Active]) VALUES (6, N'Generic Test', N'New Process {{ProcessID}} - {{Description}}', N'<table width="100%" cellpadding="0" cellspacing="0" style="font-family: ''Segoe UI'', sans-serif; background-color: #f4f4f4; padding: 30px 0;">
-          <tr>
-            <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
-                <tr>
-                  <td style="padding: 20px 0 0; text-align: center;">
-                    <span style="font-size: 24px; font-weight: bold; color: #4CAF50;">fresch<span style="color: #000;">One</span></span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 20px 30px;">
-                    <p style="margin: 0; font-size: 15px; color: #333;">Hello,</p>
-                    <p style="margin: 8px 0 16px; font-size: 14px; color: #555;">
-                      A new process has been created in the system. Here are the details:
-                    </p>
-                    <table cellpadding="10" cellspacing="0" width="100%" style="background-color: #f9f9f9; border-radius: 6px;">
-                      <tr>
-                        <td style="font-weight: bold; width: 120px;">Process ID:</td>
-                        <td>{{ProcessID}}</td>
-                      </tr>
-                      <tr>
-                        <td style="font-weight: bold;">Description:</td>
-                        <td>{{Description}}</td>
-                      </tr>
-                    </table>
-                    <div style="text-align: center; margin-top: 20px;">
-                      <a href="#" style="display: inline-block; padding: 10px 22px; background-color: #4CAF50; color: white; text-decoration: none; font-size: 14px; border-radius: 6px;">
-                        View Process
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="background-color: #f0f0f0; text-align: center; font-size: 12px; color: #777; padding: 12px;">
-                    This is an automated message. Do not reply.
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>', CAST(N'2025-05-16T11:54:16.743' AS DateTime), 1)
-GO
-SET IDENTITY_INSERT [dbo].[foEmailTemplate] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foGroups] ON 
-GO
-INSERT [dbo].[foGroups] ([ID], [Description], [Active]) VALUES (4, N'Call Center', NULL)
-GO
-INSERT [dbo].[foGroups] ([ID], [Description], [Active]) VALUES (5, N'Call Center Approval Group', NULL)
-GO
-SET IDENTITY_INSERT [dbo].[foGroups] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foLicenseManagement] ON 
-GO
-INSERT [dbo].[foLicenseManagement] ([ID], [LicenseKey], [foSiteCheckDone], [foSiteCheckTables]) VALUES (1, N'550E624R750I901S855Q1029H1127T1125F1377P1392-11', 1, N'foAdminTables, foApprovalAttachments,	foApprovalEvents,	foApprovalEventsArchive,	foApprovalEventsDetail,	foApprovalEventsDetailArchive,	foApprovals,	foApprovalSteps,	foEmailNotifications,	foEmailNotificationsDetail,	foEmailSettings,	foEmailTemplate,	foGroups,	foLicenseManagement,	foProcess,	foProcessCancellations,	foProcessDetail,	foProcessEvents,	foProcessEventsArchive,	foProcessEventsDetail,	foProcessEventsDetailArchive,	foProcessSteps,	foReportAccess,	foReports,	foReportTable,	foReportTableQuery,	foTable,	foTableAttachments,	foTableColumns,	foTableColumnsToIgnore,	foTableGroups,	foTablePrefixes,	foUserGroups,	foUserLogin,	foUserPasswordReset,	foUserProcess,	foUserReports,	foUsers,	foUserTable')
-GO
-SET IDENTITY_INSERT [dbo].[foLicenseManagement] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foProcess] ON 
-GO
-INSERT [dbo].[foProcess] ([ID], [ProcessName], [ProcessDescription], [Active]) VALUES (10, N'Calls', N'Capture Calls and log detail', 1)
-GO
-INSERT [dbo].[foProcess] ([ID], [ProcessName], [ProcessDescription], [Active]) VALUES (11, N'Capture Client', N'Capture Client', 1)
-GO
-INSERT [dbo].[foProcess] ([ID], [ProcessName], [ProcessDescription], [Active]) VALUES (12, N'Capture Employee', N'Capture details of Employee', 1)
-GO
-SET IDENTITY_INSERT [dbo].[foProcess] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foProcessDetail] ON 
-GO
-INSERT [dbo].[foProcessDetail] ([ID], [StepID], [TableName], [ColumnQuery], [FormType], [ColumnCount], [Parent], [FKColumn], [TableDescription], [Active], [ColumnCalcs], [ListTable]) VALUES (38, 24, N'tbl_tran_Call', N'*', N'F', 1, 1, NULL, N'Call Detail ', 1, NULL, NULL)
-GO
-INSERT [dbo].[foProcessDetail] ([ID], [StepID], [TableName], [ColumnQuery], [FormType], [ColumnCount], [Parent], [FKColumn], [TableDescription], [Active], [ColumnCalcs], [ListTable]) VALUES (48, 25, N'tbl_tran_Agent', N'*', N'F', 0, 1, NULL, N'Agent', 0, NULL, NULL)
-GO
-INSERT [dbo].[foProcessDetail] ([ID], [StepID], [TableName], [ColumnQuery], [FormType], [ColumnCount], [Parent], [FKColumn], [TableDescription], [Active], [ColumnCalcs], [ListTable]) VALUES (39, 24, N'tbl_tran_CallFollowUp', N'*', N'T', 0, 0, N'CallID', N'Call Follow Up on Step 1', 1, NULL, NULL)
-GO
-INSERT [dbo].[foProcessDetail] ([ID], [StepID], [TableName], [ColumnQuery], [FormType], [ColumnCount], [Parent], [FKColumn], [TableDescription], [Active], [ColumnCalcs], [ListTable]) VALUES (52, 27, N'tbl_tran_Employee', N'*', N'F', 0, 1, NULL, N'Employee', 1, NULL, NULL)
-GO
-INSERT [dbo].[foProcessDetail] ([ID], [StepID], [TableName], [ColumnQuery], [FormType], [ColumnCount], [Parent], [FKColumn], [TableDescription], [Active], [ColumnCalcs], [ListTable]) VALUES (46, 24, N'tbl_tran_Agent', N'*', N'F', 0, 0, N'CallCenterID', N'Agent', 0, NULL, NULL)
-GO
-INSERT [dbo].[foProcessDetail] ([ID], [StepID], [TableName], [ColumnQuery], [FormType], [ColumnCount], [Parent], [FKColumn], [TableDescription], [Active], [ColumnCalcs], [ListTable]) VALUES (41, 26, N'tbl_tran_Client', N'*', N'F', 2, 1, NULL, N'Capture Client', 1, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[foProcessDetail] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foProcessEvents] ON 
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (763, 1, 24, 0, NULL, 1, CAST(N'2025-06-05T14:39:02.297' AS DateTime), CAST(N'2025-06-05T14:39:02.487' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (764, 2, 24, 0, NULL, 1, CAST(N'2025-06-05T18:46:55.390' AS DateTime), CAST(N'2025-06-05T18:46:55.627' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (765, 3, 24, 0, NULL, 1, CAST(N'2025-06-06T11:33:10.427' AS DateTime), CAST(N'2025-06-06T11:33:10.600' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (766, 3, 24, 765, NULL, 1, CAST(N'2025-06-06T11:33:10.600' AS DateTime), CAST(N'2025-06-06T11:33:27.310' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (767, 3, 24, 766, NULL, 1, CAST(N'2025-06-06T11:33:27.327' AS DateTime), CAST(N'2025-06-11T11:52:38.083' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (768, 4, 24, 0, NULL, 1, CAST(N'2025-06-06T16:59:02.913' AS DateTime), CAST(N'2025-06-06T16:59:02.993' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (769, 4, 24, 768, NULL, 1, CAST(N'2025-06-06T16:59:03.010' AS DateTime), CAST(N'2025-06-06T16:59:12.523' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (770, 4, 24, 769, NULL, 1, CAST(N'2025-06-06T16:59:12.540' AS DateTime), CAST(N'2025-06-06T17:33:16.783' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (771, 3, 24, 767, NULL, 1, CAST(N'2025-06-11T11:52:38.100' AS DateTime), CAST(N'2025-06-11T23:25:14.773' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (772, 5, 24, 0, NULL, 1, CAST(N'2025-06-11T21:47:51.550' AS DateTime), CAST(N'2025-06-11T21:47:51.630' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (773, 5, 24, 772, NULL, 1, CAST(N'2025-06-11T21:47:51.643' AS DateTime), CAST(N'2025-06-11T22:43:23.760' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (774, 5, 24, 773, NULL, 1, CAST(N'2025-06-11T22:43:23.760' AS DateTime), CAST(N'2025-06-11T23:22:19.433' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (775, 5, 24, 774, NULL, 1, CAST(N'2025-06-11T23:22:19.450' AS DateTime), CAST(N'2025-06-11T23:22:39.430' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (776, 6, 24, 0, NULL, 1, CAST(N'2025-06-12T11:39:49.163' AS DateTime), CAST(N'2025-06-12T11:39:49.240' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (777, 7, 24, 0, NULL, 1, CAST(N'2025-06-12T12:49:18.630' AS DateTime), CAST(N'2025-06-12T12:49:18.690' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (778, 7, 24, 777, NULL, 1, CAST(N'2025-06-12T12:49:18.690' AS DateTime), CAST(N'2025-06-12T15:25:49.833' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (779, 7, 25, 778, NULL, 1, CAST(N'2025-06-12T15:25:49.850' AS DateTime), CAST(N'2025-06-12T15:27:27.223' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (780, 8, 26, 0, NULL, 1, CAST(N'2025-06-17T11:07:27.073' AS DateTime), CAST(N'2025-06-17T11:07:27.137' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (781, 8, 26, 780, NULL, 1, CAST(N'2025-06-17T11:07:27.137' AS DateTime), NULL, 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (782, 9, 26, 0, NULL, 1, CAST(N'2025-06-17T11:40:27.657' AS DateTime), CAST(N'2025-06-17T11:40:27.690' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (783, 9, 26, 782, NULL, 1, CAST(N'2025-06-17T11:40:27.690' AS DateTime), NULL, 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (784, 10, 26, 0, NULL, 1, CAST(N'2025-06-17T11:43:53.297' AS DateTime), CAST(N'2025-06-17T11:43:53.327' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (785, 10, 26, 784, NULL, 1, CAST(N'2025-06-17T11:43:53.327' AS DateTime), NULL, 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (786, 11, 26, 0, NULL, 1, CAST(N'2025-06-17T12:02:19.520' AS DateTime), CAST(N'2025-06-17T12:02:19.553' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (787, 11, 26, 786, NULL, 1, CAST(N'2025-06-17T12:02:19.567' AS DateTime), NULL, 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (788, 12, 26, 0, NULL, 1, CAST(N'2025-06-17T16:14:24.817' AS DateTime), CAST(N'2025-06-17T16:14:24.850' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (789, 12, 26, 788, NULL, 1, CAST(N'2025-06-17T16:14:24.867' AS DateTime), NULL, 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (790, 13, 26, 0, NULL, 1, CAST(N'2025-06-17T16:14:55.183' AS DateTime), CAST(N'2025-06-17T16:14:55.200' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (791, 13, 26, 790, NULL, 1, CAST(N'2025-06-17T16:14:55.200' AS DateTime), NULL, 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (792, 14, 26, 0, NULL, 1, CAST(N'2025-06-17T16:15:15.250' AS DateTime), CAST(N'2025-06-17T16:15:15.263' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (793, 14, 26, 792, NULL, 1, CAST(N'2025-06-17T16:15:15.263' AS DateTime), CAST(N'2025-06-17T16:15:23.163' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (794, 14, 26, 793, NULL, 1, CAST(N'2025-06-17T16:15:23.163' AS DateTime), NULL, 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (796, 16, 27, 0, NULL, 1, CAST(N'2025-06-20T14:04:28.537' AS DateTime), CAST(N'2025-06-20T14:04:28.613' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (797, 16, 27, 796, NULL, 1, CAST(N'2025-06-20T14:04:28.630' AS DateTime), CAST(N'2025-06-20T14:19:01.353' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (798, 16, 27, 797, NULL, 1, CAST(N'2025-06-20T14:19:01.370' AS DateTime), NULL, 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (802, 19, 27, 0, NULL, 1, CAST(N'2025-06-20T15:00:55.180' AS DateTime), CAST(N'2025-06-20T15:00:55.243' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (803, 20, 24, 0, NULL, 1, CAST(N'2025-06-20T15:39:48.713' AS DateTime), CAST(N'2025-06-20T15:39:48.870' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (804, 20, 25, 803, NULL, 1, CAST(N'2025-06-20T15:39:48.900' AS DateTime), CAST(N'2025-06-20T15:40:18.947' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEvents] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (805, 21, 27, 0, NULL, 1, CAST(N'2025-06-20T16:09:01.233' AS DateTime), CAST(N'2025-06-20T16:09:01.310' AS DateTime), 1, 0)
-GO
-SET IDENTITY_INSERT [dbo].[foProcessEvents] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foProcessEventsArchive] ON 
-GO
-INSERT [dbo].[foProcessEventsArchive] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (39, 17, 27, 0, NULL, 1, CAST(N'2025-06-20T14:39:42.287' AS DateTime), CAST(N'2025-06-20T14:39:42.363' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEventsArchive] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (40, 17, 27, 799, NULL, 1, CAST(N'2025-06-20T14:39:42.397' AS DateTime), CAST(N'2025-06-20T14:39:54.483' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEventsArchive] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (41, 18, 27, 0, NULL, 1, CAST(N'2025-06-20T14:40:35.843' AS DateTime), CAST(N'2025-06-20T14:40:35.890' AS DateTime), 1, 0)
-GO
-INSERT [dbo].[foProcessEventsArchive] ([ID], [ProcessInstanceID], [StepID], [PreviousEventID], [GroupID], [UserID], [DateAssigned], [DateCompleted], [Active], [Cancelled]) VALUES (38, 15, 27, 0, NULL, 1, CAST(N'2025-06-20T13:40:08.167' AS DateTime), CAST(N'2025-06-20T13:40:08.277' AS DateTime), 1, 0)
-GO
-SET IDENTITY_INSERT [dbo].[foProcessEventsArchive] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foProcessEventsDetail] ON 
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (839, 763, 1, 24, N'tbl_tran_Call', 1, N'{"AgentID":"1","ClientID":null,"ProductOfferedID":"1","CallDate":null,"CallSummary":"5555","DateResolved":null,"ApprovalStatus":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-05T14:39:02.3967473+02:00","RecordID":1,"StepDescription":"Capture Call","TableDescription":"Call Detail ","interactionType":"Insert"}', CAST(N'2025-06-05T14:39:02.470' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (840, 764, 2, 24, N'tbl_tran_Call', 2, N'{"AgentID":"1","ClientID":"2","ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-05T18:46:55.4636193+02:00","RecordID":2,"StepDescription":"Capture Call","TableDescription":"Call Detail ","interactionType":"Insert"}', CAST(N'2025-06-05T18:46:55.593' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (841, 765, 3, 24, N'tbl_tran_Call', 5, N'{"ClientID":"3","ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":null,"foUserID_Agent":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-06T11:33:10.4728904+02:00","RecordID":5,"StepDescription":"Capture Call","TableDescription":"Call Detail ","interactionType":"Insert"}', CAST(N'2025-06-06T11:33:10.570' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (842, 766, 3, 24, N'tbl_tran_Call', 5, N'{"ClientID":"2","ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":null,"foUserID_Agent":null,"Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-06T11:33:27.2565328+02:00","RecordID":5,"StepDescription":"Capture Call","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-06T11:33:27.2800004+02:00"}', CAST(N'2025-06-06T11:33:27.293' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (843, 768, 4, 24, N'tbl_tran_Call', 6, N'{"ClientID":"3","ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":null,"foUserID_Agent":"2","Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-06T16:59:02.9996104+02:00","RecordID":6,"StepDescription":"Capture Call","TableDescription":"Call Detail ","interactionType":"Insert"}', CAST(N'2025-06-06T16:59:02.977' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (844, 769, 4, 24, N'tbl_tran_Call', 6, N'{"ClientID":"3","ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":null,"foUserID_Agent":"1","Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-06T16:59:12.5077908+02:00","RecordID":6,"StepDescription":"Capture Call","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-06T16:59:12.5234137+02:00"}', CAST(N'2025-06-06T16:59:12.493' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (845, 770, 4, 24, N'tbl_tran_Call', 6, N'{"ClientID":"3","ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":null,"foUserID_Agent":"1","Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-06T17:33:16.7680917+02:00","RecordID":6,"StepDescription":"Capture Call","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-06T17:33:16.7839542+02:00"}', CAST(N'2025-06-06T17:33:16.753' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (846, 767, 3, 24, N'tbl_tran_Call', 5, N'{"ClientID":"2","ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":null,"foUserID_Agent":"1","Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-11T11:52:38.9664809+02:00","RecordID":5,"StepDescription":"Capture Call","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-11T11:52:38.9881862+02:00"}', CAST(N'2025-06-11T11:52:38.070' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (847, 772, 5, 24, N'tbl_tran_Call', 7, N'{"ClientID":null,"ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":"xxx","foUserID_Agent":"1","Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-11T21:47:51.5031927+02:00","RecordID":7,"StepDescription":"Capture Call","TableDescription":"Call Detail ","interactionType":"Insert"}', CAST(N'2025-06-11T21:47:51.613' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (848, 773, 5, 24, N'tbl_tran_Call', 7, N'{"ClientID":null,"ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":"xxx","foUserID_Agent":"2","Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-11T22:43:23.6195434+02:00","RecordID":7,"StepDescription":"Capture Call","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-11T22:43:23.6405357+02:00"}', CAST(N'2025-06-11T22:43:23.730' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (849, 774, 5, 24, N'tbl_tran_Call', 7, N'{"ClientID":"2","ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":"xxx","foUserID_Agent":"2","Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-11T23:22:19.2981235+02:00","RecordID":7,"StepDescription":"Capture Call","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-11T23:22:19.3193577+02:00"}', CAST(N'2025-06-11T23:22:19.393' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (850, 775, 5, 24, N'tbl_tran_Call', 7, N'{"ClientID":"2","ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":"xxx","foUserID_Agent":"2","Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-11T23:22:39.3211312+02:00","RecordID":7,"StepDescription":"Capture Call","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-11T23:22:39.3358226+02:00"}', CAST(N'2025-06-11T23:22:39.413' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (851, 771, 3, 24, N'tbl_tran_Call', 5, N'{"ClientID":"2","ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":null,"foUserID_Agent":"1","Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-11T23:25:14.6659409+02:00","RecordID":5,"StepDescription":"Capture Call","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-11T23:25:14.678158+02:00"}', CAST(N'2025-06-11T23:25:14.757' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (852, 776, 6, 24, N'tbl_tran_Call', 8, N'{"ClientID":"2","ProductOfferedID":null,"CallDate":null,"CallSummary":"SDSDF","DateResolved":null,"ApprovalStatus":"FSDF","foUserID_Agent":"1","Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-12T11:39:49.3789167+02:00","RecordID":8,"StepDescription":"Capture Call","TableDescription":"Call Detail ","interactionType":"Insert"}', CAST(N'2025-06-12T11:39:49.227' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (853, 777, 7, 24, N'tbl_tran_Call', 9, N'{"ClientID":null,"ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":"222","foUserID_Agent":"2","Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-12T12:49:18.6369331+02:00","RecordID":9,"StepDescription":"Capture Call","TableDescription":"Call Detail ","interactionType":"Insert"}', CAST(N'2025-06-12T12:49:18.643' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (854, 777, 7, 24, N'tbl_tran_CallFollowUp', 7, N'{"FollowUpDate":null,"Notes":"ggg","foUserID_PersonManager":"1","CallID":9,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-12T12:49:18.6813707+02:00","RecordID":7,"StepDescription":"Capture Call","TableDescription":"Call Follow Up on Step 1","interactionType":"Insert"}', CAST(N'2025-06-12T12:49:18.690' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (855, 778, 7, 24, N'tbl_tran_Call', 9, N'{"ClientID":null,"ProductOfferedID":null,"CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":"222","foUserID_Agent":"2","Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-12T15:25:49.8115754+02:00","RecordID":9,"StepDescription":"Capture Call","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-12T15:25:49.8170876+02:00"}', CAST(N'2025-06-12T15:25:49.817' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (856, 778, 7, 24, N'tbl_tran_CallFollowUp', 7, N'{"FollowUpDate":null,"Notes":"ggg","foUserID_PersonManager":"1","CallID":9,"Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-12T15:25:49.8261225+02:00","RecordID":7,"StepDescription":"Capture Call","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-12T15:25:49.8323925+02:00"}', CAST(N'2025-06-12T15:25:49.833' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (857, 779, 7, 25, N'tbl_tran_CallFollowUp', 8, N'{"FollowUpDate":null,"Notes":"NEW NOTESSS","foUserID_PersonManager":"1","CallID":9,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-12T15:27:27.2280647+02:00","RecordID":8,"StepDescription":"Capture Call Followups","interactionType":"Update"}', CAST(N'2025-06-12T15:27:27.223' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (858, 780, 8, 26, N'tbl_tran_Client', 6, N'{"FirstName":"Schalk","LastName":null,"IDNumber":null,"PhoneNumber":null,"Email":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-17T11:07:27.1413222+02:00","RecordID":6,"StepDescription":"Capture Client Details","TableDescription":"Capture Client","interactionType":"Insert"}', CAST(N'2025-06-17T11:07:27.137' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (859, 782, 9, 26, N'tbl_tran_Client', 7, N'{"FirstName":"Schalk","LastName":null,"IDNumber":null,"PhoneNumber":null,"Email":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-17T11:40:27.7001199+02:00","RecordID":7,"StepDescription":"Capture Client Details","TableDescription":"Capture Client","interactionType":"Insert"}', CAST(N'2025-06-17T11:40:27.690' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (860, 784, 10, 26, N'tbl_tran_Client', 8, N'{"FirstName":"Schalk","LastName":null,"IDNumber":null,"PhoneNumber":null,"Email":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-17T11:43:53.3327022+02:00","RecordID":8,"StepDescription":"Capture Client Details","TableDescription":"Capture Client","interactionType":"Insert"}', CAST(N'2025-06-17T11:43:53.310' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (861, 786, 11, 26, N'tbl_tran_Client', 9, N'{"FirstName":"Schalk","LastName":null,"IDNumber":null,"PhoneNumber":null,"Email":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-17T12:02:19.5626852+02:00","RecordID":9,"StepDescription":"Capture Client Details","TableDescription":"Capture Client","interactionType":"Insert"}', CAST(N'2025-06-17T12:02:19.553' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (862, 788, 12, 26, N'tbl_tran_Client', 10, N'{"FirstName":"Schalk","LastName":"van der Merwe","IDNumber":null,"PhoneNumber":null,"Email":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-17T16:14:24.8681147+02:00","RecordID":10,"StepDescription":"Capture Client Details","TableDescription":"Capture Client","interactionType":"Insert"}', CAST(N'2025-06-17T16:14:24.850' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (863, 790, 13, 26, N'tbl_tran_Client', 11, N'{"FirstName":"Schalk","LastName":"van der Merwe","IDNumber":null,"PhoneNumber":null,"Email":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-17T16:14:55.2247696+02:00","RecordID":11,"StepDescription":"Capture Client Details","TableDescription":"Capture Client","interactionType":"Insert"}', CAST(N'2025-06-17T16:14:55.200' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (864, 792, 14, 26, N'tbl_tran_Client', 12, N'{"FirstName":"Pieter","LastName":null,"IDNumber":null,"PhoneNumber":null,"Email":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-17T16:15:15.286947+02:00","RecordID":12,"StepDescription":"Capture Client Details","TableDescription":"Capture Client","interactionType":"Insert"}', CAST(N'2025-06-17T16:15:15.263' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (865, 793, 14, 26, N'tbl_tran_Client', 12, N'{"FirstName":"Schalk","LastName":"van der Merwe","IDNumber":null,"PhoneNumber":null,"Email":null,"ProvinceID":null,"Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-17T16:15:23.1769664+02:00","RecordID":12,"StepDescription":"Capture Client Details","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-17T16:15:23.183881+02:00"}', CAST(N'2025-06-17T16:15:23.163' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (867, 796, 16, 27, N'tbl_tran_Employee', 2, N'{"Firstname":"sss","Lastname":null,"CountryID":"2","Idnumber":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-20T14:04:28.6047008+02:00","RecordID":2,"StepDescription":"Capture Employee Step ","TableDescription":"Employee","interactionType":"Insert"}', CAST(N'2025-06-20T14:04:28.613' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (868, 797, 16, 27, N'tbl_tran_Employee', 2, N'{"Firstname":"sss","Lastname":null,"CountryID":"2","Idnumber":null,"Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-20T14:19:01.3159794+02:00","RecordID":2,"StepDescription":"Capture Employee Step ","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-20T14:19:01.3369857+02:00"}', CAST(N'2025-06-20T14:19:01.337' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (872, 802, 19, 27, N'tbl_tran_Employee', 5, N'{"Firstname":null,"Lastname":"s","CountryID":"3","Idnumber":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-20T15:00:55.2405443+02:00","RecordID":5,"StepDescription":"Capture Employee Step ","TableDescription":"Employee","interactionType":"Insert"}', CAST(N'2025-06-20T15:00:55.227' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (873, 803, 20, 24, N'tbl_tran_Call', 10, N'{"ClientID":"4","ProductOfferedID":"2","CallDate":null,"CallSummary":null,"DateResolved":null,"ApprovalStatus":null,"foUserID_Agent":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-20T15:39:48.8133822+02:00","RecordID":10,"StepDescription":"Capture Call","TableDescription":"Call Detail ","interactionType":"Insert"}', CAST(N'2025-06-20T15:39:48.793' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (874, 803, 20, 24, N'tbl_tran_CallFollowUp', 9, N'{"FollowUpDate":null,"Notes":null,"foUserID_PersonManager":null,"CallID":10,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-20T15:39:48.8811184+02:00","RecordID":9,"StepDescription":"Capture Call","TableDescription":"Call Follow Up on Step 1","interactionType":"Insert"}', CAST(N'2025-06-20T15:39:48.857' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetail] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (875, 805, 21, 27, N'tbl_tran_Employee', 6, N'{"Firstname":null,"Lastname":null,"CountryID":"1","Idnumber":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-20T16:09:01.3214815+02:00","RecordID":6,"StepDescription":"Capture Employee Step ","TableDescription":"Employee","interactionType":"Insert"}', CAST(N'2025-06-20T16:09:01.297' AS DateTime), 1, 1)
-GO
-SET IDENTITY_INSERT [dbo].[foProcessEventsDetail] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foProcessEventsDetailArchive] ON 
-GO
-INSERT [dbo].[foProcessEventsDetailArchive] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (67, 799, 17, 27, N'tbl_tran_Employee', 3, N'{"Firstname":null,"Lastname":"ddd","CountryID":null,"Idnumber":null,"Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-20T14:39:42.351344+02:00","RecordID":3,"StepDescription":"Capture Employee Step ","TableDescription":"Employee","interactionType":"Insert"}', CAST(N'2025-06-20T14:39:42.350' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetailArchive] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (68, 800, 17, 27, N'tbl_tran_Employee', 3, N'{"Firstname":null,"Lastname":"ddd","CountryID":null,"Idnumber":null,"Active":1,"ModifiedUserID":1,"ModifiedDate":"2025-06-20T14:39:54.4465405+02:00","RecordID":3,"StepDescription":"Capture Employee Step ","interactionType":"Update","CreatedUserID":1,"CreatedDate":"2025-06-20T14:39:54.4608936+02:00"}', CAST(N'2025-06-20T14:39:54.450' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetailArchive] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (69, 801, 18, 27, N'tbl_tran_Employee', 4, N'{"Firstname":"Schalk","Lastname":"Van Der Merwe","CountryID":"1","Idnumber":"293821093812039","Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-20T14:40:35.8872848+02:00","RecordID":4,"StepDescription":"Capture Employee Step ","TableDescription":"Employee","interactionType":"Insert"}', CAST(N'2025-06-20T14:40:35.873' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[foProcessEventsDetailArchive] ([ID], [ProcessEventID], [ProcessInstanceID], [StepID], [TableName], [RecordID], [DataSetUpdate], [CreatedDate], [CreatedUserID], [Active]) VALUES (66, 795, 15, 27, N'tbl_tran_Employee', 1, N'{"Firstname":"Schalk","Lastname":"van der Merwe","Idnumber":"293821093812039","Active":1,"CreatedUserID":1,"CreatedDate":"2025-06-20T13:40:08.2593248+02:00","RecordID":1,"StepDescription":"Capture Employee Step ","TableDescription":"Employee","interactionType":"Insert"}', CAST(N'2025-06-20T13:40:08.260' AS DateTime), 1, 1)
-GO
-SET IDENTITY_INSERT [dbo].[foProcessEventsDetailArchive] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foProcessSteps] ON 
-GO
-INSERT [dbo].[foProcessSteps] ([ID], [ProcessID], [StepNo], [StepDescription], [GroupID], [UserID], [Active]) VALUES (24, 10, CAST(1.00 AS Decimal(18, 2)), N'Capture Call', 4, NULL, 1)
-GO
-INSERT [dbo].[foProcessSteps] ([ID], [ProcessID], [StepNo], [StepDescription], [GroupID], [UserID], [Active]) VALUES (25, 10, CAST(2.00 AS Decimal(18, 2)), N'Capture Call Followups', NULL, 1, 1)
-GO
-INSERT [dbo].[foProcessSteps] ([ID], [ProcessID], [StepNo], [StepDescription], [GroupID], [UserID], [Active]) VALUES (26, 11, CAST(1.00 AS Decimal(18, 2)), N'Capture Client Details', NULL, 1, 1)
-GO
-INSERT [dbo].[foProcessSteps] ([ID], [ProcessID], [StepNo], [StepDescription], [GroupID], [UserID], [Active]) VALUES (27, 12, CAST(1.00 AS Decimal(18, 2)), N'Capture Employee Step ', 4, NULL, 1)
-GO
-SET IDENTITY_INSERT [dbo].[foProcessSteps] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foReportAccess] ON 
-GO
-INSERT [dbo].[foReportAccess] ([ID], [ReportID], [UserID], [GroupID], [Active]) VALUES (38, 8, 1, NULL, 1)
-GO
-INSERT [dbo].[foReportAccess] ([ID], [ReportID], [UserID], [GroupID], [Active]) VALUES (39, 8, 2, NULL, 1)
-GO
-SET IDENTITY_INSERT [dbo].[foReportAccess] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foReports] ON 
-GO
-INSERT [dbo].[foReports] ([ID], [ReportName], [ReportDescription], [Active]) VALUES (7, N'Test', N'Test', 1)
-GO
-INSERT [dbo].[foReports] ([ID], [ReportName], [ReportDescription], [Active]) VALUES (8, N'Calls', N'Calls', 1)
-GO
-SET IDENTITY_INSERT [dbo].[foReports] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foReportTable] ON 
-GO
-INSERT [dbo].[foReportTable] ([ID], [ReportsID], [TableName], [ColumnQuery], [FormType], [ColumnCount], [Parent], [FKColumn], [TableDescription], [Active]) VALUES (14, 8, N'tbl_tran_Call', N'*', N'F', 2, 1, NULL, N'Call', 1)
-GO
-INSERT [dbo].[foReportTable] ([ID], [ReportsID], [TableName], [ColumnQuery], [FormType], [ColumnCount], [Parent], [FKColumn], [TableDescription], [Active]) VALUES (15, 8, N'tbl_tran_CallFollowUp', N'*', N'T', 0, 0, N'CallID', N'Call Followups', 1)
-GO
-SET IDENTITY_INSERT [dbo].[foReportTable] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foTableColumnsToIgnore] ON 
-GO
-INSERT [dbo].[foTableColumnsToIgnore] ([ID], [ColumnName]) VALUES (1, N'Active')
-GO
-INSERT [dbo].[foTableColumnsToIgnore] ([ID], [ColumnName]) VALUES (2, N'CreatedUserID')
-GO
-INSERT [dbo].[foTableColumnsToIgnore] ([ID], [ColumnName]) VALUES (3, N'CreatedDate')
-GO
-INSERT [dbo].[foTableColumnsToIgnore] ([ID], [ColumnName]) VALUES (4, N'ModifiedUserID')
-GO
-INSERT [dbo].[foTableColumnsToIgnore] ([ID], [ColumnName]) VALUES (5, N'ModifiedDate')
-GO
-INSERT [dbo].[foTableColumnsToIgnore] ([ID], [ColumnName]) VALUES (6, N'DeletedUserID')
-GO
-INSERT [dbo].[foTableColumnsToIgnore] ([ID], [ColumnName]) VALUES (7, N'DeletedDate')
-GO
-SET IDENTITY_INSERT [dbo].[foTableColumnsToIgnore] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foTableGroups] ON 
-GO
-INSERT [dbo].[foTableGroups] ([ID], [Description], [Active]) VALUES (2, N'Call Center Maintenance', 1)
-GO
-SET IDENTITY_INSERT [dbo].[foTableGroups] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foTablePrefixes] ON 
-GO
-INSERT [dbo].[foTablePrefixes] ([ID], [Prefix], [Description], [Active]) VALUES (1, N'tbl_md_', N'Maintenance', 1)
-GO
-INSERT [dbo].[foTablePrefixes] ([ID], [Prefix], [Description], [Active]) VALUES (2, N'tbl_tran_', N'Transactional', 1)
-GO
-INSERT [dbo].[foTablePrefixes] ([ID], [Prefix], [Description], [Active]) VALUES (6, N'tbl_audit_', N'Auditing', 1)
-GO
-SET IDENTITY_INSERT [dbo].[foTablePrefixes] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foUserGroups] ON 
-GO
-INSERT [dbo].[foUserGroups] ([ID], [UserID], [GroupID], [Active]) VALUES (3, 2, 5, NULL)
-GO
-INSERT [dbo].[foUserGroups] ([ID], [UserID], [GroupID], [Active]) VALUES (4, 1, 4, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[foUserGroups] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foUserLogin] ON 
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1708, 1, CAST(N'2025-06-04T14:04:39.967' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1709, 1, CAST(N'2025-06-04T14:48:58.423' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1710, 1, CAST(N'2025-06-04T15:06:14.120' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1711, 1, CAST(N'2025-06-04T15:07:48.323' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1712, 1, CAST(N'2025-06-04T15:10:01.393' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1713, 1, CAST(N'2025-06-04T15:33:42.560' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1714, 1, CAST(N'2025-06-04T15:35:15.473' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1715, 1, CAST(N'2025-06-04T15:36:42.363' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1716, 1, CAST(N'2025-06-04T15:37:37.160' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1717, 1, CAST(N'2025-06-04T15:40:18.170' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1718, 1, CAST(N'2025-06-04T15:54:31.930' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1719, 1, CAST(N'2025-06-04T18:37:06.223' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1720, 1, CAST(N'2025-06-04T19:39:12.097' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1721, 1, CAST(N'2025-06-04T19:40:10.433' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1722, 1, CAST(N'2025-06-04T19:41:12.107' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1723, 1, CAST(N'2025-06-04T19:45:05.017' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1724, 1, CAST(N'2025-06-04T19:54:07.750' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1725, 1, CAST(N'2025-06-04T19:55:54.397' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1726, 1, CAST(N'2025-06-04T19:59:39.047' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1727, 1, CAST(N'2025-06-04T20:05:15.360' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1728, 1, CAST(N'2025-06-04T20:10:12.883' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1729, 1, CAST(N'2025-06-04T20:15:14.127' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1730, 1, CAST(N'2025-06-04T20:17:23.117' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1731, 1, CAST(N'2025-06-04T20:29:03.660' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1732, 1, CAST(N'2025-06-04T20:31:47.150' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1733, 1, CAST(N'2025-06-04T20:39:59.643' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1734, 1, CAST(N'2025-06-04T20:41:27.313' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1735, 1, CAST(N'2025-06-05T11:55:21.110' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1736, 1, CAST(N'2025-06-05T11:55:21.180' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1737, 1, CAST(N'2025-06-05T12:31:25.060' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1738, 1, CAST(N'2025-06-05T14:12:25.143' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1739, 1, CAST(N'2025-06-05T18:46:34.393' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1740, 1, CAST(N'2025-06-05T19:32:02.480' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1741, 1, CAST(N'2025-06-06T10:25:16.043' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1742, 1, CAST(N'2025-06-06T15:22:19.537' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1743, 1, CAST(N'2025-06-06T17:56:47.517' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1744, 1, CAST(N'2025-06-06T18:36:58.553' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1745, 1, CAST(N'2025-06-06T18:45:48.860' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1746, 1, CAST(N'2025-06-11T11:52:10.590' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1747, 2, CAST(N'2025-06-11T11:56:26.563' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1748, 1, CAST(N'2025-06-11T12:03:45.767' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1749, 1, CAST(N'2025-06-11T12:18:06.503' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1750, 2, CAST(N'2025-06-11T12:38:08.460' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1751, 2, CAST(N'2025-06-11T12:40:30.653' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1752, 2, CAST(N'2025-06-11T12:45:23.027' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1753, 2, CAST(N'2025-06-11T12:47:00.987' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1754, 2, CAST(N'2025-06-11T12:51:20.677' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1755, 2, CAST(N'2025-06-11T13:36:42.577' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1756, 2, CAST(N'2025-06-11T13:46:30.160' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1757, 2, CAST(N'2025-06-19T11:12:08.473' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1758, 2, CAST(N'2025-06-19T11:40:23.937' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1759, 2, CAST(N'2025-06-19T11:50:03.427' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1760, 2, CAST(N'2025-06-19T11:51:05.393' AS DateTime))
-GO
-INSERT [dbo].[foUserLogin] ([ID], [UserID], [LoginDateTime]) VALUES (1761, 2, CAST(N'2025-06-19T12:37:48.020' AS DateTime))
-GO
-SET IDENTITY_INSERT [dbo].[foUserLogin] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foUserProcess] ON 
-GO
-INSERT [dbo].[foUserProcess] ([ID], [UserID], [ProcessID]) VALUES (5, 1, 12)
-GO
-SET IDENTITY_INSERT [dbo].[foUserProcess] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foUsers] ON 
-GO
-INSERT [dbo].[foUsers] ([ID], [UserName], [Password], [FirstName], [LastName], [Email], [Admin], [Active]) VALUES (1, N'schalkvdm', N'111', N'Schalk', N'van der Merwe', N'schalk83.vandermerwe@gmail.com', 1, 1)
-GO
-INSERT [dbo].[foUsers] ([ID], [UserName], [Password], [FirstName], [LastName], [Email], [Admin], [Active]) VALUES (2, N'freedomn', N'freedomn', N'Freedom', N'Nxumalo', N'', 1, 1)
-GO
-SET IDENTITY_INSERT [dbo].[foUsers] OFF
-GO
-SET IDENTITY_INSERT [dbo].[foUserTable] ON 
-GO
-INSERT [dbo].[foUserTable] ([ID], [UserID], [TableName], [ReadWriteAccess], [Active]) VALUES (44, 1, N'tbl_tran_Call', N'RW', 1)
-GO
-INSERT [dbo].[foUserTable] ([ID], [UserID], [TableName], [ReadWriteAccess], [Active]) VALUES (45, 1, N'tbl_tran_CallCenter', N'RW', 1)
-GO
-INSERT [dbo].[foUserTable] ([ID], [UserID], [TableName], [ReadWriteAccess], [Active]) VALUES (46, 1, N'tbl_tran_CallFollowUp', N'RW', 1)
-GO
-INSERT [dbo].[foUserTable] ([ID], [UserID], [TableName], [ReadWriteAccess], [Active]) VALUES (47, 1, N'tbl_tran_Agent', N'RW', 1)
-GO
-INSERT [dbo].[foUserTable] ([ID], [UserID], [TableName], [ReadWriteAccess], [Active]) VALUES (48, 1, N'tbl_tran_Client', N'RW', 1)
-GO
-SET IDENTITY_INSERT [dbo].[foUserTable] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_EmailNotification] ON 
-GO
-INSERT [dbo].[tbl_EmailNotification] ([Id], [TemplateId], [Recipient], [Subject], [Body], [IsSent], [CreatedAt]) VALUES (1, 1, N'user1@example.com', N'Test', N'Test', 0, CAST(N'2025-06-11T12:38:27.130' AS DateTime))
-GO
-INSERT [dbo].[tbl_EmailNotification] ([Id], [TemplateId], [Recipient], [Subject], [Body], [IsSent], [CreatedAt]) VALUES (2, 1, N'user2@example.com', N'Test', N'Test', 0, CAST(N'2025-06-11T12:38:27.130' AS DateTime))
-GO
-INSERT [dbo].[tbl_EmailNotification] ([Id], [TemplateId], [Recipient], [Subject], [Body], [IsSent], [CreatedAt]) VALUES (3, 1, N'user1@example.com', N'Test', N'Test', 0, CAST(N'2025-06-11T12:47:11.537' AS DateTime))
-GO
-INSERT [dbo].[tbl_EmailNotification] ([Id], [TemplateId], [Recipient], [Subject], [Body], [IsSent], [CreatedAt]) VALUES (4, 1, N'user2@example.com', N'Test', N'Test', 0, CAST(N'2025-06-11T12:47:11.537' AS DateTime))
-GO
-SET IDENTITY_INSERT [dbo].[tbl_EmailNotification] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_EmailTemplate] ON 
-GO
-INSERT [dbo].[tbl_EmailTemplate] ([Id], [Name], [Subject], [Body], [IsApproved], [CreatedAt]) VALUES (1, N'Test', N'Test', N'Test', 0, CAST(N'2025-06-11T11:59:17.307' AS DateTime))
-GO
-SET IDENTITY_INSERT [dbo].[tbl_EmailTemplate] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Actor] ON 
-GO
-INSERT [dbo].[tbl_md_Actor] ([ID], [FullName], [Gender], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Leonardo DiCaprio', N'M', 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Actor] ([ID], [FullName], [Gender], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Jennifer Lawrence', N'F', 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Actor] ([ID], [FullName], [Gender], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Tom Hanks', N'M', 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Actor] ([ID], [FullName], [Gender], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'Scarlett Johansson', N'F', 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Actor] ([ID], [FullName], [Gender], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'Brad Pitt', N'M', 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Actor] ([ID], [FullName], [Gender], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'Natalie Portman', N'F', 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Actor] ([ID], [FullName], [Gender], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'Chris Hemsworth', N'M', 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Actor] ([ID], [FullName], [Gender], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'Emma Stone', N'F', 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Actor] ([ID], [FullName], [Gender], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'Will Smith', N'M', 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Actor] ([ID], [FullName], [Gender], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (10, N'Gal Gadot', N'F', 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Actor] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_AssetType] ON 
-GO
-INSERT [dbo].[tbl_md_AssetType] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Laptop', 1, 2, CAST(N'2025-05-23T16:33:52.233' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_AssetType] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Phone', 1, 2, CAST(N'2025-05-23T16:34:01.127' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_AssetType] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Campus] ON 
-GO
-INSERT [dbo].[tbl_md_Campus] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Pretoria', 1, NULL, NULL, NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Campus] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Johburg', 1, NULL, NULL, NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Campus] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Durban', 1, NULL, NULL, NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Campus] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'PE', 1, NULL, NULL, 1, CAST(N'2025-02-19T15:02:30.960' AS DateTime), NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Campus] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Country] ON 
-GO
-INSERT [dbo].[tbl_md_Country] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'United States', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Country] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'United Kingdom', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Country] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Canada', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Country] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'Australia', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Country] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'France', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Country] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'Germany', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Country] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'Japan', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Country] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'India', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Country] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'China', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Country] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (10, N'South Africa', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Country] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Director] ON 
-GO
-INSERT [dbo].[tbl_md_Director] ([ID], [FullName], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Steven Spielberg', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Director] ([ID], [FullName], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Christopher Nolan', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Director] ([ID], [FullName], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'James Cameron', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Director] ([ID], [FullName], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'Quentin Tarantino', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Director] ([ID], [FullName], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'Martin Scorsese', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Director] ([ID], [FullName], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'Peter Jackson', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Director] ([ID], [FullName], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'Ridley Scott', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Director] ([ID], [FullName], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'Kathryn Bigelow', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Director] ([ID], [FullName], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'Denis Villeneuve', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Director] ([ID], [FullName], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (10, N'Patty Jenkins', 1, 1, CAST(N'2025-04-25T11:15:52.203' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Director] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Format] ON 
-GO
-INSERT [dbo].[tbl_md_Format] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'DVD', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Format] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Blu-ray', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Format] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Digital HD', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Format] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'4K UHD', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Format] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'Streaming', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Format] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'VHS', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Format] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'Laserdisc', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Format] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'DivX', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Format] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'Web Download', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Format] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (10, N'iTunes', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Format] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Genre] ON 
-GO
-INSERT [dbo].[tbl_md_Genre] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Action', 1, 1, CAST(N'2025-04-25T11:15:52.200' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Genre] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Drama', 1, 1, CAST(N'2025-04-25T11:15:52.200' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Genre] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Comedy', 1, 1, CAST(N'2025-04-25T11:15:52.200' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Genre] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'Romance', 1, 1, CAST(N'2025-04-25T11:15:52.200' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Genre] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'Science Fiction', 1, 1, CAST(N'2025-04-25T11:15:52.200' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Genre] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'Horror', 1, 1, CAST(N'2025-04-25T11:15:52.200' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Genre] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'Thriller', 1, 1, CAST(N'2025-04-25T11:15:52.200' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Genre] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'Animation', 1, 1, CAST(N'2025-04-25T11:15:52.200' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Genre] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'Adventure', 1, 1, CAST(N'2025-04-25T11:15:52.200' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Genre] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (10, N'Fantasy', 1, 1, CAST(N'2025-04-25T11:15:52.200' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Genre] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_HomeType] ON 
-GO
-INSERT [dbo].[tbl_md_HomeType] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'House', 1, NULL, NULL, NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_HomeType] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Apartment', 1, NULL, NULL, NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_HomeType] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Complex', 1, NULL, NULL, NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_HomeType] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Language] ON 
-GO
-INSERT [dbo].[tbl_md_Language] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'English', 1, 1, CAST(N'2025-04-25T11:28:00.310' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Language] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'French', 1, 1, CAST(N'2025-04-25T11:28:00.310' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Language] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Spanish', 1, 1, CAST(N'2025-04-25T11:28:00.310' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Language] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'Mandarin', 1, 1, CAST(N'2025-04-25T11:28:00.310' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Language] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'Hindi', 1, 1, CAST(N'2025-04-25T11:28:00.310' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Language] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'German', 1, 1, CAST(N'2025-04-25T11:28:00.310' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Language] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'Japanese', 1, 1, CAST(N'2025-04-25T11:28:00.310' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Language] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'Arabic', 1, 1, CAST(N'2025-04-25T11:28:00.310' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Language] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'Portuguese', 1, 1, CAST(N'2025-04-25T11:28:00.310' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Language] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (10, N'Russian', 1, 1, CAST(N'2025-04-25T11:28:00.310' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Language] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_ProductOffered] ON 
-GO
-INSERT [dbo].[tbl_md_ProductOffered] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'SmartContract 1GB', 1, 1, CAST(N'2025-06-04T14:41:14.190' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_ProductOffered] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'SmartContract 5GB', 1, 1, CAST(N'2025-06-04T14:41:14.190' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_ProductOffered] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Unlimited Data Bundle', 1, 1, CAST(N'2025-06-04T14:41:14.190' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_ProductOffered] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'Device + Contract Combo', 1, 1, CAST(N'2025-06-04T14:41:14.190' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_ProductOffered] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'SIM-Only Prepaid', 1, 1, CAST(N'2025-06-04T14:41:14.190' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_ProductOffered] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Province] ON 
-GO
-INSERT [dbo].[tbl_md_Province] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Gauteng', 1, 1, CAST(N'2025-06-04T14:41:06.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Province] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Western Cape', 1, 1, CAST(N'2025-06-04T14:41:06.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Province] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'KwaZulu-Natal', 1, 1, CAST(N'2025-06-04T14:41:06.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Province] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'Eastern Cape', 1, 1, CAST(N'2025-06-04T14:41:06.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Province] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'Free State', 1, 1, CAST(N'2025-06-04T14:41:06.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Province] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'North West', 1, 1, CAST(N'2025-06-04T14:41:06.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Province] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'Limpopo', 1, 1, CAST(N'2025-06-04T14:41:06.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Province] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'Mpumalanga', 1, 1, CAST(N'2025-06-04T14:41:06.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Province] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'Northern Cape', 1, 1, CAST(N'2025-06-04T14:41:06.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Province] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Rating] ON 
-GO
-INSERT [dbo].[tbl_md_Rating] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'G', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Rating] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'PG', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Rating] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'PG-13', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Rating] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'R', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Rating] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'NC-17', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Rating] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'U', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Rating] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'12A', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Rating] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'15', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Rating] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'18', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Rating] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (10, N'TV-MA', 1, 1, CAST(N'2025-04-25T11:15:52.210' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Rating] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Studio] ON 
-GO
-INSERT [dbo].[tbl_md_Studio] ([ID], [Name], [CountryID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Warner Bros.', 1, 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Studio] ([ID], [Name], [CountryID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Universal Pictures', 1, 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Studio] ([ID], [Name], [CountryID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Paramount Pictures', 1, 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Studio] ([ID], [Name], [CountryID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'20th Century Studios', 1, 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Studio] ([ID], [Name], [CountryID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'Sony Pictures', 1, 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Studio] ([ID], [Name], [CountryID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'Lionsgate Films', 1, 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Studio] ([ID], [Name], [CountryID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'Miramax Films', 1, 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Studio] ([ID], [Name], [CountryID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'Netflix Studios', 1, 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Studio] ([ID], [Name], [CountryID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'Amazon Studios', 1, 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Studio] ([ID], [Name], [CountryID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (10, N'New Line Cinema', 1, 1, 1, CAST(N'2025-04-25T11:15:52.207' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Studio] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Suburb] ON 
-GO
-INSERT [dbo].[tbl_md_Suburb] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Villieria', 1, 1, CAST(N'2025-05-29T19:17:34.793' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_md_Suburb] ([ID], [Description], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Melkbosstrand', 1, 1, CAST(N'2025-05-29T19:17:41.177' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_md_Suburb] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_Agent] ON 
-GO
-INSERT [dbo].[tbl_tran_Agent] ([ID], [foUserID_Agent], [CallCenterID], [Email], [PhoneNumber], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, 2, 4, N'ddd', N'111', 1, 1, CAST(N'2025-06-11T12:04:15.037' AS DateTime), 1, CAST(N'2025-06-11T12:04:34.973' AS DateTime), NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Agent] ([ID], [foUserID_Agent], [CallCenterID], [Email], [PhoneNumber], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, 2, 3, NULL, NULL, 1, 1, CAST(N'2025-06-11T19:38:54.563' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_Agent] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_Call] ON 
-GO
-INSERT [dbo].[tbl_tran_Call] ([ID], [ClientID], [ProductOfferedID], [CallDate], [CallSummary], [Accepted], [TicketResolved], [DateResolved], [ApprovalStatus], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_Agent]) VALUES (1, 3, 1, NULL, N'5555', NULL, NULL, NULL, NULL, 1, CAST(N'2025-06-05T14:39:02.380' AS DateTime), 1, CAST(N'2025-06-06T15:22:44.550' AS DateTime), NULL, NULL, 1, 2)
-GO
-INSERT [dbo].[tbl_tran_Call] ([ID], [ClientID], [ProductOfferedID], [CallDate], [CallSummary], [Accepted], [TicketResolved], [DateResolved], [ApprovalStatus], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_Agent]) VALUES (2, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, CAST(N'2025-06-05T18:46:55.443' AS DateTime), NULL, NULL, NULL, NULL, 1, NULL)
-GO
-INSERT [dbo].[tbl_tran_Call] ([ID], [ClientID], [ProductOfferedID], [CallDate], [CallSummary], [Accepted], [TicketResolved], [DateResolved], [ApprovalStatus], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_Agent]) VALUES (3, 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, CAST(N'2025-06-06T10:27:33.247' AS DateTime), NULL, NULL, NULL, NULL, 1, NULL)
-GO
-INSERT [dbo].[tbl_tran_Call] ([ID], [ClientID], [ProductOfferedID], [CallDate], [CallSummary], [Accepted], [TicketResolved], [DateResolved], [ApprovalStatus], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_Agent]) VALUES (4, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, CAST(N'2025-06-06T11:06:24.593' AS DateTime), NULL, NULL, NULL, NULL, 1, NULL)
-GO
-INSERT [dbo].[tbl_tran_Call] ([ID], [ClientID], [ProductOfferedID], [CallDate], [CallSummary], [Accepted], [TicketResolved], [DateResolved], [ApprovalStatus], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_Agent]) VALUES (5, 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, CAST(N'2025-06-06T11:33:10.457' AS DateTime), 1, CAST(N'2025-06-11T23:25:14.667' AS DateTime), NULL, NULL, 1, 1)
-GO
-INSERT [dbo].[tbl_tran_Call] ([ID], [ClientID], [ProductOfferedID], [CallDate], [CallSummary], [Accepted], [TicketResolved], [DateResolved], [ApprovalStatus], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_Agent]) VALUES (6, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, CAST(N'2025-06-06T16:59:02.983' AS DateTime), 1, CAST(N'2025-06-06T17:33:16.767' AS DateTime), NULL, NULL, 1, 1)
-GO
-INSERT [dbo].[tbl_tran_Call] ([ID], [ClientID], [ProductOfferedID], [CallDate], [CallSummary], [Accepted], [TicketResolved], [DateResolved], [ApprovalStatus], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_Agent]) VALUES (7, 2, NULL, NULL, NULL, NULL, NULL, NULL, N'xxx', 1, CAST(N'2025-06-11T21:47:51.483' AS DateTime), 1, CAST(N'2025-06-11T23:22:39.320' AS DateTime), NULL, NULL, 1, 2)
-GO
-INSERT [dbo].[tbl_tran_Call] ([ID], [ClientID], [ProductOfferedID], [CallDate], [CallSummary], [Accepted], [TicketResolved], [DateResolved], [ApprovalStatus], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_Agent]) VALUES (8, 2, NULL, NULL, N'SDSDF', NULL, NULL, NULL, N'FSDF', 1, CAST(N'2025-06-12T11:39:49.360' AS DateTime), NULL, NULL, NULL, NULL, 1, 1)
-GO
-INSERT [dbo].[tbl_tran_Call] ([ID], [ClientID], [ProductOfferedID], [CallDate], [CallSummary], [Accepted], [TicketResolved], [DateResolved], [ApprovalStatus], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_Agent]) VALUES (9, NULL, NULL, NULL, NULL, NULL, NULL, NULL, N'222', 1, CAST(N'2025-06-12T12:49:18.630' AS DateTime), 1, CAST(N'2025-06-12T15:25:49.810' AS DateTime), NULL, NULL, 1, 2)
-GO
-INSERT [dbo].[tbl_tran_Call] ([ID], [ClientID], [ProductOfferedID], [CallDate], [CallSummary], [Accepted], [TicketResolved], [DateResolved], [ApprovalStatus], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_Agent]) VALUES (10, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, CAST(N'2025-06-20T15:39:48.797' AS DateTime), NULL, NULL, NULL, NULL, 1, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_Call] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_CallCenter] ON 
-GO
-INSERT [dbo].[tbl_tran_CallCenter] ([ID], [Name], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Call Center - Gauteng', 1, 1, 1, CAST(N'2025-06-04T19:12:34.643' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_CallCenter] ([ID], [Name], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Call Center - Western Cape', 2, 1, 1, CAST(N'2025-06-04T19:12:34.643' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_CallCenter] ([ID], [Name], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Call Center - KwaZulu-Natal', 3, 1, 1, CAST(N'2025-06-04T19:12:34.643' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_CallCenter] ([ID], [Name], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'Call Center - Eastern Cape', 4, 1, 1, CAST(N'2025-06-04T19:12:34.643' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_CallCenter] ([ID], [Name], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'Call Center - Free State', 5, 1, 1, CAST(N'2025-06-04T19:12:34.643' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_CallCenter] ([ID], [Name], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'Call Center - North West', 6, 1, 1, CAST(N'2025-06-04T19:12:34.643' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_CallCenter] ([ID], [Name], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'Call Center - Limpopo', 7, 1, 1, CAST(N'2025-06-04T19:12:34.643' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_CallCenter] ([ID], [Name], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'Call Center - Mpumalanga', 8, 1, 1, CAST(N'2025-06-04T19:12:34.643' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_CallCenter] ([ID], [Name], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'Call Center - Northern Cape', 9, 1, 1, CAST(N'2025-06-04T19:12:34.643' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_CallCenter] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_CallFollowUp] ON 
-GO
-INSERT [dbo].[tbl_tran_CallFollowUp] ([ID], [CallID], [FollowUpDate], [Notes], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_PersonManager]) VALUES (1, 1, CAST(N'2025-06-06T00:00:00.000' AS DateTime), N'new update', 1, CAST(N'2025-06-06T16:19:27.727' AS DateTime), 1, CAST(N'2025-06-11T21:36:58.970' AS DateTime), NULL, NULL, 1, 1)
-GO
-INSERT [dbo].[tbl_tran_CallFollowUp] ([ID], [CallID], [FollowUpDate], [Notes], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_PersonManager]) VALUES (2, 1, NULL, N'ddddjjj', 1, CAST(N'2025-06-06T19:14:55.230' AS DateTime), 1, CAST(N'2025-06-11T21:31:51.123' AS DateTime), NULL, NULL, 1, 1)
-GO
-INSERT [dbo].[tbl_tran_CallFollowUp] ([ID], [CallID], [FollowUpDate], [Notes], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_PersonManager]) VALUES (3, NULL, CAST(N'2025-06-11T00:00:00.000' AS DateTime), N'sadasdsdf', 1, CAST(N'2025-06-11T17:58:00.677' AS DateTime), NULL, NULL, NULL, NULL, 1, 1)
-GO
-INSERT [dbo].[tbl_tran_CallFollowUp] ([ID], [CallID], [FollowUpDate], [Notes], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_PersonManager]) VALUES (4, 1, NULL, N'xxx123', 1, CAST(N'2025-06-11T18:45:16.557' AS DateTime), NULL, NULL, NULL, NULL, 1, 1)
-GO
-INSERT [dbo].[tbl_tran_CallFollowUp] ([ID], [CallID], [FollowUpDate], [Notes], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_PersonManager]) VALUES (5, 1, NULL, N'ddd', 1, CAST(N'2025-06-11T19:31:40.713' AS DateTime), 1, CAST(N'2025-06-11T21:36:48.940' AS DateTime), NULL, NULL, 1, 2)
-GO
-INSERT [dbo].[tbl_tran_CallFollowUp] ([ID], [CallID], [FollowUpDate], [Notes], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_PersonManager]) VALUES (6, 1, NULL, N'XXX123FFF', 1, CAST(N'2025-06-11T19:38:12.583' AS DateTime), NULL, NULL, NULL, NULL, 1, 1)
-GO
-INSERT [dbo].[tbl_tran_CallFollowUp] ([ID], [CallID], [FollowUpDate], [Notes], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_PersonManager]) VALUES (7, 9, NULL, N'ggg', 1, CAST(N'2025-06-12T12:49:18.677' AS DateTime), 1, CAST(N'2025-06-12T15:25:49.827' AS DateTime), NULL, NULL, 1, 1)
-GO
-INSERT [dbo].[tbl_tran_CallFollowUp] ([ID], [CallID], [FollowUpDate], [Notes], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_PersonManager]) VALUES (8, 9, NULL, N'NEW NOTESSS', 1, CAST(N'2025-06-12T15:27:27.217' AS DateTime), NULL, NULL, NULL, NULL, 1, 1)
-GO
-INSERT [dbo].[tbl_tran_CallFollowUp] ([ID], [CallID], [FollowUpDate], [Notes], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate], [Active], [foUserID_PersonManager]) VALUES (9, 10, NULL, NULL, 1, CAST(N'2025-06-20T15:39:48.867' AS DateTime), NULL, NULL, NULL, NULL, 1, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_CallFollowUp] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_Client] ON 
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Thabo', N'Nkosi', N'8801015009081', N'0835550011', N'thabo@example.com', 1, 1, 1, CAST(N'2025-06-04T19:12:49.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'Zanele', N'Naidoo', N'9003030080082', N'0835550012', N'zanele@example.com', 2, 1, 1, CAST(N'2025-06-04T19:12:49.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, N'Johan', N'Visser', N'8507075029083', N'0835550013', N'johan@example.com', 3, 1, 1, CAST(N'2025-06-04T19:12:49.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'Ayesha', N'Khan', N'9205050033084', N'0835550014', N'ayesha@example.com', 4, 1, 1, CAST(N'2025-06-04T19:12:49.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, N'Sipho', N'Dlamini', N'9303035080085', N'0835550015', N'sipho@example.com', 5, 1, 1, CAST(N'2025-06-04T19:12:49.633' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, N'Schalk', NULL, NULL, NULL, NULL, NULL, 1, 1, CAST(N'2025-06-17T11:07:27.133' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (7, N'Schalk', NULL, NULL, NULL, NULL, NULL, 1, 1, CAST(N'2025-06-17T11:40:27.693' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (8, N'Schalk', NULL, NULL, NULL, NULL, NULL, 1, 1, CAST(N'2025-06-17T11:43:53.327' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (9, N'Schalk', NULL, NULL, NULL, NULL, NULL, 1, 1, CAST(N'2025-06-17T12:02:19.557' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (10, N'Schalk', N'van der Merwe', NULL, NULL, NULL, NULL, 1, 1, CAST(N'2025-06-17T16:14:24.853' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (11, N'Schalk', N'van der Merwe', NULL, NULL, NULL, NULL, 1, 1, CAST(N'2025-06-17T16:14:55.223' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Client] ([ID], [FirstName], [LastName], [IDNumber], [PhoneNumber], [Email], [ProvinceID], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (12, N'Schalk', N'van der Merwe', NULL, NULL, NULL, NULL, 1, 1, CAST(N'2025-06-17T16:15:15.283' AS DateTime), 1, CAST(N'2025-06-17T16:15:23.177' AS DateTime), NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_Client] OFF
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_Employee] ON 
-GO
-INSERT [dbo].[tbl_tran_Employee] ([ID], [Firstname], [Lastname], [CountryID], [Idnumber], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (1, N'Schalk', N'van der Merwe', NULL, N'293821093812039', 1, 1, CAST(N'2025-06-20T13:40:08.243' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Employee] ([ID], [Firstname], [Lastname], [CountryID], [Idnumber], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (2, N'sss', NULL, 2, NULL, 1, 1, CAST(N'2025-06-20T14:04:28.587' AS DateTime), 1, CAST(N'2025-06-20T14:19:01.317' AS DateTime), NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Employee] ([ID], [Firstname], [Lastname], [CountryID], [Idnumber], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (3, NULL, N'ddd', NULL, NULL, 1, 1, CAST(N'2025-06-20T14:39:42.333' AS DateTime), 1, CAST(N'2025-06-20T14:39:54.447' AS DateTime), NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Employee] ([ID], [Firstname], [Lastname], [CountryID], [Idnumber], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (4, N'Schalk', N'Van Der Merwe', 1, N'293821093812039', 1, 1, CAST(N'2025-06-20T14:40:35.873' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Employee] ([ID], [Firstname], [Lastname], [CountryID], [Idnumber], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (5, NULL, N's', 3, NULL, 1, 1, CAST(N'2025-06-20T15:00:55.220' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-INSERT [dbo].[tbl_tran_Employee] ([ID], [Firstname], [Lastname], [CountryID], [Idnumber], [Active], [CreatedUserID], [CreatedDate], [ModifiedUserID], [ModifiedDate], [DeletedUserID], [DeletedDate]) VALUES (6, NULL, NULL, 1, NULL, 1, 1, CAST(N'2025-06-20T16:09:01.300' AS DateTime), NULL, NULL, NULL, NULL)
-GO
-SET IDENTITY_INSERT [dbo].[tbl_tran_Employee] OFF
-GO
-ALTER TABLE [dbo].[foApprovalAttachments] ADD  DEFAULT (getdate()) FOR [CreatedDate]
-GO
-ALTER TABLE [dbo].[foApprovals] ADD  CONSTRAINT [DF__foApprova__Creat__09602436]  DEFAULT (getdate()) FOR [CreatedDate]
-GO
-ALTER TABLE [dbo].[foProcessCancellations] ADD  DEFAULT (getdate()) FOR [CancelledDate]
-GO
-ALTER TABLE [dbo].[foProcessEvents] ADD  DEFAULT ((0)) FOR [Cancelled]
-GO
-ALTER TABLE [dbo].[foProcessEventsDetail] ADD  DEFAULT (getdate()) FOR [CreatedDate]
-GO
-ALTER TABLE [dbo].[foReportAccess] ADD  DEFAULT ((1)) FOR [Active]
-GO
-ALTER TABLE [dbo].[foTableColumns] ADD  DEFAULT ((1)) FOR [IsNullable]
-GO
-ALTER TABLE [dbo].[foTableColumns] ADD  DEFAULT ((1)) FOR [Active]
-GO
-ALTER TABLE [dbo].[tbl_EmailNotification] ADD  CONSTRAINT [DF_tbl_EmailNotification_IsSent]  DEFAULT ((0)) FOR [IsSent]
-GO
-ALTER TABLE [dbo].[tbl_EmailNotification] ADD  CONSTRAINT [DF_tbl_EmailNotification_CreatedAt]  DEFAULT (getdate()) FOR [CreatedAt]
-GO
-ALTER TABLE [dbo].[tbl_EmailTemplate] ADD  CONSTRAINT [DF_tbl_EmailTemplate_IsApproved]  DEFAULT ((0)) FOR [IsApproved]
-GO
-ALTER TABLE [dbo].[tbl_EmailTemplate] ADD  CONSTRAINT [DF_tbl_EmailTemplate_CreatedAt]  DEFAULT (getdate()) FOR [CreatedAt]
-GO
-ALTER TABLE [dbo].[tbl_tran_Call] ADD  DEFAULT ((1)) FOR [Active]
-GO
-ALTER TABLE [dbo].[tbl_tran_CallFollowUp] ADD  DEFAULT ((1)) FOR [Active]
-GO
-ALTER TABLE [dbo].[foUserLogin]  WITH CHECK ADD FOREIGN KEY([UserID])
-REFERENCES [dbo].[foUsers] ([ID])
-GO
-ALTER TABLE [dbo].[foUserPasswordReset]  WITH CHECK ADD FOREIGN KEY([UserID])
-REFERENCES [dbo].[foUsers] ([ID])
-GO
-ALTER TABLE [dbo].[foUserTable]  WITH CHECK ADD FOREIGN KEY([UserID])
-REFERENCES [dbo].[foUsers] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_EmailNotification]  WITH CHECK ADD  CONSTRAINT [FK_EmailNotification_Template] FOREIGN KEY([TemplateId])
-REFERENCES [dbo].[tbl_EmailTemplate] ([Id])
-GO
-ALTER TABLE [dbo].[tbl_EmailNotification] CHECK CONSTRAINT [FK_EmailNotification_Template]
-GO
-ALTER TABLE [dbo].[tbl_md_Studio]  WITH CHECK ADD  CONSTRAINT [FK_Studio_Country] FOREIGN KEY([CountryID])
-REFERENCES [dbo].[tbl_md_Country] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_md_Studio] CHECK CONSTRAINT [FK_Studio_Country]
-GO
-ALTER TABLE [dbo].[tbl_tran_Agent]  WITH CHECK ADD FOREIGN KEY([CallCenterID])
-REFERENCES [dbo].[tbl_tran_CallCenter] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_tran_Agent]  WITH CHECK ADD FOREIGN KEY([foUserID_Agent])
-REFERENCES [dbo].[foUsers] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_tran_Call]  WITH CHECK ADD FOREIGN KEY([ClientID])
-REFERENCES [dbo].[tbl_tran_Client] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_tran_Call]  WITH CHECK ADD FOREIGN KEY([foUserID_Agent])
-REFERENCES [dbo].[foUsers] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_tran_Call]  WITH CHECK ADD FOREIGN KEY([ProductOfferedID])
-REFERENCES [dbo].[tbl_md_ProductOffered] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_tran_CallCenter]  WITH CHECK ADD FOREIGN KEY([ProvinceID])
-REFERENCES [dbo].[tbl_md_Province] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_tran_CallFollowUp]  WITH CHECK ADD FOREIGN KEY([CallID])
-REFERENCES [dbo].[tbl_tran_Call] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_tran_CallFollowUp]  WITH CHECK ADD FOREIGN KEY([foUserID_PersonManager])
-REFERENCES [dbo].[foUsers] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_tran_Client]  WITH CHECK ADD FOREIGN KEY([ProvinceID])
-REFERENCES [dbo].[tbl_md_Province] ([ID])
-GO
-ALTER TABLE [dbo].[tbl_tran_Employee]  WITH CHECK ADD FOREIGN KEY([CountryID])
-REFERENCES [dbo].[tbl_md_Country] ([ID])
-GO
+-- Transaction Table: Team
+CREATE TABLE [dbo].[tbl_tran_Team] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [TeamName] [varchar](MAX) NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+-- Transaction Table: Employee
+CREATE TABLE [dbo].[tbl_tran_Employee] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [Name] [varchar](MAX) NULL,
+    [Surname] [varchar](MAX) NULL,
+    [IDNumber] [varchar](MAX) NULL,
+    [Email] [varchar](MAX) NULL,
+    [Cellphone] [varchar](MAX) NULL,
+    [Vetted] [bit] NULL,
+    [TeamLeader] [bit] NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+-- Transaction Table: Tool
+CREATE TABLE [dbo].[tbl_tran_Tool] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [ToolName] [varchar](MAX) NULL,
+    [SerialNumber] [varchar](MAX) NULL,
+    [ConditionID] [bigint] NULL,
+    FOREIGN KEY([ConditionID]) REFERENCES [dbo].[tbl_md_Condition]([ID]),
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+-- Tool Seed Data
+INSERT INTO [dbo].[tbl_tran_Tool] ([ToolName], [Active]) VALUES
+('Torque wrench with crow feet', 1),
+('Lobster Crimper', 1),
+('Hex Crimper', 1),
+('Digital Inclinometer', 1),
+('Brother Label Machine', 1),
+('Brother Label Cartridge', 1);
+
+-- Transaction Table: ScopeOfWork
+CREATE TABLE [dbo].[tbl_tran_ScopeOfWork] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [Code] [varchar](MAX) NULL,
+    [Description] [varchar](MAX) NULL,
+    [DueDate] [datetime] NULL,
+    [Cost] [decimal](18, 2) NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+-- Transaction Table: DailyWork
+CREATE TABLE [dbo].[tbl_tran_DailyWork] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [WorkDate] [date] NULL,
+    [TeamID] [bigint] NULL,
+    FOREIGN KEY([TeamID]) REFERENCES [dbo].[tbl_tran_Team]([ID]),
+    [ScopeOfWorkID] [bigint] NULL,
+    FOREIGN KEY([ScopeOfWorkID]) REFERENCES [dbo].[tbl_tran_ScopeOfWork]([ID]),
+    [WorkDescription] [varchar](MAX) NULL,
+    [Comments] [varchar](MAX) NULL,
+    [Completed] [bit] NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+-- Link Table: ClientSite
+CREATE TABLE [dbo].[tbl_tran_ClientSite] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [ClientID] [bigint] NULL,
+    FOREIGN KEY([ClientID]) REFERENCES [dbo].[tbl_tran_Client]([ID]),
+    [SiteID] [bigint] NULL,
+    FOREIGN KEY([SiteID]) REFERENCES [dbo].[tbl_tran_Site]([ID]),
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+-- Link Table: TeamSite
+CREATE TABLE [dbo].[tbl_tran_TeamSite] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [TeamID] [bigint] NULL,
+    FOREIGN KEY([TeamID]) REFERENCES [dbo].[tbl_tran_Team]([ID]),
+    [SiteID] [bigint] NULL,
+    FOREIGN KEY([SiteID]) REFERENCES [dbo].[tbl_tran_Site]([ID]),
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+-- Link Table: ToolTeam
+CREATE TABLE [dbo].[tbl_tran_ToolTeam] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [ToolID] [bigint] NULL,
+    FOREIGN KEY([ToolID]) REFERENCES [dbo].[tbl_tran_Tool]([ID]),
+    [TeamID] [bigint] NULL,
+    FOREIGN KEY([TeamID]) REFERENCES [dbo].[tbl_tran_Team]([ID]),
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+-- Attachment Table: EmployeeDocuments
+CREATE TABLE [dbo].[tbl_tran_EmployeeDocuments] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [EmployeeID] [bigint] NULL,
+    FOREIGN KEY([EmployeeID]) REFERENCES [dbo].[tbl_tran_Employee]([ID]),
+    [attachment_Document] [varchar](MAX) NULL,
+    [ExpiredDate] [date] NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+-- Attachment Table: DailyWorkAttachments
+CREATE TABLE [dbo].[tbl_tran_DailyWorkAttachments] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [DailyWorkID] [bigint] NULL,
+    FOREIGN KEY([DailyWorkID]) REFERENCES [dbo].[tbl_tran_DailyWork]([ID]),
+    [attachment_DailyWork] [varchar](MAX) NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+CREATE TABLE [dbo].[tbl_tran_Vehicle] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [Make] [varchar](MAX) NULL,
+    [Model] [varchar](MAX) NULL,
+    [NumberPlate] [varchar](MAX) NULL,
+    [Color] [varchar](MAX) NULL,
+    [TeamID] [bigint] NULL,
+    FOREIGN KEY([TeamID]) REFERENCES [dbo].[tbl_tran_Team]([ID]),
+    [CollectedMileage] decimal(18,2) NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+CREATE TABLE [dbo].[tbl_tran_WeeklyMileage] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [VehicleID] [bigint] NULL,
+    FOREIGN KEY([VehicleID]) REFERENCES [dbo].[tbl_tran_Vehicle]([ID]),
+    [MileageDate] datetime NULL,
+    [StartMileage] decimal(18,2) NULL,
+    [EndMileage] decimal(18,2) NULL,
+    [Comments] [varchar](MAX) NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+CREATE TABLE [dbo].[tbl_tran_Timesheet] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [SheetDate] DateTime NULL,
+    [TeamID] [bigint] NULL,
+    FOREIGN KEY([TeamID]) REFERENCES [dbo].[tbl_tran_Team]([ID]),
+    [Comments] [varchar](MAX) NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+CREATE TABLE [dbo].[tbl_tran_IncidentReport] (
+    [ID] [bigint] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [ReportDate] [date] NULL,
+    [TeamID] [bigint] NULL,
+    FOREIGN KEY([TeamID]) REFERENCES [dbo].[tbl_tran_Team]([ID]),
+    [SiteID] [bigint] NULL,
+    FOREIGN KEY([SiteID]) REFERENCES [dbo].[tbl_tran_Site]([ID]),
+    [ReportedBy] [varchar](MAX) NULL,
+    [Comment] [varchar](MAX) NULL,
+    [Active] [bit] NULL,
+    [CreatedUserID] [bigint] NULL,
+    [CreatedDate] [datetime] NULL,
+    [ModifiedUserID] [bigint] NULL,
+    [ModifiedDate] [datetime] NULL,
+    [DeletedUserID] [bigint] NULL,
+    [DeletedDate] [datetime] NULL
+);
+
+
+
+
+
+
+
+
